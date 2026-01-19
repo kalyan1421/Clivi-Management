@@ -14,8 +14,15 @@ migrate_working_dir/
 
 # Environment Variables
 .env
+**/.env
 # Allow .env.example to be committed as a template
 !.env.example
+**/.env.example
+
+# IDE and Editor files
+.claude/
+.vscode/
+.idea/
 
 # IntelliJ related
 *.iml
@@ -36,6 +43,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+**/build/
 /coverage/
 
 # Symbolication related
