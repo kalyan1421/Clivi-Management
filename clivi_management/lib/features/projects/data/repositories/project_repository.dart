@@ -30,7 +30,7 @@ class ProjectRepository {
               user_id,
               assigned_role,
               assigned_at,
-              user_profiles(id, full_name, phone)
+              user_profiles!user_id(id, full_name, phone)
             )
           ''');
 
@@ -85,7 +85,7 @@ class ProjectRepository {
               user_id,
               assigned_role,
               assigned_at,
-              user_profiles(id, full_name, phone)
+              user_profiles!user_id(id, full_name, phone)
             )
           ''')
           .inFilter('id', projectIds)
@@ -112,7 +112,7 @@ class ProjectRepository {
               user_id,
               assigned_role,
               assigned_at,
-              user_profiles(id, full_name, phone)
+              user_profiles!user_id(id, full_name, phone)
             )
           ''')
           .eq('id', projectId)
