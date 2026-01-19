@@ -27,6 +27,7 @@ class ProjectRepository {
             *,
             project_assignments(
               id,
+              project_id,
               user_id,
               assigned_role,
               assigned_at,
@@ -82,6 +83,7 @@ class ProjectRepository {
             *,
             project_assignments(
               id,
+              project_id,
               user_id,
               assigned_role,
               assigned_at,
@@ -109,6 +111,7 @@ class ProjectRepository {
             *,
             project_assignments(
               id,
+              project_id,
               user_id,
               assigned_role,
               assigned_at,
