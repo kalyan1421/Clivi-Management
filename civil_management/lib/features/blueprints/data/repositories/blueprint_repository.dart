@@ -1,0 +1,158 @@
+import 'dart:io';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/config/supabase_client.dart';
+import '../../../../core/errors/app_exceptions.dart';
+import '../models/blueprint_model.dart';
+
+class BlueprintRepository {
+  final SupabaseClient _client;
+
+  BlueprintRepository({SupabaseClient? client}) : _client = client ?? supabase;
+
+  /// Fetches all blueprints for a project and groups them into folders.
+  ///
+  /// The logic for what a site_manager can see is handled by RLS policies.
+  Future<List<BlueprintFolder>> getBlueprintFolders(String projectId) async {
+    try {
+      final response = await _client
+          .from('blueprints')
+          .select()
+          .eq('project_id', projectId)
+          .order('created_at', ascending: false);
+
+      final blueprints = (response as List)
+          .map((json) => Blueprint.fromJson(json))
+          .toList();
+      
+      return BlueprintFolder.fromBlueprints(blueprints);
+    } on PostgrestException catch (e) {
+      logger.e('Failed to fetch blueprint folders: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
+    }
+  }
+
+  /// Fetches all blueprint files within a specific folder for a project.
+  Future<List<Blueprint>> getBlueprintFiles(String projectId, String folderName) async {
+    try {
+      final response = await _client
+          .from('blueprints')
+          .select()
+          .eq('project_id', projectId)
+          .eq('folder_name', folderName)
+          .order('created_at', ascending: false);
+          
+      return (response as List)
+          .map((json) => Blueprint.fromJson(json))
+          .toList();
+    } on PostgrestException catch (e) {
+      logger.e('Failed to fetch blueprint files: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
+    }
+  }
+
+  /// Uploads a file and creates a blueprint record.
+  /// Generates unique filenames to avoid conflicts with existing files.
+  Future<Blueprint> uploadBlueprint({
+    required String projectId,
+    required String folderName,
+    required bool isAdminOnly,
+    required File file,
+    required String uploaderId,
+  }) async {
+    final originalFileName = file.path.split('/').last;
+    final fileExtension = originalFileName.contains('.') 
+        ? '.${originalFileName.split('.').last}' 
+        : '';
+    final baseFileName = originalFileName.contains('.')
+        ? originalFileName.substring(0, originalFileName.lastIndexOf('.'))
+        : originalFileName;
+
+    // Generate a unique filename by checking if it exists and appending timestamp if needed
+    String fileName = originalFileName;
+    String filePath = '$projectId/$folderName/$fileName';
+    
+    // Check if file_path already exists in database
+    final existingFiles = await _client
+        .from('blueprints')
+        .select('file_path')
+        .eq('file_path', filePath);
+    
+    if ((existingFiles as List).isNotEmpty) {
+      // Generate unique filename with timestamp
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      fileName = '${baseFileName}_$timestamp$fileExtension';
+      filePath = '$projectId/$folderName/$fileName';
+    }
+
+    try {
+      // 1. Upload file to storage (use upsert: true to allow overwriting if needed)
+      await _client.storage.from('blueprints').upload(
+            filePath,
+            file,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+          );
+
+      // 2. Create record in database
+      final response = await _client.from('blueprints').insert({
+        'project_id': projectId,
+        'folder_name': folderName,
+        'file_name': fileName,
+        'file_path': filePath,
+        'is_admin_only': isAdminOnly,
+        'uploader_id': uploaderId,
+      }).select().single();
+      
+      return Blueprint.fromJson(response);
+
+    } on StorageException catch (e) {
+       logger.e('Failed to upload blueprint file: ${e.message}');
+       throw StorageUploadException.fromStorageException(e);
+    } on PostgrestException catch (e) {
+      // If db insert fails, we should try to clean up the uploaded file
+      try {
+        await _client.storage.from('blueprints').remove([filePath]);
+      } catch (_) {
+        // Ignore cleanup errors
+      }
+      logger.e('Failed to create blueprint record: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
+    }
+  }
+
+  /// Deletes a blueprint file and its database record.
+  Future<void> deleteBlueprint(String blueprintId) async {
+    try {
+      // First, get the file path to delete from storage
+      final response = await _client
+          .from('blueprints')
+          .select('file_path')
+          .eq('id', blueprintId)
+          .single();
+          
+      final filePath = response['file_path'] as String?;
+
+      if (filePath == null) {
+        throw DatabaseException('Blueprint not found or file path is missing.');
+      }
+
+      // Delete from database (which will cascade to storage via trigger, or do it manually)
+      // Let's do it manually for explicit control.
+      
+      // 1. Delete from DB
+      await _client.from('blueprints').delete().eq('id', blueprintId);
+      
+      // 2. Delete from Storage
+      await _client.storage.from('blueprints').remove([filePath]);
+
+    } on PostgrestException catch (e) {
+      logger.e('Failed to delete blueprint record: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
+    } on StorageException catch (e) {
+      logger.e('Failed to delete blueprint file: ${e.message}');
+      // The DB record might be gone, but the file is orphaned.
+      // This state is not ideal, but we notify of the error.
+      throw StorageDeleteException.fromStorageException(e);
+    }
+  }
+}

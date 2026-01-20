@@ -1,0 +1,50 @@
+name: civil_management
+description: "Civil Management App with role-based access control"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Routing
+  go_router: ^14.7.0
+
+  # Backend
+  supabase_flutter: ^2.9.2
+
+  # Environment Variables
+  flutter_dotenv: ^5.2.1
+
+  # Utilities
+  intl: ^0.20.2
+  logger: ^2.5.0
+  flutter_cached_pdfview: ^0.4.3
+  file_picker: ^10.3.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code Generation
+  build_runner: ^2.4.14
+  riverpod_generator: ^2.6.2
+
+flutter:
+  uses-material-design: true
+
+  # Assets
+  assets:
+    - .env
