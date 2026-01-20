@@ -63,19 +63,13 @@ class SuperAdminDashboard extends ConsumerWidget {
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 user?.email ?? 'No email',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(color: AppColors.textSecondary),
                               ),
                             ],
                           ),
@@ -99,11 +93,11 @@ class SuperAdminDashboard extends ConsumerWidget {
                           const SizedBox(width: 8),
                           Text(
                             'Full system access granted',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.success,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                         ],
                       ),
@@ -117,9 +111,9 @@ class SuperAdminDashboard extends ConsumerWidget {
             // Modules Grid
             Text(
               'System Modules',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             GridView.count(
@@ -222,26 +216,22 @@ class _ModuleCard extends StatelessWidget {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: color,
-                ),
+                child: Icon(icon, size: 32, color: color),
               ),
               const SizedBox(height: 12),
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
               Text(
                 description,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],

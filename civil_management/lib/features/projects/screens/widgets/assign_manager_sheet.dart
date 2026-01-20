@@ -11,10 +11,7 @@ import '../../providers/project_provider.dart';
 class AssignManagerSheet extends ConsumerStatefulWidget {
   final String projectId;
 
-  const AssignManagerSheet({
-    super.key,
-    required this.projectId,
-  });
+  const AssignManagerSheet({super.key, required this.projectId});
 
   @override
   ConsumerState<AssignManagerSheet> createState() => _AssignManagerSheetState();
@@ -60,8 +57,8 @@ class _AssignManagerSheetState extends ConsumerState<AssignManagerSheet> {
                       child: Text(
                         'Assign Site Managers',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -74,11 +71,17 @@ class _AssignManagerSheetState extends ConsumerState<AssignManagerSheet> {
 
               // Selected count
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
@@ -98,7 +101,11 @@ class _AssignManagerSheetState extends ConsumerState<AssignManagerSheet> {
                           // Clear all selections
                           for (final id in state.selectedIds.toList()) {
                             ref
-                                .read(siteManagerSelectionProvider(widget.projectId).notifier)
+                                .read(
+                                  siteManagerSelectionProvider(
+                                    widget.projectId,
+                                  ).notifier,
+                                )
                                 .toggleManager(id);
                           }
                         },
@@ -110,7 +117,10 @@ class _AssignManagerSheetState extends ConsumerState<AssignManagerSheet> {
 
               // Search
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search managers...',
@@ -131,9 +141,7 @@ class _AssignManagerSheetState extends ConsumerState<AssignManagerSheet> {
               const Divider(),
 
               // Content
-              Expanded(
-                child: _buildContent(state, scrollController),
-              ),
+              Expanded(child: _buildContent(state, scrollController)),
 
               // Bottom action
               Container(
@@ -164,7 +172,10 @@ class _AssignManagerSheetState extends ConsumerState<AssignManagerSheet> {
     );
   }
 
-  Widget _buildContent(SiteManagerSelectionState state, ScrollController scrollController) {
+  Widget _buildContent(
+    SiteManagerSelectionState state,
+    ScrollController scrollController,
+  ) {
     if (state.isLoading) {
       return const LoadingWidget(message: 'Loading managers...');
     }
@@ -191,15 +202,19 @@ class _AssignManagerSheetState extends ConsumerState<AssignManagerSheet> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off, size: 64, color: AppColors.textDisabled),
+            const Icon(
+              Icons.search_off,
+              size: 64,
+              color: AppColors.textDisabled,
+            ),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isEmpty
                   ? 'No site managers found'
                   : 'No managers match your search',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -300,20 +315,23 @@ class _ManagerTile extends StatelessWidget {
                     Text(
                       manager.displayName,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     if (manager.phone != null) ...[
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          const Icon(Icons.phone, size: 12, color: AppColors.textSecondary),
+                          const Icon(
+                            Icons.phone,
+                            size: 12,
+                            color: AppColors.textSecondary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             manager.phone!,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),

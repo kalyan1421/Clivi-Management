@@ -105,25 +105,25 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         Text(
           'Email Sent!',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           'We\'ve sent a password reset link to:',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
           _emailController.text.trim(),
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
         ),
         const SizedBox(height: 24),
         Container(
@@ -138,9 +138,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               const SizedBox(height: 8),
               Text(
                 'Check your inbox and follow the link to reset your password. The link will expire in 24 hours.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -193,17 +193,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           Text(
             'Forgot Password?',
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             'No worries! Enter your email and we\'ll send you a reset link.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -251,8 +251,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               Text(
                 'Remember your password? ',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                  color: AppColors.textSecondary,
+                ),
               ),
               TextButton(
                 onPressed: () => context.go('/login'),

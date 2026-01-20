@@ -56,7 +56,9 @@ class ProjectListState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
       searchQuery: searchQuery ?? this.searchQuery,
-      statusFilter: clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
+      statusFilter: clearStatusFilter
+          ? null
+          : (statusFilter ?? this.statusFilter),
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
     );
@@ -72,7 +74,8 @@ class ProjectListNotifier extends StateNotifier<ProjectListState> {
   final Ref _ref;
   static const int _pageSize = 20;
 
-  ProjectListNotifier(this._repository, this._ref) : super(const ProjectListState()) {
+  ProjectListNotifier(this._repository, this._ref)
+    : super(const ProjectListState()) {
     loadProjects();
   }
 
@@ -90,11 +93,7 @@ class ProjectListNotifier extends StateNotifier<ProjectListState> {
     if (state.isLoading) return;
 
     try {
-      state = state.copyWith(
-        isLoading: true,
-        clearError: true,
-        currentPage: 0,
-      );
+      state = state.copyWith(isLoading: true, clearError: true, currentPage: 0);
 
       List<ProjectModel> projects;
 
@@ -181,9 +180,7 @@ class ProjectListNotifier extends StateNotifier<ProjectListState> {
 
   /// Add project to list (after creation)
   void addProject(ProjectModel project) {
-    state = state.copyWith(
-      projects: [project, ...state.projects],
-    );
+    state = state.copyWith(projects: [project, ...state.projects]);
   }
 
   /// Update project in list
@@ -247,7 +244,7 @@ class ProjectDetailNotifier extends StateNotifier<ProjectDetailState> {
   final String projectId;
 
   ProjectDetailNotifier(this._repository, this._ref, this.projectId)
-      : super(const ProjectDetailState()) {
+    : super(const ProjectDetailState()) {
     loadProject();
   }
 
@@ -260,10 +257,7 @@ class ProjectDetailNotifier extends StateNotifier<ProjectDetailState> {
 
       final project = await _repository.getProjectById(projectId);
 
-      state = state.copyWith(
-        project: project,
-        isLoading: false,
-      );
+      state = state.copyWith(project: project, isLoading: false);
     } catch (e) {
       logger.e('Failed to load project: $e');
       state = state.copyWith(
@@ -280,10 +274,7 @@ class ProjectDetailNotifier extends StateNotifier<ProjectDetailState> {
 
       final updated = await _repository.updateProject(projectId, updates);
 
-      state = state.copyWith(
-        project: updated,
-        isSaving: false,
-      );
+      state = state.copyWith(project: updated, isSaving: false);
 
       // Update in list
       _ref.read(projectListProvider.notifier).updateProject(updated);
@@ -367,13 +358,14 @@ class SiteManagerSelectionState {
 // SITE MANAGER SELECTION NOTIFIER
 // ============================================================
 
-class SiteManagerSelectionNotifier extends StateNotifier<SiteManagerSelectionState> {
+class SiteManagerSelectionNotifier
+    extends StateNotifier<SiteManagerSelectionState> {
   final ProjectRepository _repository;
   final Ref _ref;
   final String projectId;
 
   SiteManagerSelectionNotifier(this._repository, this._ref, this.projectId)
-      : super(const SiteManagerSelectionState()) {
+    : super(const SiteManagerSelectionState()) {
     loadManagers();
   }
 
@@ -384,7 +376,9 @@ class SiteManagerSelectionNotifier extends StateNotifier<SiteManagerSelectionSta
     try {
       state = state.copyWith(isLoading: true, clearError: true);
 
-      final managers = await _repository.getSiteManagersWithAssignmentStatus(projectId);
+      final managers = await _repository.getSiteManagersWithAssignmentStatus(
+        projectId,
+      );
 
       final selectedIds = managers
           .where((m) => m.isAssigned)
@@ -482,7 +476,8 @@ class CreateProjectNotifier extends StateNotifier<CreateProjectState> {
   final ProjectRepository _repository;
   final Ref _ref;
 
-  CreateProjectNotifier(this._repository, this._ref) : super(const CreateProjectState());
+  CreateProjectNotifier(this._repository, this._ref)
+    : super(const CreateProjectState());
 
   String? get _currentUserId => _ref.read(currentUserProvider)?.id;
 
@@ -501,10 +496,7 @@ class CreateProjectNotifier extends StateNotifier<CreateProjectState> {
       // Add to list
       _ref.read(projectListProvider.notifier).addProject(created);
 
-      state = state.copyWith(
-        isLoading: false,
-        createdProject: created,
-      );
+      state = state.copyWith(isLoading: false, createdProject: created);
 
       return created;
     } catch (e) {
@@ -530,30 +522,38 @@ class CreateProjectNotifier extends StateNotifier<CreateProjectState> {
 /// Project list provider
 final projectListProvider =
     StateNotifierProvider<ProjectListNotifier, ProjectListState>((ref) {
-  final repository = ref.watch(projectRepositoryProvider);
-  return ProjectListNotifier(repository, ref);
-});
+      final repository = ref.watch(projectRepositoryProvider);
+      return ProjectListNotifier(repository, ref);
+    });
 
 /// Project detail provider (family for different project IDs)
-final projectDetailProvider = StateNotifierProvider.family<
-    ProjectDetailNotifier, ProjectDetailState, String>((ref, projectId) {
-  final repository = ref.watch(projectRepositoryProvider);
-  return ProjectDetailNotifier(repository, ref, projectId);
-});
+final projectDetailProvider =
+    StateNotifierProvider.family<
+      ProjectDetailNotifier,
+      ProjectDetailState,
+      String
+    >((ref, projectId) {
+      final repository = ref.watch(projectRepositoryProvider);
+      return ProjectDetailNotifier(repository, ref, projectId);
+    });
 
 /// Site manager selection provider (family for different project IDs)
-final siteManagerSelectionProvider = StateNotifierProvider.family<
-    SiteManagerSelectionNotifier, SiteManagerSelectionState, String>((ref, projectId) {
-  final repository = ref.watch(projectRepositoryProvider);
-  return SiteManagerSelectionNotifier(repository, ref, projectId);
-});
+final siteManagerSelectionProvider =
+    StateNotifierProvider.family<
+      SiteManagerSelectionNotifier,
+      SiteManagerSelectionState,
+      String
+    >((ref, projectId) {
+      final repository = ref.watch(projectRepositoryProvider);
+      return SiteManagerSelectionNotifier(repository, ref, projectId);
+    });
 
 /// Create project provider
 final createProjectProvider =
     StateNotifierProvider<CreateProjectNotifier, CreateProjectState>((ref) {
-  final repository = ref.watch(projectRepositoryProvider);
-  return CreateProjectNotifier(repository, ref);
-});
+      final repository = ref.watch(projectRepositoryProvider);
+      return CreateProjectNotifier(repository, ref);
+    });
 
 /// Project stats provider
 final projectStatsProvider = FutureProvider<Map<String, int>>((ref) async {

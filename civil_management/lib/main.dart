@@ -23,17 +23,9 @@ void main() async {
     await SupabaseConfig.initialize();
 
     // Run the app
-    runApp(
-      const ProviderScope(
-        child: CivilManagementApp(),
-      ),
-    );
+    runApp(const ProviderScope(child: CivilManagementApp()));
   } catch (e, stackTrace) {
-    logger.e(
-      'Failed to initialize app',
-      error: e,
-      stackTrace: stackTrace,
-    );
+    logger.e('Failed to initialize app', error: e, stackTrace: stackTrace);
 
     // Show error screen
     runApp(
@@ -66,10 +58,7 @@ class CivilManagementApp extends ConsumerWidget {
 class ErrorApp extends StatelessWidget {
   final String error;
 
-  const ErrorApp({
-    super.key,
-    required this.error,
-  });
+  const ErrorApp({super.key, required this.error});
 
   @override
   Widget build(BuildContext context) {
@@ -81,11 +70,7 @@ class ErrorApp extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red,
-              ),
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 24),
               const Text(
                 'App Initialization Failed',
@@ -128,10 +113,7 @@ class ErrorApp extends StatelessWidget {
               const SizedBox(height: 24),
               const Text(
                 'Please check your configuration:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),

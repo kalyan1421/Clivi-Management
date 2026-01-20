@@ -26,7 +26,11 @@ enum UserRole {
 
   /// Check if this role has higher privileges than another
   bool hasHigherPrivilegeThan(UserRole other) {
-    const hierarchy = [UserRole.siteManager, UserRole.admin, UserRole.superAdmin];
+    const hierarchy = [
+      UserRole.siteManager,
+      UserRole.admin,
+      UserRole.superAdmin,
+    ];
     return hierarchy.indexOf(this) > hierarchy.indexOf(other);
   }
 
@@ -74,7 +78,11 @@ class AppAuthState {
   /// Check if user is at least the given role level
   bool isAtLeast(UserRole minRole) {
     if (role == null) return false;
-    const hierarchy = [UserRole.siteManager, UserRole.admin, UserRole.superAdmin];
+    const hierarchy = [
+      UserRole.siteManager,
+      UserRole.admin,
+      UserRole.superAdmin,
+    ];
     return hierarchy.indexOf(role!) >= hierarchy.indexOf(minRole);
   }
 
@@ -115,33 +123,48 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
 
   /// Initialize auth listener
   void _init() {
-    // Listen to auth state changes from Supabase
+    // Keep the listener, it's good for realtime updates (logout elsewhere)
     _authSubscription = _repository.authStateChanges.listen((data) async {
       final session = data.session;
-      if (session != null) {
-        await _loadUserProfile(session.user);
-      } else {
-        state = const AppAuthState(
-          user: null,
-          role: null,
-          profile: null,
-          isLoading: false,
-          isInitialized: true,
-        );
+
+      // Only react to stream changes if we are ALREADY initialized
+      // or if this is the first definitive event.
+      if (state.isInitialized) {
+        if (session != null && state.user?.id != session.user.id) {
+          await _loadUserProfile(session.user);
+        } else if (session == null) {
+          state = const AppAuthState(
+            user: null,
+            role: null,
+            profile: null,
+            isInitialized: true, // Keep it true
+          );
+        }
       }
     });
 
-    // Check initial session
+    // This is the critical function for app startup
     _checkInitialSession();
   }
 
   /// Check for existing session on app start
   Future<void> _checkInitialSession() async {
-    final session = _repository.currentSession;
-    if (session != null) {
-      await _loadUserProfile(session.user);
-    } else {
-      state = state.copyWith(isInitialized: true);
+    try {
+      // Add a tiny delay to ensure Supabase local storage is ready
+      // explicitly on mobile devices sometimes this is instant,
+      // sometimes needs a microtask.
+      await Future.delayed(Duration.zero);
+
+      final session = _repository.currentSession;
+      if (session != null) {
+        await _loadUserProfile(session.user);
+      } else {
+        // Explicitly set initialized to true so Router knows to redirect to Login
+        state = state.copyWith(isInitialized: true, user: null);
+      }
+    } catch (e) {
+      // Even on error, we must mark initialized so the app doesn't hang on splash
+      state = state.copyWith(isInitialized: true, error: e.toString());
     }
   }
 
@@ -176,10 +199,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
   }
 
   /// Sign in with email and password
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     try {
       state = state.copyWith(isLoading: true, clearError: true);
 
@@ -203,10 +223,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
 
       logger.i('User signed in: ${result.user!.email}');
     } on AppAuthException catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.message,
-      );
+      state = state.copyWith(isLoading: false, error: e.message);
       rethrow;
     } catch (e) {
       state = state.copyWith(
@@ -250,16 +267,10 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
 
       logger.i('User signed up: ${result.user!.email}');
     } on AppAuthException catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.message,
-      );
+      state = state.copyWith(isLoading: false, error: e.message);
       rethrow;
     } on DatabaseException catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.message,
-      );
+      state = state.copyWith(isLoading: false, error: e.message);
       rethrow;
     } catch (e) {
       state = state.copyWith(
@@ -338,10 +349,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
         updates: updates,
       );
 
-      state = state.copyWith(
-        profile: updatedProfile,
-        isLoading: false,
-      );
+      state = state.copyWith(profile: updatedProfile, isLoading: false);
 
       logger.i('Profile updated');
     } on DatabaseException catch (e) {

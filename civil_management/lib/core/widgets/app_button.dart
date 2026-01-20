@@ -35,15 +35,15 @@ class AppButton extends StatelessWidget {
       child: isLoading
           ? const LoadingIndicator()
           : icon != null
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 20),
-                    const SizedBox(width: 8),
-                    Text(text),
-                  ],
-                )
-              : Text(text),
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20),
+                const SizedBox(width: 8),
+                Text(text),
+              ],
+            )
+          : Text(text),
     );
 
     return button;
@@ -77,15 +77,15 @@ class AppOutlinedButton extends StatelessWidget {
       child: isLoading
           ? const LoadingIndicator(color: AppColors.primary)
           : icon != null
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 20),
-                    const SizedBox(width: 8),
-                    Text(text),
-                  ],
-                )
-              : Text(text),
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20),
+                const SizedBox(width: 8),
+                Text(text),
+              ],
+            )
+          : Text(text),
     );
   }
 }
@@ -112,15 +112,15 @@ class AppTextButton extends StatelessWidget {
       child: isLoading
           ? const LoadingIndicator(color: AppColors.primary, size: 16)
           : icon != null
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 18),
-                    const SizedBox(width: 4),
-                    Text(text),
-                  ],
-                )
-              : Text(text),
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18),
+                const SizedBox(width: 4),
+                Text(text),
+              ],
+            )
+          : Text(text),
     );
   }
 }

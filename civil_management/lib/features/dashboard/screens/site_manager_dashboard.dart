@@ -57,20 +57,14 @@ class SiteManagerDashboard extends ConsumerWidget {
                         children: [
                           Text(
                             'Site Manager',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             user?.email ?? 'No email',
-                            style:
-                                Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
@@ -83,9 +77,9 @@ class SiteManagerDashboard extends ConsumerWidget {
 
             Text(
               'My Tasks',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -172,15 +166,15 @@ class SiteManagerDashboard extends ConsumerWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),

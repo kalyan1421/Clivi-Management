@@ -20,9 +20,7 @@ class BlueprintsFoldersScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Blueprints: ${project.name}'),
-      ),
+      appBar: AppBar(title: Text('Blueprints: ${project.name}')),
       body: foldersAsync.when(
         loading: () => const LoadingWidget(),
         error: (err, stack) => AppErrorWidget(
@@ -35,7 +33,11 @@ class BlueprintsFoldersScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.folder_off_outlined, size: 60, color: Colors.grey),
+                  const Icon(
+                    Icons.folder_off_outlined,
+                    size: 60,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(height: 16),
                   const Text('No blueprint folders found for this project.'),
                   if (authState.isAtLeast(UserRole.admin)) ...[
@@ -45,12 +47,12 @@ class BlueprintsFoldersScreen extends ConsumerWidget {
                       icon: const Icon(Icons.upload_file),
                       label: const Text('Upload First Blueprint'),
                     ),
-                  ]
+                  ],
                 ],
               ),
             );
           }
-          
+
           return GridView.builder(
             padding: const EdgeInsets.all(16),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -67,7 +69,9 @@ class BlueprintsFoldersScreen extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: authState.isAtLeast(UserRole.admin) && (foldersAsync.valueOrNull?.isNotEmpty ?? false)
+      floatingActionButton:
+          authState.isAtLeast(UserRole.admin) &&
+              (foldersAsync.valueOrNull?.isNotEmpty ?? false)
           ? FloatingActionButton(
               onPressed: () => _showUploadSheet(context),
               child: const Icon(Icons.upload_file),

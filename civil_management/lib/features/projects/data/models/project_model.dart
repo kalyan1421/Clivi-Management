@@ -12,7 +12,7 @@ class ProjectModel {
   final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Joined data
   final List<ProjectAssignmentModel>? assignments;
   final int? assignedManagersCount;
@@ -58,8 +58,8 @@ class ProjectModel {
           : null,
       assignments: json['project_assignments'] != null
           ? (json['project_assignments'] as List)
-              .map((e) => ProjectAssignmentModel.fromJson(e))
-              .toList()
+                .map((e) => ProjectAssignmentModel.fromJson(e))
+                .toList()
           : null,
       assignedManagersCount: json['assigned_managers_count'] as int?,
     );
@@ -78,10 +78,7 @@ class ProjectModel {
   }
 
   Map<String, dynamic> toInsertJson(String userId) {
-    return {
-      ...toJson(),
-      'created_by': userId,
-    };
+    return {...toJson(), 'created_by': userId};
   }
 
   ProjectModel copyWith({
@@ -112,12 +109,14 @@ class ProjectModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       assignments: assignments ?? this.assignments,
-      assignedManagersCount: assignedManagersCount ?? this.assignedManagersCount,
+      assignedManagersCount:
+          assignedManagersCount ?? this.assignedManagersCount,
     );
   }
 
   @override
-  String toString() => 'ProjectModel(id: $id, name: $name, status: ${status.value})';
+  String toString() =>
+      'ProjectModel(id: $id, name: $name, status: ${status.value})';
 }
 
 /// Project status enum
@@ -154,7 +153,8 @@ enum ProjectStatus {
     }
   }
 
-  bool get isActive => this == ProjectStatus.planning || this == ProjectStatus.inProgress;
+  bool get isActive =>
+      this == ProjectStatus.planning || this == ProjectStatus.inProgress;
 }
 
 /// Project assignment model
@@ -166,7 +166,7 @@ class ProjectAssignmentModel {
   final String assignedRole;
   final DateTime? assignedAt;
   final String? assignedBy;
-  
+
   // Joined user profile data
   final String? userName;
   final String? userPhone;
@@ -185,7 +185,7 @@ class ProjectAssignmentModel {
   factory ProjectAssignmentModel.fromJson(Map<String, dynamic> json) {
     // Handle nested user_profiles data
     final userProfile = json['user_profiles'] as Map<String, dynamic>?;
-    
+
     return ProjectAssignmentModel(
       id: json['id'] as String,
       projectId: json['project_id'] as String,
@@ -209,14 +209,12 @@ class ProjectAssignmentModel {
   }
 
   Map<String, dynamic> toInsertJson(String assignedByUserId) {
-    return {
-      ...toJson(),
-      'assigned_by': assignedByUserId,
-    };
+    return {...toJson(), 'assigned_by': assignedByUserId};
   }
 
   @override
-  String toString() => 'ProjectAssignmentModel(projectId: $projectId, userId: $userId)';
+  String toString() =>
+      'ProjectAssignmentModel(projectId: $projectId, userId: $userId)';
 }
 
 /// Simple user model for site manager selection
@@ -235,7 +233,10 @@ class SiteManagerModel {
     this.isAssigned = false,
   });
 
-  factory SiteManagerModel.fromJson(Map<String, dynamic> json, {bool isAssigned = false}) {
+  factory SiteManagerModel.fromJson(
+    Map<String, dynamic> json, {
+    bool isAssigned = false,
+  }) {
     return SiteManagerModel(
       id: json['id'] as String,
       fullName: json['full_name'] as String?,

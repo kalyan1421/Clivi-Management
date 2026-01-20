@@ -21,9 +21,7 @@ class ProjectRepository {
     int pageSize = 20,
   }) async {
     try {
-      var query = _client
-          .from('projects')
-          .select('''
+      var query = _client.from('projects').select('''
             *,
             project_assignments(
               id,
@@ -129,7 +127,10 @@ class ProjectRepository {
   }
 
   /// Create new project
-  Future<ProjectModel> createProject(ProjectModel project, String userId) async {
+  Future<ProjectModel> createProject(
+    ProjectModel project,
+    String userId,
+  ) async {
     try {
       final response = await _client
           .from('projects')
@@ -146,7 +147,10 @@ class ProjectRepository {
   }
 
   /// Update existing project
-  Future<ProjectModel> updateProject(String projectId, Map<String, dynamic> updates) async {
+  Future<ProjectModel> updateProject(
+    String projectId,
+    Map<String, dynamic> updates,
+  ) async {
     try {
       updates['updated_at'] = DateTime.now().toIso8601String();
 
@@ -199,7 +203,9 @@ class ProjectRepository {
   }
 
   /// Get site managers with assignment status for a project
-  Future<List<SiteManagerModel>> getSiteManagersWithAssignmentStatus(String projectId) async {
+  Future<List<SiteManagerModel>> getSiteManagersWithAssignmentStatus(
+    String projectId,
+  ) async {
     try {
       // Get all site managers
       final managersResponse = await _client
@@ -219,10 +225,12 @@ class ProjectRepository {
           .toSet();
 
       return (managersResponse as List)
-          .map((json) => SiteManagerModel.fromJson(
-                json,
-                isAssigned: assignedUserIds.contains(json['id']),
-              ))
+          .map(
+            (json) => SiteManagerModel.fromJson(
+              json,
+              isAssigned: assignedUserIds.contains(json['id']),
+            ),
+          )
           .toList();
     } on PostgrestException catch (e) {
       logger.e('Failed to fetch site managers: ${e.message}');
@@ -307,12 +315,14 @@ class ProjectRepository {
       // Add newly assigned users
       if (toAdd.isNotEmpty) {
         final insertData = toAdd
-            .map((userId) => {
-                  'project_id': projectId,
-                  'user_id': userId,
-                  'assigned_role': 'manager',
-                  'assigned_by': assignedBy,
-                })
+            .map(
+              (userId) => {
+                'project_id': projectId,
+                'user_id': userId,
+                'assigned_role': 'manager',
+                'assigned_by': assignedBy,
+              },
+            )
             .toList();
 
         await _client.from('project_assignments').insert(insertData);
@@ -328,9 +338,7 @@ class ProjectRepository {
   /// Get project statistics (for dashboard)
   Future<Map<String, int>> getProjectStats() async {
     try {
-      final response = await _client
-          .from('projects')
-          .select('status');
+      final response = await _client.from('projects').select('status');
 
       final stats = <String, int>{
         'total': 0,

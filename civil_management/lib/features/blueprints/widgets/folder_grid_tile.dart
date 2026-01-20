@@ -19,7 +19,8 @@ class FolderGridTile extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.go('/projects/$projectId/blueprints/${folder.name}'),
+        onTap: () =>
+            context.go('/projects/$projectId/blueprints/${folder.name}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -67,8 +68,8 @@ class FolderGridTile extends StatelessWidget {
                   Text(
                     '${folder.fileCount} file${folder.fileCount == 1 ? '' : 's'}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),

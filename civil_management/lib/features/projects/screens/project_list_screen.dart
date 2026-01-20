@@ -94,7 +94,9 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
                     label: Text(state.statusFilter!.displayName),
                     deleteIcon: const Icon(Icons.close, size: 18),
                     onDeleted: () {
-                      ref.read(projectListProvider.notifier).filterByStatus(null);
+                      ref
+                          .read(projectListProvider.notifier)
+                          .filterByStatus(null);
                     },
                   ),
                 ],
@@ -102,9 +104,7 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
             ),
 
           // Content
-          Expanded(
-            child: _buildContent(state, isAdmin),
-          ),
+          Expanded(child: _buildContent(state, isAdmin)),
         ],
       ),
       floatingActionButton: isAdmin
@@ -188,10 +188,7 @@ class _ProjectCard extends StatelessWidget {
   final ProjectModel project;
   final VoidCallback onTap;
 
-  const _ProjectCard({
-    required this.project,
-    required this.onTap,
-  });
+  const _ProjectCard({required this.project, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -212,8 +209,8 @@ class _ProjectCard extends StatelessWidget {
                     child: Text(
                       project.name,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   _StatusChip(status: project.status),
@@ -225,14 +222,18 @@ class _ProjectCard extends StatelessWidget {
               if (project.location != null) ...[
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 16, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         project.location!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                          color: AppColors.textSecondary,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -247,26 +248,35 @@ class _ProjectCard extends StatelessWidget {
                 children: [
                   // Dates
                   if (project.startDate != null) ...[
-                    Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       _formatDateRange(project.startDate, project.endDate),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(width: 16),
                   ],
 
                   // Assigned managers count
-                  if (project.assignments != null && project.assignments!.isNotEmpty) ...[
-                    const Icon(Icons.people, size: 14, color: AppColors.textSecondary),
+                  if (project.assignments != null &&
+                      project.assignments!.isNotEmpty) ...[
+                    const Icon(
+                      Icons.people,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${project.assignments!.length} manager${project.assignments!.length > 1 ? 's' : ''}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
 
@@ -277,9 +287,9 @@ class _ProjectCard extends StatelessWidget {
                     Text(
                       '₹${_formatBudget(project.budget!)}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
                     ),
                 ],
               ),
@@ -357,10 +367,7 @@ class _FilterSheet extends StatelessWidget {
   final ProjectStatus? currentFilter;
   final Function(ProjectStatus?) onFilterSelected;
 
-  const _FilterSheet({
-    this.currentFilter,
-    required this.onFilterSelected,
-  });
+  const _FilterSheet({this.currentFilter, required this.onFilterSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -372,9 +379,9 @@ class _FilterSheet extends StatelessWidget {
         children: [
           Text(
             'Filter by Status',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
 
@@ -388,12 +395,14 @@ class _FilterSheet extends StatelessWidget {
           const Divider(),
 
           // Status options
-          ...ProjectStatus.values.map((status) => _FilterOption(
-                label: status.displayName,
-                isSelected: currentFilter == status,
-                onTap: () => onFilterSelected(status),
-                color: _getStatusColor(status),
-              )),
+          ...ProjectStatus.values.map(
+            (status) => _FilterOption(
+              label: status.displayName,
+              isSelected: currentFilter == status,
+              onTap: () => onFilterSelected(status),
+              color: _getStatusColor(status),
+            ),
+          ),
 
           const SizedBox(height: 16),
         ],
@@ -439,10 +448,7 @@ class _FilterOption extends StatelessWidget {
           ? Container(
               width: 12,
               height: 12,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             )
           : null,
       title: Text(label),

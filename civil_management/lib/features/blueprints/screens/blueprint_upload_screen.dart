@@ -16,7 +16,8 @@ class BlueprintUploadScreen extends ConsumerStatefulWidget {
   const BlueprintUploadScreen({super.key, required this.project});
 
   @override
-  ConsumerState<BlueprintUploadScreen> createState() => _BlueprintUploadScreenState();
+  ConsumerState<BlueprintUploadScreen> createState() =>
+      _BlueprintUploadScreenState();
 }
 
 class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
@@ -56,13 +57,15 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
     final uploaderId = ref.read(currentUserProvider)!.id;
 
     try {
-      await ref.read(blueprintRepositoryProvider).uploadBlueprint(
-        projectId: widget.project.id,
-        folderName: _folderNameController.text.trim(),
-        isAdminOnly: _isAdminOnly,
-        file: _selectedFile!,
-        uploaderId: uploaderId,
-      );
+      await ref
+          .read(blueprintRepositoryProvider)
+          .uploadBlueprint(
+            projectId: widget.project.id,
+            folderName: _folderNameController.text.trim(),
+            isAdminOnly: _isAdminOnly,
+            file: _selectedFile!,
+            uploaderId: uploaderId,
+          );
 
       // Invalidate providers to refresh the lists
       ref.invalidate(blueprintFoldersProvider);
@@ -102,9 +105,7 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Upload Blueprint'),
-      ),
+      appBar: AppBar(title: const Text('Upload Blueprint')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -148,7 +149,9 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
               // Admin Only Switch
               SwitchListTile(
                 title: const Text('Admin Only'),
-                subtitle: const Text('If enabled, only admins can see this file.'),
+                subtitle: const Text(
+                  'If enabled, only admins can see this file.',
+                ),
                 value: _isAdminOnly,
                 onChanged: (value) {
                   setState(() {

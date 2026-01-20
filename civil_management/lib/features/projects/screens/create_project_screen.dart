@@ -12,15 +12,13 @@ import '../providers/project_provider.dart';
 class CreateProjectScreen extends ConsumerStatefulWidget {
   final String? projectId; // null for create, id for edit
 
-  const CreateProjectScreen({
-    super.key,
-    this.projectId,
-  });
+  const CreateProjectScreen({super.key, this.projectId});
 
   bool get isEditing => projectId != null;
 
   @override
-  ConsumerState<CreateProjectScreen> createState() => _CreateProjectScreenState();
+  ConsumerState<CreateProjectScreen> createState() =>
+      _CreateProjectScreenState();
 }
 
 class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
@@ -311,9 +309,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                   prefixText: '₹ ',
                 ),
                 keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
                     if (double.tryParse(value) == null) {
@@ -361,11 +357,7 @@ class _DateField extends StatelessWidget {
   final DateTime? date;
   final VoidCallback onTap;
 
-  const _DateField({
-    required this.label,
-    this.date,
-    required this.onTap,
-  });
+  const _DateField({required this.label, this.date, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -382,7 +374,9 @@ class _DateField extends StatelessWidget {
               ? '${date!.day}/${date!.month}/${date!.year}'
               : 'Select date',
           style: TextStyle(
-            color: date != null ? AppColors.textPrimary : AppColors.textSecondary,
+            color: date != null
+                ? AppColors.textPrimary
+                : AppColors.textSecondary,
           ),
         ),
       ),

@@ -52,10 +52,7 @@ class AuthRepository {
       final response = await _client.auth.signUp(
         email: request.email,
         password: request.password,
-        data: {
-          'full_name': request.fullName,
-          'phone': request.phone,
-        },
+        data: {'full_name': request.fullName, 'phone': request.phone},
       );
 
       if (response.user == null) {
@@ -71,13 +68,14 @@ class AuthRepository {
       UserProfileModel? profile;
       try {
         profile = await getUserProfile(response.user!.id);
-        
+
         // Update profile with additional info if provided
-        if (profile != null && (request.fullName != null || request.phone != null)) {
+        if (profile != null &&
+            (request.fullName != null || request.phone != null)) {
           final updates = <String, dynamic>{};
           if (request.fullName != null) updates['full_name'] = request.fullName;
           if (request.phone != null) updates['phone'] = request.phone;
-          
+
           if (updates.isNotEmpty) {
             profile = await updateUserProfile(
               userId: response.user!.id,
@@ -191,7 +189,8 @@ class AuthRepository {
 
   /// Create user profile
   Future<UserProfileModel> createUserProfile(
-      Map<String, dynamic> profileData) async {
+    Map<String, dynamic> profileData,
+  ) async {
     try {
       final response = await _client
           .from('user_profiles')
@@ -236,7 +235,10 @@ class AuthRepository {
     try {
       await _client
           .from('user_profiles')
-          .update({'role': newRole, 'updated_at': DateTime.now().toIso8601String()})
+          .update({
+            'role': newRole,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
           .eq('id', userId);
 
       logger.i('User role updated to: $newRole');

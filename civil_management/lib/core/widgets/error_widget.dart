@@ -22,25 +22,21 @@ class AppErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon ?? Icons.error_outline,
-              size: 64,
-              color: AppColors.error,
-            ),
+            Icon(icon ?? Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               'Oops!',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[
@@ -62,10 +58,7 @@ class AppErrorWidget extends StatelessWidget {
 class InlineErrorWidget extends StatelessWidget {
   final String message;
 
-  const InlineErrorWidget({
-    super.key,
-    required this.message,
-  });
+  const InlineErrorWidget({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -74,24 +67,18 @@ class InlineErrorWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.error.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.error.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.error.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: 20,
-          ),
+          Icon(Icons.error_outline, color: AppColors.error, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.error,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.error),
             ),
           ),
         ],
@@ -129,15 +116,12 @@ class EmptyStateWidget extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
-            if (action != null) ...[
-              const SizedBox(height: 24),
-              action!,
-            ],
+            if (action != null) ...[const SizedBox(height: 24), action!],
           ],
         ),
       ),

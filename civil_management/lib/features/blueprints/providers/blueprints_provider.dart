@@ -12,14 +12,18 @@ BlueprintRepository blueprintRepository(BlueprintRepositoryRef ref) {
 }
 
 @riverpod
-Future<List<BlueprintFolder>> blueprintFolders(BlueprintFoldersRef ref, String projectId) {
+Future<List<BlueprintFolder>> blueprintFolders(
+  BlueprintFoldersRef ref,
+  String projectId,
+) {
   final repository = ref.watch(blueprintRepositoryProvider);
   return repository.getBlueprintFolders(projectId);
 }
 
 @riverpod
-Future<List<Blueprint>> blueprintFiles(BlueprintFilesRef ref, {
-  required String projectId, 
+Future<List<Blueprint>> blueprintFiles(
+  BlueprintFilesRef ref, {
+  required String projectId,
   required String folderName,
 }) {
   final repository = ref.watch(blueprintRepositoryProvider);

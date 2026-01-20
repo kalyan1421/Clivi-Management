@@ -5,10 +5,7 @@ import '../theme/app_colors.dart';
 class LoadingWidget extends StatelessWidget {
   final String? message;
 
-  const LoadingWidget({
-    super.key,
-    this.message,
-  });
+  const LoadingWidget({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +20,9 @@ class LoadingWidget extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               message!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -40,11 +37,7 @@ class LoadingIndicator extends StatelessWidget {
   final Color? color;
   final double size;
 
-  const LoadingIndicator({
-    super.key,
-    this.color,
-    this.size = 20,
-  });
+  const LoadingIndicator({super.key, this.color, this.size = 20});
 
   @override
   Widget build(BuildContext context) {

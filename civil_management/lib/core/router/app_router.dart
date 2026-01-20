@@ -22,37 +22,41 @@ import '../../features/projects/data/models/project_model.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
 
-
   return GoRouter(
     initialLocation: '/splash',
     debugLogDiagnostics: true,
     refreshListenable: _AuthStateNotifier(ref),
     redirect: (context, state) {
-      final isAuthenticated = authState.isAuthenticated;
-      final userRole = authState.role;
-      final isLoginRoute = state.matchedLocation == '/login';
-      final isSplashRoute = state.matchedLocation == '/splash';
-
-      // Allow splash screen
-      if (isSplashRoute) {
+      // 1. Check if Auth is fully initialized
+      // If not initialized, DO NOT redirect yet. Let the Splash screen show.
+      if (!authState.isInitialized) {
         return null;
       }
 
-      // Public routes that don't require auth
+      final isAuthenticated = authState.isAuthenticated;
+      final userRole = authState.role;
+      final isSplashRoute = state.matchedLocation == '/splash';
+
+      // 2. Public Routes Logic
       final publicRoutes = ['/login', '/signup', '/forgot-password'];
       final isPublicRoute = publicRoutes.contains(state.matchedLocation);
 
-      // If not authenticated and trying to access protected route
+      // 3. Handle Unauthenticated Users
+      // If not authenticated and not on a public route, go to Login
       if (!isAuthenticated && !isPublicRoute) {
         return '/login';
       }
 
-      // If authenticated and trying to access public auth route, redirect to dashboard
-      if (isAuthenticated && isPublicRoute && userRole != null) {
-        return _getRoleBasedRoute(userRole);
+      // 4. Handle Authenticated Users
+      // If authenticated...
+      if (isAuthenticated) {
+        // ...and trying to access Splash or Login, send to Dashboard
+        if (isSplashRoute || isPublicRoute) {
+          return _getRoleBasedRoute(userRole ?? UserRole.siteManager);
+        }
       }
 
-      // No redirect needed
+      // 5. Default: No redirect needed
       return null;
     },
     routes: [
@@ -135,7 +139,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final projectId = state.pathParameters['id']!;
               final folderName = state.pathParameters['folderName']!;
-              return BlueprintFilesScreen(projectId: projectId, folderName: folderName);
+              return BlueprintFilesScreen(
+                projectId: projectId,
+                folderName: folderName,
+              );
             },
             routes: [
               GoRoute(
@@ -146,9 +153,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                   return BlueprintViewerScreen(blueprint: blueprint);
                 },
               ),
-            ]
+            ],
           ),
-        ]
+        ],
       ),
       GoRoute(
         path: '/projects/:id/edit',

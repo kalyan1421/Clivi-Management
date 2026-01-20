@@ -24,7 +24,7 @@ class BlueprintRepository {
       final blueprints = (response as List)
           .map((json) => Blueprint.fromJson(json))
           .toList();
-      
+
       return BlueprintFolder.fromBlueprints(blueprints);
     } on PostgrestException catch (e) {
       logger.e('Failed to fetch blueprint folders: ${e.message}');
@@ -33,7 +33,10 @@ class BlueprintRepository {
   }
 
   /// Fetches all blueprint files within a specific folder for a project.
-  Future<List<Blueprint>> getBlueprintFiles(String projectId, String folderName) async {
+  Future<List<Blueprint>> getBlueprintFiles(
+    String projectId,
+    String folderName,
+  ) async {
     try {
       final response = await _client
           .from('blueprints')
@@ -41,7 +44,7 @@ class BlueprintRepository {
           .eq('project_id', projectId)
           .eq('folder_name', folderName)
           .order('created_at', ascending: false);
-          
+
       return (response as List)
           .map((json) => Blueprint.fromJson(json))
           .toList();
@@ -61,8 +64,8 @@ class BlueprintRepository {
     required String uploaderId,
   }) async {
     final originalFileName = file.path.split('/').last;
-    final fileExtension = originalFileName.contains('.') 
-        ? '.${originalFileName.split('.').last}' 
+    final fileExtension = originalFileName.contains('.')
+        ? '.${originalFileName.split('.').last}'
         : '';
     final baseFileName = originalFileName.contains('.')
         ? originalFileName.substring(0, originalFileName.lastIndexOf('.'))
@@ -71,13 +74,13 @@ class BlueprintRepository {
     // Generate a unique filename by checking if it exists and appending timestamp if needed
     String fileName = originalFileName;
     String filePath = '$projectId/$folderName/$fileName';
-    
+
     // Check if file_path already exists in database
     final existingFiles = await _client
         .from('blueprints')
         .select('file_path')
         .eq('file_path', filePath);
-    
+
     if ((existingFiles as List).isNotEmpty) {
       // Generate unique filename with timestamp
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -87,27 +90,32 @@ class BlueprintRepository {
 
     try {
       // 1. Upload file to storage (use upsert: true to allow overwriting if needed)
-      await _client.storage.from('blueprints').upload(
+      await _client.storage
+          .from('blueprints')
+          .upload(
             filePath,
             file,
             fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
           );
 
       // 2. Create record in database
-      final response = await _client.from('blueprints').insert({
-        'project_id': projectId,
-        'folder_name': folderName,
-        'file_name': fileName,
-        'file_path': filePath,
-        'is_admin_only': isAdminOnly,
-        'uploader_id': uploaderId,
-      }).select().single();
-      
-      return Blueprint.fromJson(response);
+      final response = await _client
+          .from('blueprints')
+          .insert({
+            'project_id': projectId,
+            'folder_name': folderName,
+            'file_name': fileName,
+            'file_path': filePath,
+            'is_admin_only': isAdminOnly,
+            'uploader_id': uploaderId,
+          })
+          .select()
+          .single();
 
+      return Blueprint.fromJson(response);
     } on StorageException catch (e) {
-       logger.e('Failed to upload blueprint file: ${e.message}');
-       throw StorageUploadException.fromStorageException(e);
+      logger.e('Failed to upload blueprint file: ${e.message}');
+      throw StorageUploadException.fromStorageException(e);
     } on PostgrestException catch (e) {
       // If db insert fails, we should try to clean up the uploaded file
       try {
@@ -129,7 +137,7 @@ class BlueprintRepository {
           .select('file_path')
           .eq('id', blueprintId)
           .single();
-          
+
       final filePath = response['file_path'] as String?;
 
       if (filePath == null) {
@@ -138,13 +146,12 @@ class BlueprintRepository {
 
       // Delete from database (which will cascade to storage via trigger, or do it manually)
       // Let's do it manually for explicit control.
-      
+
       // 1. Delete from DB
       await _client.from('blueprints').delete().eq('id', blueprintId);
-      
+
       // 2. Delete from Storage
       await _client.storage.from('blueprints').remove([filePath]);
-
     } on PostgrestException catch (e) {
       logger.e('Failed to delete blueprint record: ${e.message}');
       throw DatabaseException.fromPostgrest(e);

@@ -8,12 +8,7 @@ class AuthResultModel {
   final UserProfileModel? profile;
   final String? error;
 
-  const AuthResultModel({
-    this.user,
-    this.session,
-    this.profile,
-    this.error,
-  });
+  const AuthResultModel({this.user, this.session, this.profile, this.error});
 
   bool get isSuccess => user != null && error == null;
   bool get hasSession => session != null;
@@ -24,11 +19,7 @@ class AuthResultModel {
     supabase.Session? session,
     UserProfileModel? profile,
   }) {
-    return AuthResultModel(
-      user: user,
-      session: session,
-      profile: profile,
-    );
+    return AuthResultModel(user: user, session: session, profile: profile);
   }
 
   factory AuthResultModel.failure(String error) {
@@ -71,10 +62,7 @@ class SignInRequest {
   final String email;
   final String password;
 
-  const SignInRequest({
-    required this.email,
-    required this.password,
-  });
+  const SignInRequest({required this.email, required this.password});
 }
 
 /// Model for password reset request

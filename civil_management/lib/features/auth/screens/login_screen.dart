@@ -38,7 +38,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await ref.read(authProvider.notifier).signIn(
+      await ref
+          .read(authProvider.notifier)
+          .signIn(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
@@ -111,16 +113,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Text(
                       'Welcome Back',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Sign in to your account',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 32),
 
@@ -208,9 +210,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         Text(
                           'Don\'t have an account? ',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: AppColors.textSecondary),
                         ),
                         TextButton(
                           onPressed: () => context.go('/signup'),
@@ -244,9 +245,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               const SizedBox(width: 8),
                               Text(
                                 'Development Note',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
+                                style: Theme.of(context).textTheme.labelMedium
                                     ?.copyWith(
                                       color: AppColors.info,
                                       fontWeight: FontWeight.bold,
@@ -260,10 +259,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             '• super_admin\n'
                             '• admin\n'
                             '• site_manager',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),

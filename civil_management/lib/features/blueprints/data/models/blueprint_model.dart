@@ -1,4 +1,3 @@
-
 class Blueprint {
   final String id;
   final String projectId;
@@ -65,12 +64,14 @@ class BlueprintFolder {
     return folderMap.entries.map((entry) {
       final folderName = entry.key;
       final files = entry.value;
-      
+
       // A folder is admin-only if ALL files within it are admin-only
       final isFolderAdminOnly = files.every((file) => file.isAdminOnly);
-      
+
       // Get the most recent file's date as the folder's last modified date
-      final lastModified = files.map((f) => f.createdAt).reduce((a, b) => a.isAfter(b) ? a : b);
+      final lastModified = files
+          .map((f) => f.createdAt)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
 
       return BlueprintFolder(
         name: folderName,
@@ -78,7 +79,8 @@ class BlueprintFolder {
         isAdminOnly: isFolderAdminOnly,
         lastModified: lastModified,
       );
-    }).toList()
-    ..sort((a, b) => b.lastModified.compareTo(a.lastModified)); // Sort by most recently modified
+    }).toList()..sort(
+      (a, b) => b.lastModified.compareTo(a.lastModified),
+    ); // Sort by most recently modified
   }
 }

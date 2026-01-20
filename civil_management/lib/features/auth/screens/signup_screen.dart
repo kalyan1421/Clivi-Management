@@ -46,7 +46,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     });
 
     try {
-      await ref.read(authProvider.notifier).signUp(
+      await ref
+          .read(authProvider.notifier)
+          .signUp(
             email: _emailController.text.trim(),
             password: _passwordController.text,
             fullName: _fullNameController.text.trim(),
@@ -104,9 +106,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             padding: const EdgeInsets.all(24.0),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
-              child: _signupSuccess
-                  ? _buildSuccessView()
-                  : _buildSignupForm(),
+              child: _signupSuccess ? _buildSuccessView() : _buildSignupForm(),
             ),
           ),
         ),
@@ -135,16 +135,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         Text(
           'Account Created!',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           'Please check your email to verify your account.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -152,9 +152,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         const SizedBox(height: 16),
         Text(
           'Redirecting to login...',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -171,16 +171,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           Text(
             'Create Account',
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Fill in your details to get started',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 32),
 
@@ -251,9 +251,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _isPasswordVisible
-                      ? Icons.visibility_off
-                      : Icons.visibility,
+                  _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
                 ),
                 onPressed: () {
                   setState(() {
@@ -326,9 +324,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 Text(
                   'Password Requirements:',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.info,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.info,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 _buildRequirement('At least 8 characters'),
@@ -355,8 +353,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               Text(
                 'Already have an account? ',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                  color: AppColors.textSecondary,
+                ),
               ),
               TextButton(
                 onPressed: () => context.go('/login'),
@@ -374,13 +372,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_outline, size: 16, color: AppColors.textSecondary),
+          const Icon(
+            Icons.check_circle_outline,
+            size: 16,
+            color: AppColors.textSecondary,
+          ),
           const SizedBox(width: 8),
           Text(
             text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),

@@ -13,13 +13,11 @@ import 'widgets/assign_manager_sheet.dart';
 class ProjectDetailScreen extends ConsumerStatefulWidget {
   final String projectId;
 
-  const ProjectDetailScreen({
-    super.key,
-    required this.projectId,
-  });
+  const ProjectDetailScreen({super.key, required this.projectId});
 
   @override
-  ConsumerState<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
+  ConsumerState<ProjectDetailScreen> createState() =>
+      _ProjectDetailScreenState();
 }
 
 class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
@@ -51,7 +49,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
           if (isAdmin && state.project != null) ...[
             IconButton(
               icon: const Icon(Icons.edit),
-              onPressed: () => context.push('/projects/${widget.projectId}/edit'),
+              onPressed: () =>
+                  context.push('/projects/${widget.projectId}/edit'),
             ),
             PopupMenuButton<String>(
               onSelected: (value) => _handleMenuAction(value, state.project!),
@@ -68,7 +67,10 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                   value: 'delete',
                   child: ListTile(
                     leading: Icon(Icons.delete, color: AppColors.error),
-                    title: Text('Delete Project', style: TextStyle(color: AppColors.error)),
+                    title: Text(
+                      'Delete Project',
+                      style: TextStyle(color: AppColors.error),
+                    ),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
@@ -97,8 +99,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     if (state.error != null) {
       return AppErrorWidget(
         message: state.error!,
-        onRetry: () =>
-            ref.read(projectDetailProvider(widget.projectId).notifier).refresh(),
+        onRetry: () => ref
+            .read(projectDetailProvider(widget.projectId).notifier)
+            .refresh(),
       );
     }
 
@@ -168,9 +171,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                 );
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Delete'),
           ),
         ],
@@ -184,10 +185,7 @@ class _OverviewTab extends StatelessWidget {
   final ProjectModel project;
   final bool isAdmin;
 
-  const _OverviewTab({
-    required this.project,
-    required this.isAdmin,
-  });
+  const _OverviewTab({required this.project, required this.isAdmin});
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +220,8 @@ class _OverviewTab extends StatelessWidget {
                       children: [
                         Text(
                           project.status.displayName,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: _getStatusColor(project.status),
                               ),
@@ -231,9 +230,8 @@ class _OverviewTab extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             _getDateRangeText(),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ],
@@ -245,13 +243,13 @@ class _OverviewTab extends StatelessWidget {
                       children: [
                         Text(
                           'Budget',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
                         ),
                         Text(
                           '₹${_formatBudget(project.budget!)}',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
                               ),
@@ -269,7 +267,8 @@ class _OverviewTab extends StatelessWidget {
             title: 'Details',
             icon: Icons.info_outline,
             children: [
-              if (project.description != null && project.description!.isNotEmpty)
+              if (project.description != null &&
+                  project.description!.isNotEmpty)
                 _DetailRow(
                   label: 'Description',
                   value: project.description!,
@@ -318,7 +317,8 @@ class _OverviewTab extends StatelessWidget {
               if (project.startDate != null && project.endDate != null)
                 _DetailRow(
                   label: 'Duration',
-                  value: '${project.endDate!.difference(project.startDate!).inDays} days',
+                  value:
+                      '${project.endDate!.difference(project.startDate!).inDays} days',
                   icon: Icons.hourglass_empty,
                 ),
             ],
@@ -423,13 +423,17 @@ class _TeamTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.people_outline, size: 64, color: AppColors.textDisabled),
+            const Icon(
+              Icons.people_outline,
+              size: 64,
+              color: AppColors.textDisabled,
+            ),
             const SizedBox(height: 16),
             Text(
               'No team members assigned',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
             ),
             if (isAdmin) ...[
               const SizedBox(height: 16),
@@ -454,8 +458,8 @@ class _TeamTab extends StatelessWidget {
                 Text(
                   '${assignments.length} Team Member${assignments.length > 1 ? 's' : ''}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 TextButton.icon(
@@ -492,26 +496,32 @@ class _TeamTab extends StatelessWidget {
                       if (assignment.userPhone != null)
                         Row(
                           children: [
-                            const Icon(Icons.phone, size: 12, color: AppColors.textSecondary),
+                            const Icon(
+                              Icons.phone,
+                              size: 12,
+                              color: AppColors.textSecondary,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               assignment.userPhone!,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.textSecondary),
                             ),
                           ],
                         ),
                       Text(
                         'Assigned: ${_formatDate(assignment.assignedAt)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
                   trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.siteManager.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -556,16 +566,16 @@ class _ActivityTab extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Activity Log',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
           Text(
             'Coming soon...',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textDisabled,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textDisabled),
           ),
         ],
       ),
@@ -600,8 +610,8 @@ class _SectionCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -639,9 +649,9 @@ class _DetailRow extends StatelessWidget {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(value),
@@ -657,15 +667,15 @@ class _DetailRow extends StatelessWidget {
                   child: Text(
                     label,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
                 Text(
                   value,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
               ],
             ),

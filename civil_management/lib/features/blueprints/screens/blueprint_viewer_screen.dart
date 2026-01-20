@@ -14,9 +14,7 @@ class BlueprintViewerScreen extends StatelessWidget {
     final isPdf = blueprint.fileName.toLowerCase().endsWith('.pdf');
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(blueprint.fileName),
-      ),
+      appBar: AppBar(title: Text(blueprint.fileName)),
       body: isPdf ? _buildPdfViewer() : _buildImageViewer(),
     );
   }
@@ -24,7 +22,8 @@ class BlueprintViewerScreen extends StatelessWidget {
   Widget _buildPdfViewer() {
     return const PDF().cachedFromUrl(
       blueprint.publicUrl,
-      placeholder: (progress) => LoadingWidget(message: 'Loading PDF... $progress%'),
+      placeholder: (progress) =>
+          LoadingWidget(message: 'Loading PDF... $progress%'),
       errorWidget: (error) => Center(child: Text(error.toString())),
     );
   }
