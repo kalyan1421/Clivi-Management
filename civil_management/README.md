@@ -137,6 +137,12 @@ lib/
 
 ## ⚙️ Setup & Installation  
 
+### Prerequisites
+- Flutter SDK (latest stable)
+- Dart SDK ^3.10.7
+- A Supabase account and project
+- Android Studio / Xcode (for mobile development)
+
 ### ✅ 1. Clone Repository
 ```bash
 git clone https://github.com/kalyan1421/Clivi-Management.git
@@ -149,27 +155,145 @@ flutter pub get
 ```
 
 ### ✅ 3. Setup Environment Variables
-1. Copy `.env.example` to `.env`:
+1. Create the `.env` file in the `assets` folder:
 ```bash
-cp .env.example .env
+touch assets/.env
 ```
 
-2. Add your Supabase credentials to `.env`:
+2. Add your Supabase credentials to `assets/.env`:
 ```env
-SUPABASE_URL=https://your-project-id.supabase.co
+# Supabase Configuration
+SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_ANON_KEY=your-anon-key-here
-DEBUG_MODE=true
+
+# App Environment (development, staging, production)
 APP_ENV=development
+
+# Debug Mode (enables Supabase debug logging)
+DEBUG_MODE=true
 ```
+
+**Getting Supabase Credentials:**
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project (or create a new one)
+3. Navigate to **Settings** → **API**
+4. Copy the **Project URL** and **anon/public** key
 
 ⚠️ **IMPORTANT**: Never commit `.env` to version control! The `.env` file is already in `.gitignore`.
 
 ### ✅ 4. Run Database Migrations
 See `supabase/SETUP_GUIDE.md` for detailed instructions on setting up the Supabase database.
 
-### ✅ 5. Run the App
+**Quick Setup:**
+1. Go to Supabase SQL Editor
+2. Run migrations in order:
+   - `supabase/migrations/001_initial_schema.sql`
+   - `supabase/migrations/002_fix_rls_policies.sql`
+   - `supabase/migrations/003_add_blueprints.sql`
+
+### ✅ 5. Generate Code (if using freezed/riverpod_generator)
 ```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+### ✅ 6. Run the App
+```bash
+# Run on connected device
 flutter run
+
+# Run with specific flavor
+flutter run --debug
+
+# Run on web
+flutter run -d chrome
+```
+
+---
+
+## 🏗️ Architecture Overview
+
+This project follows **Clean Architecture** principles with **Feature-First** organization:
+
+```
+lib/
+├── main.dart                    # App entry point
+├── core/                        # Shared core functionality
+│   ├── config/
+│   │   ├── app_constants.dart   # App-wide constants
+│   │   ├── env.dart             # Environment configuration
+│   │   └── supabase_client.dart # Supabase initialization
+│   ├── errors/
+│   │   ├── app_exceptions.dart  # Custom exception classes
+│   │   └── error_handler.dart   # Global error handling
+│   ├── router/
+│   │   ├── app_router.dart      # GoRouter configuration
+│   │   ├── route_guards.dart    # Auth & role guards
+│   │   └── route_names.dart     # Route constants
+│   ├── theme/
+│   │   ├── app_colors.dart      # Color palette
+│   │   ├── app_theme.dart       # Material theme
+│   │   └── text_styles.dart     # Typography
+│   ├── utils/
+│   │   ├── currency_formatter.dart
+│   │   ├── date_formatter.dart
+│   │   └── validators.dart
+│   └── widgets/                 # Reusable UI components
+│       ├── app_button.dart
+│       ├── custom_text_field.dart
+│       ├── error_widget.dart
+│       └── loading_widget.dart
+├── features/                    # Feature modules
+│   ├── auth/
+│   │   ├── data/
+│   │   │   ├── models/
+│   │   │   └── repositories/
+│   │   ├── providers/
+│   │   └── screens/
+│   ├── dashboard/
+│   ├── projects/
+│   ├── blueprints/
+│   └── ... (other features)
+└── shared/                      # Shared models & utilities
+    └── models/
+        └── app_user.dart
+```
+
+### Key Technologies
+| Technology | Purpose |
+|------------|---------|
+| **flutter_riverpod** | State management |
+| **go_router** | Navigation with guards |
+| **supabase_flutter** | Backend (Auth, DB, Storage) |
+| **flutter_dotenv** | Environment configuration |
+| **google_fonts** | Typography |
+| **freezed** | Immutable models (optional) |
+| **intl** | Date/Currency formatting |
+
+---
+
+## ✅ Testing Checklist
+
+After setup, verify the following:
+
+- [ ] App launches without errors
+- [ ] Supabase connection successful (check console logs)
+- [ ] Environment variables loaded correctly
+- [ ] Router redirects to login when not authenticated
+- [ ] Login/Signup functionality works
+- [ ] Role-based routing (Super Admin/Admin/Site Manager dashboards)
+- [ ] Theme applied globally (Blue primary, Orange secondary)
+- [ ] No compilation errors
+
+**Debug Commands:**
+```bash
+# Check for analysis issues
+flutter analyze
+
+# Run tests
+flutter test
+
+# Clean build
+flutter clean && flutter pub get && flutter run
 ```
 
 ---

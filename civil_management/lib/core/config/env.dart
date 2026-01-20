@@ -8,7 +8,7 @@ class Env {
 
   /// Initialize environment variables
   static Future<void> init() async {
-    await dotenv.load(fileName: '.env');
+    await dotenv.load(fileName: 'assets/.env');
   }
 
   /// Supabase Project URL
