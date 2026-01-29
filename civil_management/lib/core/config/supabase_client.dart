@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logger/logger.dart';
 import 'env.dart';
@@ -16,10 +17,16 @@ final logger = Logger(
   ),
 );
 
+enum ConnectionState { connected, paused, disconnected }
+
 /// Initialize Supabase with environment configuration
 class SupabaseConfig {
   // Private constructor
   SupabaseConfig._();
+
+  static ConnectionState _connectionState = ConnectionState.connected;
+
+  static ConnectionState get connectionState => _connectionState;
 
   /// Initialize Supabase
   static Future<void> initialize() async {
@@ -46,6 +53,43 @@ class SupabaseConfig {
       );
       rethrow;
     }
+  }
+
+  static Future<void> handleAppLifecycle(AppLifecycleState state) async {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // Refresh session and reconnect
+        await _refreshConnection();
+        break;
+      case AppLifecycleState.paused:
+        // Mark connection as potentially stale
+        _connectionState = ConnectionState.paused;
+        break;
+      case AppLifecycleState.detached:
+        // Save any pending data
+        await _flushPendingOperations();
+        break;
+      default:
+        break;
+    }
+  }
+
+  static Future<void> _refreshConnection() async {
+    _connectionState = ConnectionState.connected;
+    final session = supabase.auth.currentSession;
+    if (session != null) {
+      final expiresAt = session.expiresAt;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      if (expiresAt != null && expiresAt - now < 60) {
+        // Session expires in less than 60 seconds, refresh it
+        await supabase.auth.refreshSession();
+      }
+    }
+  }
+
+  static Future<void> _flushPendingOperations() async {
+    // TODO: Implement logic to save any pending data before the app is detached.
   }
 
   /// Check if user is authenticated

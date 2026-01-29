@@ -1,3 +1,4 @@
+import 'package:civil_management/core/config/app_lifecycle_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/env.dart';
@@ -44,6 +45,14 @@ class CivilManagementApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+
+    ref.listen<AsyncValue<AppLifecycleState?>>(appLifecycleProvider, (previous, next) {
+      next.whenData((state) {
+        if (state != null) {
+          SupabaseConfig.handleAppLifecycle(state);
+        }
+      });
+    });
 
     return MaterialApp.router(
       title: 'Civil Management',

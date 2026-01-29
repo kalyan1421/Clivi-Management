@@ -120,8 +120,9 @@ class BlueprintRepository {
       // If db insert fails, we should try to clean up the uploaded file
       try {
         await _client.storage.from('blueprints').remove([filePath]);
-      } catch (_) {
-        // Ignore cleanup errors
+      } catch (cleanupError) {
+        // Log cleanup failure for monitoring orphaned files
+        logger.w('Failed to cleanup uploaded file after DB error: $cleanupError');
       }
       logger.e('Failed to create blueprint record: ${e.message}');
       throw DatabaseException.fromPostgrest(e);

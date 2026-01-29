@@ -1,3 +1,4 @@
+import 'package:civil_management/core/utils/cached_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_client.dart';
 import '../../../../core/errors/app_exceptions.dart';
@@ -6,6 +7,7 @@ import '../models/project_model.dart';
 /// Repository for project-related Supabase operations
 class ProjectRepository {
   final SupabaseClient _client;
+  final CachedRepository<List<ProjectModel>> _cache = CachedRepository();
 
   ProjectRepository({SupabaseClient? client}) : _client = client ?? supabase;
 
@@ -20,8 +22,10 @@ class ProjectRepository {
     int page = 0,
     int pageSize = 20,
   }) async {
-    try {
-      var query = _client.from('projects').select('''
+    final cacheKey = 'projects_${search}_${status}_${page}_$pageSize';
+    return _cache.getOrFetch(cacheKey, () async {
+      try {
+        var query = _client.from('projects').select('''
             *,
             project_assignments(
               id,
@@ -33,53 +37,41 @@ class ProjectRepository {
             )
           ''');
 
-      // Apply search filter
-      if (search != null && search.isNotEmpty) {
-        query = query.or('name.ilike.%$search%,location.ilike.%$search%');
+        // Apply search filter
+        if (search != null && search.isNotEmpty) {
+          query = query.or('name.ilike.%$search%,location.ilike.%$search%');
+        }
+
+        // Apply status filter
+        if (status != null) {
+          query = query.eq('status', status.value);
+        }
+
+        // Apply pagination and ordering
+        final response = await query
+            .order('created_at', ascending: false)
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        return (response as List)
+            .map((json) => ProjectModel.fromJson(json))
+            .toList();
+      } on PostgrestException catch (e) {
+        logger.e('Failed to fetch projects: ${e.message}');
+        throw DatabaseException.fromPostgrest(e);
       }
-
-      // Apply status filter
-      if (status != null) {
-        query = query.eq('status', status.value);
-      }
-
-      // Apply pagination and ordering
-      final response = await query
-          .order('created_at', ascending: false)
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-
-      return (response as List)
-          .map((json) => ProjectModel.fromJson(json))
-          .toList();
-    } on PostgrestException catch (e) {
-      logger.e('Failed to fetch projects: ${e.message}');
-      throw DatabaseException.fromPostgrest(e);
-    }
+    });
   }
 
   /// Get projects assigned to a specific site manager
+  /// Uses a single JOIN query instead of N+1 pattern for better performance
   Future<List<ProjectModel>> getAssignedProjects(String userId) async {
     try {
-      // First get project IDs assigned to this user
-      final assignmentsResponse = await _client
-          .from('project_assignments')
-          .select('project_id')
-          .eq('user_id', userId);
-
-      final projectIds = (assignmentsResponse as List)
-          .map((a) => a['project_id'] as String)
-          .toList();
-
-      if (projectIds.isEmpty) {
-        return [];
-      }
-
-      // Then fetch those projects
+      // Single JOIN query - uses !inner to filter projects with matching assignments
       final response = await _client
           .from('projects')
           .select('''
             *,
-            project_assignments(
+            project_assignments!inner(
               id,
               project_id,
               user_id,
@@ -88,7 +80,7 @@ class ProjectRepository {
               user_profiles!user_id(id, full_name, phone)
             )
           ''')
-          .inFilter('id', projectIds)
+          .eq('project_assignments.user_id', userId)
           .order('created_at', ascending: false);
 
       return (response as List)
@@ -139,6 +131,7 @@ class ProjectRepository {
           .single();
 
       logger.i('Project created: ${response['name']}');
+      _cache.invalidateAll();
       return ProjectModel.fromJson(response);
     } on PostgrestException catch (e) {
       logger.e('Failed to create project: ${e.message}');
@@ -162,6 +155,7 @@ class ProjectRepository {
           .single();
 
       logger.i('Project updated: ${response['name']}');
+      _cache.invalidateAll();
       return ProjectModel.fromJson(response);
     } on PostgrestException catch (e) {
       logger.e('Failed to update project: ${e.message}');
@@ -174,6 +168,7 @@ class ProjectRepository {
     try {
       await _client.from('projects').delete().eq('id', projectId);
       logger.i('Project deleted: $projectId');
+      _cache.invalidateAll();
     } on PostgrestException catch (e) {
       logger.e('Failed to delete project: ${e.message}');
       throw DatabaseException.fromPostgrest(e);
@@ -336,9 +331,15 @@ class ProjectRepository {
   }
 
   /// Get project statistics (for dashboard)
+  /// Optimized to minimize data transfer - only fetches status field
   Future<Map<String, int>> getProjectStats() async {
     try {
-      final response = await _client.from('projects').select('status');
+      // Fetch only the status column for efficiency
+      // Note: For very large datasets, consider creating a database view or RPC function
+      final response = await _client
+          .from('projects')
+          .select('status')
+          .limit(10000); // Safety limit to prevent unbounded queries
 
       final stats = <String, int>{
         'total': 0,
@@ -349,9 +350,11 @@ class ProjectRepository {
         'cancelled': 0,
       };
 
-      for (final row in response as List) {
+      final dataList = response as List;
+      stats['total'] = dataList.length;
+      
+      for (final row in dataList) {
         final status = row['status'] as String?;
-        stats['total'] = (stats['total'] ?? 0) + 1;
         if (status != null && stats.containsKey(status)) {
           stats[status] = (stats[status] ?? 0) + 1;
         }

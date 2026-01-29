@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+
 /// Project data model
 /// Maps to the `projects` table in Supabase
 class ProjectModel {
@@ -119,7 +122,7 @@ class ProjectModel {
       'ProjectModel(id: $id, name: $name, status: ${status.value})';
 }
 
-/// Project status enum
+/// Project status enum with display name and color
 enum ProjectStatus {
   planning('planning'),
   inProgress('in_progress'),
@@ -150,6 +153,22 @@ enum ProjectStatus {
         return 'Completed';
       case ProjectStatus.cancelled:
         return 'Cancelled';
+    }
+  }
+
+  /// Status-specific color for UI display
+  Color get color {
+    switch (this) {
+      case ProjectStatus.planning:
+        return AppColors.info;
+      case ProjectStatus.inProgress:
+        return AppColors.success;
+      case ProjectStatus.onHold:
+        return AppColors.warning;
+      case ProjectStatus.completed:
+        return AppColors.primary;
+      case ProjectStatus.cancelled:
+        return AppColors.error;
     }
   }
 

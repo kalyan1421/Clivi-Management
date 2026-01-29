@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/supabase_client.dart';
 import '../../../core/errors/app_exceptions.dart';
@@ -73,6 +75,8 @@ class ProjectListNotifier extends StateNotifier<ProjectListState> {
   final ProjectRepository _repository;
   final Ref _ref;
   static const int _pageSize = 20;
+  static const Duration _debounceDuration = Duration(milliseconds: 400);
+  Timer? _debounceTimer;
 
   ProjectListNotifier(this._repository, this._ref)
     : super(const ProjectListState()) {
@@ -89,7 +93,7 @@ class ProjectListNotifier extends StateNotifier<ProjectListState> {
   String? get _currentUserId => _ref.read(currentUserProvider)?.id;
 
   /// Load projects (initial load or refresh)
-  Future<void> loadProjects({bool refresh = false}) async {
+  Future<void> loadProjects() async {
     if (state.isLoading) return;
 
     try {
@@ -158,14 +162,19 @@ class ProjectListNotifier extends StateNotifier<ProjectListState> {
     }
   }
 
-  /// Search projects
-  Future<void> search(String query) async {
+  /// Search projects with debouncing to prevent rapid API calls
+  void search(String query) {
+    _debounceTimer?.cancel();
     state = state.copyWith(searchQuery: query);
-    await loadProjects();
+    
+    _debounceTimer = Timer(_debounceDuration, () {
+      loadProjects();
+    });
   }
 
   /// Filter by status
   Future<void> filterByStatus(ProjectStatus? status) async {
+    _debounceTimer?.cancel();
     state = state.copyWith(
       statusFilter: status,
       clearStatusFilter: status == null,
@@ -175,7 +184,8 @@ class ProjectListNotifier extends StateNotifier<ProjectListState> {
 
   /// Refresh projects
   Future<void> refresh() async {
-    await loadProjects(refresh: true);
+    _debounceTimer?.cancel();
+    await loadProjects();
   }
 
   /// Add project to list (after creation)
@@ -198,6 +208,12 @@ class ProjectListNotifier extends StateNotifier<ProjectListState> {
     state = state.copyWith(
       projects: state.projects.where((p) => p.id != projectId).toList(),
     );
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 }
 

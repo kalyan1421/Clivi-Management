@@ -124,24 +124,29 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
   /// Initialize auth listener
   void _init() {
     // Keep the listener, it's good for realtime updates (logout elsewhere)
-    _authSubscription = _repository.authStateChanges.listen((data) async {
-      final session = data.session;
+    _authSubscription = _repository.authStateChanges.listen(
+      (data) async {
+        final session = data.session;
 
-      // Only react to stream changes if we are ALREADY initialized
-      // or if this is the first definitive event.
-      if (state.isInitialized) {
-        if (session != null && state.user?.id != session.user.id) {
-          await _loadUserProfile(session.user);
-        } else if (session == null) {
-          state = const AppAuthState(
-            user: null,
-            role: null,
-            profile: null,
-            isInitialized: true, // Keep it true
-          );
+        // Only react to stream changes if we are ALREADY initialized
+        // or if this is the first definitive event.
+        if (state.isInitialized) {
+          if (session != null && state.user?.id != session.user.id) {
+            await _loadUserProfile(session.user);
+          } else if (session == null) {
+            state = const AppAuthState(
+              user: null,
+              role: null,
+              profile: null,
+              isInitialized: true, // Keep it true
+            );
+          }
         }
-      }
-    });
+      },
+      onError: (error) {
+        logger.e('Auth state stream error: $error');
+      },
+    );
 
     // This is the critical function for app startup
     _checkInitialSession();

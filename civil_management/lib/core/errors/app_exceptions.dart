@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Base exception class for the application
@@ -65,7 +66,8 @@ class DatabaseException extends AppException {
     if (message.contains('permission denied')) {
       return 'You do not have permission to perform this action';
     }
-    return 'Database operation failed';
+    // In debug mode, show actual error for debugging; in release show generic message
+    return kDebugMode ? 'Database error: $message' : 'Database operation failed';
   }
 }
 

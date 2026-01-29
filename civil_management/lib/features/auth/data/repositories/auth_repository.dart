@@ -61,32 +61,38 @@ class AuthRepository {
 
       logger.i('User signed up: ${response.user!.email}');
 
-      // Wait a moment for the trigger to create the profile
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Try to fetch the auto-created profile
+      // Retry logic with exponential backoff to wait for trigger-created profile
       UserProfileModel? profile;
-      try {
-        profile = await getUserProfile(response.user!.id);
+      const maxRetries = 3;
+      const retryDelays = [100, 200, 400]; // milliseconds
+      
+      for (int attempt = 0; attempt < maxRetries; attempt++) {
+        await Future.delayed(Duration(milliseconds: retryDelays[attempt]));
+        try {
+          profile = await getUserProfile(response.user!.id);
+          if (profile != null) {
+            // Update profile with additional info if provided
+            if (request.fullName != null || request.phone != null) {
+              final updates = <String, dynamic>{};
+              if (request.fullName != null) updates['full_name'] = request.fullName;
+              if (request.phone != null) updates['phone'] = request.phone;
 
-        // Update profile with additional info if provided
-        if (profile != null &&
-            (request.fullName != null || request.phone != null)) {
-          final updates = <String, dynamic>{};
-          if (request.fullName != null) updates['full_name'] = request.fullName;
-          if (request.phone != null) updates['phone'] = request.phone;
-
-          if (updates.isNotEmpty) {
-            profile = await updateUserProfile(
-              userId: response.user!.id,
-              updates: updates,
-            );
+              if (updates.isNotEmpty) {
+                profile = await updateUserProfile(
+                  userId: response.user!.id,
+                  updates: updates,
+                );
+              }
+            }
+            break; // Success, exit retry loop
+          }
+        } catch (e) {
+          if (attempt == maxRetries - 1) {
+            logger.w('Could not fetch profile after $maxRetries attempts: $e');
+            // Profile might not exist yet if trigger didn't fire
+            // This is okay - profile will be created on first login
           }
         }
-      } catch (e) {
-        logger.w('Could not fetch/update profile after signup: $e');
-        // Profile might not exist yet if trigger didn't fire
-        // This is okay - profile will be created on first login
       }
 
       return AuthResultModel.success(

@@ -34,6 +34,9 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
   }
 
   void _onScroll() {
+    // Guard against accessing position after dispose
+    if (!_scrollController.hasClients) return;
+    
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       ref.read(projectListProvider.notifier).loadMore();
@@ -328,37 +331,25 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = status.color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.1),
+        color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _getStatusColor(status).withOpacity(0.5)),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.5),
+        ),
       ),
       child: Text(
         status.displayName,
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: _getStatusColor(status),
+          color: statusColor,
         ),
       ),
     );
-  }
-
-  Color _getStatusColor(ProjectStatus status) {
-    switch (status) {
-      case ProjectStatus.planning:
-        return AppColors.info;
-      case ProjectStatus.inProgress:
-        return AppColors.success;
-      case ProjectStatus.onHold:
-        return AppColors.warning;
-      case ProjectStatus.completed:
-        return AppColors.primary;
-      case ProjectStatus.cancelled:
-        return AppColors.error;
-    }
   }
 }
 
@@ -394,13 +385,13 @@ class _FilterSheet extends StatelessWidget {
 
           const Divider(),
 
-          // Status options
+          // Status options - using status.color directly
           ...ProjectStatus.values.map(
             (status) => _FilterOption(
               label: status.displayName,
               isSelected: currentFilter == status,
               onTap: () => onFilterSelected(status),
-              color: _getStatusColor(status),
+              color: status.color,
             ),
           ),
 
@@ -408,21 +399,6 @@ class _FilterSheet extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Color _getStatusColor(ProjectStatus status) {
-    switch (status) {
-      case ProjectStatus.planning:
-        return AppColors.info;
-      case ProjectStatus.inProgress:
-        return AppColors.success;
-      case ProjectStatus.onHold:
-        return AppColors.warning;
-      case ProjectStatus.completed:
-        return AppColors.primary;
-      case ProjectStatus.cancelled:
-        return AppColors.error;
-    }
   }
 }
 

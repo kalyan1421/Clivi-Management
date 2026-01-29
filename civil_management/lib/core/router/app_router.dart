@@ -129,7 +129,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'blueprints',
             name: 'project-blueprints',
             builder: (context, state) {
-              final project = state.extra as ProjectModel;
+              final project = state.extra as ProjectModel?;
+              if (project == null) {
+                return const Scaffold(
+                  body: Center(
+                    child: Text('Error: Project data not provided. Please navigate from the project detail page.'),
+                  ),
+                );
+              }
               return BlueprintsFoldersScreen(project: project);
             },
           ),
@@ -149,7 +156,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: ':fileId',
                 name: 'project-blueprint-viewer',
                 builder: (context, state) {
-                  final blueprint = state.extra as Blueprint;
+                  final blueprint = state.extra as Blueprint?;
+                  if (blueprint == null) {
+                    return const Scaffold(
+                      body: Center(
+                        child: Text('Error: Blueprint data not provided. Please navigate from the files list.'),
+                      ),
+                    );
+                  }
                   return BlueprintViewerScreen(blueprint: blueprint);
                 },
               ),
