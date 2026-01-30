@@ -5,6 +5,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/dashboard/screens/site_manager_management_screen.dart';
 import '../../features/dashboard/screens/add_site_manager_screen.dart';
+import '../../features/dashboard/screens/staff_directory_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/dashboard/screens/super_admin_dashboard.dart';
 import '../../features/dashboard/screens/admin_dashboard.dart';
@@ -18,6 +19,8 @@ import '../../features/blueprints/screens/blueprint_files_screen.dart';
 import '../../features/blueprints/screens/blueprint_viewer_screen.dart';
 import '../../features/blueprints/data/models/blueprint_model.dart';
 import '../../features/projects/data/models/project_model.dart';
+import '../../features/inventory/screens/stock_list_screen.dart';
+import '../../features/inventory/screens/daily_material_log_screen.dart';
 
 /// Global router provider
 final routerProvider = Provider<GoRouter>((ref) {
@@ -90,6 +93,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/admin/site-managers/add',
         name: 'admin-add-site-manager',
         builder: (context, state) => const AddSiteManagerScreen(),
+      ),
+      GoRoute(
+        path: '/admin/staff-directory',
+        name: 'admin-staff-directory',
+        builder: (context, state) => const StaffDirectoryScreen(),
       ),
 
       // Super Admin Routes
@@ -176,6 +184,31 @@ final routerProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          // Inventory Routes
+          GoRoute(
+            path: 'stock',
+            name: 'project-stock',
+            builder: (context, state) {
+              final projectId = state.pathParameters['id']!;
+              final projectName = (state.extra as String?) ?? 'Project';
+              return StockListScreen(
+                projectId: projectId,
+                projectName: projectName,
+              );
+            },
+          ),
+          GoRoute(
+            path: 'material-log',
+            name: 'project-material-log',
+            builder: (context, state) {
+              final projectId = state.pathParameters['id']!;
+              final projectName = (state.extra as String?) ?? 'Project';
+              return DailyMaterialLogScreen(
+                projectId: projectId,
+                projectName: projectName,
+              );
+            },
           ),
         ],
       ),

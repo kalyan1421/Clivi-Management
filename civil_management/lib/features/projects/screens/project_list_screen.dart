@@ -296,6 +296,16 @@ class _ProjectCard extends StatelessWidget {
                     ),
                 ],
               ),
+              
+              // Progress Bar (timeline based)
+              if (project.startDate != null && project.endDate != null) ...[
+                const SizedBox(height: 12),
+                _TimelineProgress(
+                  startDate: project.startDate!,
+                  endDate: project.endDate!,
+                  status: project.status,
+                ),
+              ],
             ],
           ),
         ),
@@ -350,6 +360,90 @@ class _StatusChip extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Timeline progress widget - shows completion based on dates
+class _TimelineProgress extends StatelessWidget {
+  final DateTime startDate;
+  final DateTime endDate;
+  final ProjectStatus status;
+
+  const _TimelineProgress({
+    required this.startDate,
+    required this.endDate,
+    required this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = _calculateProgress();
+    final progressColor = _getProgressColor(progress);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Timeline Progress',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Text(
+              '${(progress * 100).toInt()}%',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: progressColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.grey[200],
+            valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+            minHeight: 6,
+          ),
+        ),
+      ],
+    );
+  }
+
+  double _calculateProgress() {
+    // If completed or cancelled, show appropriate progress
+    if (status == ProjectStatus.completed) return 1.0;
+    if (status == ProjectStatus.cancelled) return 0.0;
+    
+    final now = DateTime.now();
+    final totalDuration = endDate.difference(startDate).inDays;
+    if (totalDuration <= 0) return 0.0;
+    
+    final elapsed = now.difference(startDate).inDays;
+    if (elapsed < 0) return 0.0;
+    if (elapsed > totalDuration) return 1.0;
+    
+    return elapsed / totalDuration;
+  }
+
+  Color _getProgressColor(double progress) {
+    if (status == ProjectStatus.completed) return Colors.green;
+    if (status == ProjectStatus.cancelled) return Colors.grey;
+    if (status == ProjectStatus.onHold) return Colors.orange;
+    
+    // Check if behind schedule
+    final now = DateTime.now();
+    if (now.isAfter(endDate)) return Colors.red; // Overdue
+    
+    if (progress < 0.25) return Colors.blue;
+    if (progress < 0.5) return Colors.cyan;
+    if (progress < 0.75) return Colors.orange;
+    return Colors.green;
   }
 }
 

@@ -342,6 +342,38 @@ class _OverviewTab extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          
+          // Inventory Section
+          _SectionCard(
+            title: 'Inventory',
+            icon: Icons.inventory_2_outlined,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.warehouse, color: Colors.blueGrey),
+                title: const Text('Stock Items'),
+                subtitle: const Text('Manage materials inventory'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () => context.go(
+                  '/projects/${project.id}/stock',
+                  extra: project.name,
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.swap_vert, color: Colors.teal),
+                title: const Text('Material Log'),
+                subtitle: const Text('Track inward/outward movements'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () => context.go(
+                  '/projects/${project.id}/material-log',
+                  extra: project.name,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
