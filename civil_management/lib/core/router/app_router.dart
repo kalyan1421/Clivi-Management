@@ -21,6 +21,8 @@ import '../../features/blueprints/data/models/blueprint_model.dart';
 import '../../features/projects/data/models/project_model.dart';
 import '../../features/inventory/screens/stock_list_screen.dart';
 import '../../features/inventory/screens/daily_material_log_screen.dart';
+import '../../features/labour/screens/labour_roster_screen.dart';
+import '../../features/labour/screens/attendance_screen.dart';
 
 /// Global router provider
 final routerProvider = Provider<GoRouter>((ref) {
@@ -205,6 +207,31 @@ final routerProvider = Provider<GoRouter>((ref) {
               final projectId = state.pathParameters['id']!;
               final projectName = (state.extra as String?) ?? 'Project';
               return DailyMaterialLogScreen(
+                projectId: projectId,
+                projectName: projectName,
+              );
+            },
+          ),
+          // Labour Routes
+          GoRoute(
+            path: 'labour',
+            name: 'project-labour',
+            builder: (context, state) {
+              final projectId = state.pathParameters['id']!;
+              final projectName = (state.extra as String?) ?? 'Project';
+              return LabourRosterScreen(
+                projectId: projectId,
+                projectName: projectName,
+              );
+            },
+          ),
+          GoRoute(
+            path: 'attendance',
+            name: 'project-attendance',
+            builder: (context, state) {
+              final projectId = state.pathParameters['id']!;
+              final projectName = (state.extra as String?) ?? 'Project';
+              return AttendanceScreen(
                 projectId: projectId,
                 projectName: projectName,
               );

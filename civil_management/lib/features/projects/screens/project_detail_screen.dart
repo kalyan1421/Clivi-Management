@@ -374,6 +374,38 @@ class _OverviewTab extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          
+          // Workforce Section
+          _SectionCard(
+            title: 'Workforce',
+            icon: Icons.people_outlined,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.person, color: Colors.indigo),
+                title: const Text('Labour Roster'),
+                subtitle: const Text('Manage workers'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () => context.go(
+                  '/projects/${project.id}/labour',
+                  extra: project.name,
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.event_available, color: Colors.green),
+                title: const Text('Daily Attendance'),
+                subtitle: const Text('Mark attendance for today'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () => context.go(
+                  '/projects/${project.id}/attendance',
+                  extra: project.name,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
