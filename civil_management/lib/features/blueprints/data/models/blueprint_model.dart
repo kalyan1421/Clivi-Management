@@ -4,6 +4,7 @@ class Blueprint {
   final String folderName;
   final String fileName;
   final String filePath;
+  final String fileUrl;
   final bool isAdminOnly;
   final String? uploaderId;
   final DateTime createdAt;
@@ -14,6 +15,7 @@ class Blueprint {
     required this.folderName,
     required this.fileName,
     required this.filePath,
+    required this.fileUrl,
     required this.isAdminOnly,
     this.uploaderId,
     required this.createdAt,
@@ -26,18 +28,15 @@ class Blueprint {
       folderName: json['folder_name'] as String,
       fileName: json['file_name'] as String,
       filePath: json['file_path'] as String,
+      fileUrl: json['file_url'] as String,
       isAdminOnly: json['is_admin_only'] as bool,
       uploaderId: json['uploader_id'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
 
-  String get publicUrl {
-    // This needs to be configured with the actual Supabase URL
-    // TODO: Replace with a central URL provider
-    const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-    return '$supabaseUrl/storage/v1/object/public/blueprints/$filePath';
-  }
+  /// Public URL for accessing this blueprint file
+  String get publicUrl => fileUrl;
 }
 
 /// A representation of a folder, derived from a list of Blueprints.

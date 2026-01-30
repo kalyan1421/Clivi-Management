@@ -55,6 +55,8 @@ class SupabaseConfig {
     }
   }
 
+  static bool _isRealtimePaused = false;
+
   static Future<void> handleAppLifecycle(AppLifecycleState state) async {
     switch (state) {
       case AppLifecycleState.resumed:
@@ -62,7 +64,9 @@ class SupabaseConfig {
         await _refreshConnection();
         break;
       case AppLifecycleState.paused:
-        // Mark connection as potentially stale
+      case AppLifecycleState.inactive:
+        // Pause realtime to save battery
+        _pauseRealtime();
         _connectionState = ConnectionState.paused;
         break;
       case AppLifecycleState.detached:
@@ -76,15 +80,42 @@ class SupabaseConfig {
 
   static Future<void> _refreshConnection() async {
     _connectionState = ConnectionState.connected;
+    
+    // Resume realtime if it was paused
+    if (_isRealtimePaused) {
+      try {
+        supabase.realtime.connect();
+        _isRealtimePaused = false;
+        logger.i('Realtime connection resumed');
+      } catch (e) {
+        logger.w('Failed to resume realtime: $e');
+      }
+    }
+    
+    // Refresh session if expiring soon (within 5 minutes)
     final session = supabase.auth.currentSession;
     if (session != null) {
       final expiresAt = session.expiresAt;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-      if (expiresAt != null && expiresAt - now < 60) {
-        // Session expires in less than 60 seconds, refresh it
-        await supabase.auth.refreshSession();
+      if (expiresAt != null && expiresAt - now < 300) {
+        try {
+          await supabase.auth.refreshSession();
+          logger.i('Session refreshed on resume');
+        } catch (e) {
+          logger.e('Session refresh failed: $e');
+        }
       }
+    }
+  }
+
+  static void _pauseRealtime() {
+    try {
+      supabase.realtime.disconnect();
+      _isRealtimePaused = true;
+      logger.i('Realtime connection paused');
+    } catch (e) {
+      logger.w('Failed to pause realtime: $e');
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../../../core/config/supabase_client.dart';
 import '../../../core/errors/app_exceptions.dart';
+import '../../../core/services/local_database_service.dart';
 import '../data/models/models.dart';
 import '../data/repositories/auth_repository.dart';
 import 'auth_repository_provider.dart';
@@ -286,10 +287,41 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
     }
   }
 
-  /// Sign out
+  /// Create a new site manager as admin (without affecting admin's session)
+  Future<UserProfileModel> createSiteManager({
+    required String email,
+    required String password,
+    String? fullName,
+    String? phone,
+  }) async {
+    try {
+      final profile = await _repository.createUserAsAdmin(
+        email: email,
+        password: password,
+        fullName: fullName,
+        phone: phone,
+        role: 'site_manager',
+      );
+
+      logger.i('Site manager created: $email');
+      return profile;
+    } on AppAuthException catch (e) {
+      logger.e('Failed to create site manager: ${e.message}');
+      rethrow;
+    } catch (e) {
+      logger.e('Failed to create site manager: $e');
+      throw AppAuthException('Failed to create site manager');
+    }
+  }
+
+  /// Sign out and clear local cache
   Future<void> signOut() async {
     try {
       await _repository.signOut();
+      
+      // Clear local cached data
+      await LocalDatabaseService.instance.clearAll();
+      
       state = const AppAuthState(
         user: null,
         role: null,
@@ -297,7 +329,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
         isLoading: false,
         isInitialized: true,
       );
-      logger.i('User signed out');
+      logger.i('User signed out and local cache cleared');
     } catch (e) {
       logger.e('Sign out failed: $e');
       rethrow;

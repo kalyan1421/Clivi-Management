@@ -98,7 +98,10 @@ class BlueprintRepository {
             fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
           );
 
-      // 2. Create record in database
+      // 2. Get the public URL for the uploaded file
+      final fileUrl = _client.storage.from('blueprints').getPublicUrl(filePath);
+
+      // 3. Create record in database
       final response = await _client
           .from('blueprints')
           .insert({
@@ -106,7 +109,9 @@ class BlueprintRepository {
             'folder_name': folderName,
             'file_name': fileName,
             'file_path': filePath,
+            'file_url': fileUrl,
             'is_admin_only': isAdminOnly,
+            'uploaded_by': uploaderId,
             'uploader_id': uploaderId,
           })
           .select()
@@ -161,6 +166,20 @@ class BlueprintRepository {
       // The DB record might be gone, but the file is orphaned.
       // This state is not ideal, but we notify of the error.
       throw StorageDeleteException.fromStorageException(e);
+    }
+  }
+
+  /// Get a signed URL for viewing a private file
+  /// URL is valid for the specified duration (default 300 seconds = 5 minutes)
+  Future<String> getSignedUrl(String filePath, {int expiresIn = 300}) async {
+    try {
+      final signedUrl = await _client.storage
+          .from('blueprints')
+          .createSignedUrl(filePath, expiresIn);
+      return signedUrl;
+    } on StorageException catch (e) {
+      logger.e('Failed to generate signed URL: ${e.message}');
+      throw StorageUploadException.fromStorageException(e);
     }
   }
 }

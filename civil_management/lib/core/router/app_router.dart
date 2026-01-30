@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
-import '../../features/auth/screens/signup_screen.dart';
+import '../../features/dashboard/screens/site_manager_management_screen.dart';
+import '../../features/dashboard/screens/add_site_manager_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/dashboard/screens/super_admin_dashboard.dart';
 import '../../features/dashboard/screens/admin_dashboard.dart';
@@ -38,7 +39,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isSplashRoute = state.matchedLocation == '/splash';
 
       // 2. Public Routes Logic
-      final publicRoutes = ['/login', '/signup', '/forgot-password'];
+      final publicRoutes = ['/login', '/forgot-password'];
       final isPublicRoute = publicRoutes.contains(state.matchedLocation);
 
       // 3. Handle Unauthenticated Users
@@ -74,14 +75,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: '/signup',
-        name: 'signup',
-        builder: (context, state) => const SignupScreen(),
-      ),
-      GoRoute(
         path: '/forgot-password',
         name: 'forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+
+      // Admin Site Manager Routes
+      GoRoute(
+        path: '/admin/site-managers',
+        name: 'admin-site-managers',
+        builder: (context, state) => const SiteManagerManagementScreen(),
+      ),
+      GoRoute(
+        path: '/admin/site-managers/add',
+        name: 'admin-add-site-manager',
+        builder: (context, state) => const AddSiteManagerScreen(),
       ),
 
       // Super Admin Routes

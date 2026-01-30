@@ -109,6 +109,94 @@ class AuthRepository {
     }
   }
 
+  /// Create a new user as admin without affecting the current session
+  /// This preserves the admin's login state while creating the new user
+  Future<UserProfileModel> createUserAsAdmin({
+    required String email,
+    required String password,
+    String? fullName,
+    String? phone,
+    String role = 'site_manager',
+  }) async {
+    // Save current admin session
+    final adminSession = currentSession;
+    final adminAccessToken = adminSession?.accessToken;
+    final adminRefreshToken = adminSession?.refreshToken;
+    
+    if (adminSession == null) {
+      throw AppAuthException('Admin must be logged in to create users');
+    }
+
+    try {
+      // Create the new user (this will temporarily switch the session)
+      final response = await _client.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': fullName, 'phone': phone},
+      );
+
+      if (response.user == null) {
+        throw AppAuthException('Failed to create user account');
+      }
+
+      final newUserId = response.user!.id;
+      logger.i('Created new user: $email');
+
+      // Immediately restore admin session
+      await _client.auth.setSession(adminRefreshToken!);
+      logger.i('Admin session restored');
+
+      // Wait for profile to be created by trigger
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Update the new user's profile with role and details
+      try {
+        final profile = await updateUserProfile(
+          userId: newUserId,
+          updates: {
+            'role': role,
+            'full_name': fullName,
+            'phone': phone,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+        );
+        return profile;
+      } catch (e) {
+        // If profile doesn't exist yet, create it
+        logger.w('Profile not found, creating: $e');
+        final profile = await createUserProfile({
+          'id': newUserId,
+          'email': email,
+          'role': role,
+          'full_name': fullName,
+          'phone': phone,
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+        return profile;
+      }
+    } on AuthException catch (e) {
+      // Try to restore admin session on error
+      if (adminRefreshToken != null) {
+        try {
+          await _client.auth.setSession(adminRefreshToken);
+        } catch (_) {}
+      }
+      logger.e('Create user failed: ${e.message}');
+      throw AppAuthException.fromSupabase(e);
+    } catch (e) {
+      // Try to restore admin session on error
+      if (adminRefreshToken != null) {
+        try {
+          await _client.auth.setSession(adminRefreshToken);
+        } catch (_) {}
+      }
+      logger.e('Create user error: $e');
+      throw AppAuthException('An unexpected error occurred while creating user');
+    }
+  }
+
+
   /// Sign out current user
   Future<void> signOut() async {
     try {

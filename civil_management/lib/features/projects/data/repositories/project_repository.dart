@@ -2,12 +2,15 @@ import 'package:civil_management/core/utils/cached_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_client.dart';
 import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/services/local_database_service.dart';
 import '../models/project_model.dart';
 
 /// Repository for project-related Supabase operations
+/// Implements cache-first strategy for offline support
 class ProjectRepository {
   final SupabaseClient _client;
-  final CachedRepository<List<ProjectModel>> _cache = CachedRepository();
+  final CachedRepository<List<ProjectModel>> _memoryCache = CachedRepository();
+  final LocalDatabaseService _localDb = LocalDatabaseService.instance;
 
   ProjectRepository({SupabaseClient? client}) : _client = client ?? supabase;
 
@@ -15,15 +18,110 @@ class ProjectRepository {
   // PROJECT CRUD OPERATIONS
   // ============================================================
 
-  /// Get all projects with optional search and pagination
+  /// Get all projects with cache-first strategy
+  /// Returns cached data immediately, refreshes from API in background
   Future<List<ProjectModel>> getProjects({
+    String? search,
+    ProjectStatus? status,
+    int page = 0,
+    int pageSize = 20,
+    bool forceRefresh = false,
+  }) async {
+    // For filtered/searched queries, skip disk cache (use memory cache only)
+    if (search != null || status != null || page > 0) {
+      return _fetchFromApi(search: search, status: status, page: page, pageSize: pageSize);
+    }
+
+    // CACHE-FIRST: Return cached data immediately for main list
+    if (!forceRefresh) {
+      final cached = _localDb.getProjects();
+      if (cached.isNotEmpty) {
+        logger.i('Returning ${cached.length} cached projects');
+        // Refresh in background (don't await)
+        _refreshProjectsInBackground();
+        return cached;
+      }
+    }
+
+    // No cache, fetch from API
+    final projects = await _fetchFromApi(search: search, status: status, page: page, pageSize: pageSize);
+    
+    // Save to local cache
+    await _localDb.saveProjects(projects);
+    
+    return projects;
+  }
+
+  /// Refresh projects from API in background
+  Future<void> _refreshProjectsInBackground() async {
+    try {
+      final freshProjects = await _fetchFromApi();
+      await _localDb.saveProjects(freshProjects);
+      logger.i('Background refresh: saved ${freshProjects.length} projects to cache');
+    } catch (e) {
+      logger.w('Background refresh failed: $e');
+    }
+  }
+
+  /// Get projects using cursor-based pagination (infinite scroll)
+  /// More efficient than offset pagination, prevents duplicates on insert
+  Future<List<ProjectModel>> getProjectsCursor({
+    String? cursorCreatedAt,
+    String? cursorId,
+    int limit = 20,
+    ProjectStatus? status,
+  }) async {
+    try {
+      var query = _client.from('projects').select('''
+        *,
+        project_assignments(
+          id,
+          project_id,
+          user_id,
+          assigned_role,
+          assigned_at,
+          user_profiles!user_id(id, full_name, phone)
+        )
+      ''');
+
+      // Apply status filter
+      if (status != null) {
+        query = query.eq('status', status.value);
+      }
+
+      // Apply cursor filter for pagination
+      if (cursorCreatedAt != null && cursorId != null) {
+        // Cursor: get items older than current cursor
+        query = query.or(
+          'created_at.lt.$cursorCreatedAt,'
+          'and(created_at.eq.$cursorCreatedAt,id.lt.$cursorId)'
+        );
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .order('id', ascending: false)
+          .limit(limit);
+
+      return (response as List)
+          .map((json) => ProjectModel.fromJson(json))
+          .toList();
+    } on PostgrestException catch (e) {
+      logger.e('Failed to fetch projects with cursor: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
+    }
+  }
+
+
+  /// Fetch projects from Supabase API
+  Future<List<ProjectModel>> _fetchFromApi({
     String? search,
     ProjectStatus? status,
     int page = 0,
     int pageSize = 20,
   }) async {
     final cacheKey = 'projects_${search}_${status}_${page}_$pageSize';
-    return _cache.getOrFetch(cacheKey, () async {
+    return _memoryCache.getOrFetch(cacheKey, () async {
       try {
         var query = _client.from('projects').select('''
             *,
@@ -131,7 +229,7 @@ class ProjectRepository {
           .single();
 
       logger.i('Project created: ${response['name']}');
-      _cache.invalidateAll();
+      _memoryCache.invalidateAll();
       return ProjectModel.fromJson(response);
     } on PostgrestException catch (e) {
       logger.e('Failed to create project: ${e.message}');
@@ -155,7 +253,7 @@ class ProjectRepository {
           .single();
 
       logger.i('Project updated: ${response['name']}');
-      _cache.invalidateAll();
+      _memoryCache.invalidateAll();
       return ProjectModel.fromJson(response);
     } on PostgrestException catch (e) {
       logger.e('Failed to update project: ${e.message}');
@@ -168,7 +266,7 @@ class ProjectRepository {
     try {
       await _client.from('projects').delete().eq('id', projectId);
       logger.i('Project deleted: $projectId');
-      _cache.invalidateAll();
+      _memoryCache.invalidateAll();
     } on PostgrestException catch (e) {
       logger.e('Failed to delete project: ${e.message}');
       throw DatabaseException.fromPostgrest(e);
