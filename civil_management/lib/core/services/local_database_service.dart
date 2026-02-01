@@ -147,6 +147,37 @@ class LocalDatabaseService {
   }
 
   // ============================================================
+  // DASHBOARD STATS
+  // ============================================================
+
+  /// Get cached dashboard stats
+  Map<String, dynamic>? getDashboardStats() {
+    try {
+      final json = _metadataBox.get('dashboard_stats');
+      if (json == null) return null;
+      return Map<String, dynamic>.from(json as Map);
+    } catch (e) {
+      logger.w('Failed to read dashboard stats from cache: $e');
+      return null;
+    }
+  }
+
+  /// Save dashboard stats to cache
+  Future<void> saveDashboardStats(Map<String, dynamic> stats) async {
+    try {
+      await _metadataBox.put('dashboard_stats', stats);
+      await _setLastSync('dashboard');
+    } catch (e) {
+      logger.w('Failed to save dashboard stats to cache: $e');
+    }
+  }
+
+  /// Check if dashboard cache is stale
+  bool isDashboardStale({Duration maxAge = const Duration(minutes: 5)}) {
+    return isCacheStale('dashboard', maxAge: maxAge);
+  }
+
+  // ============================================================
   // METADATA & UTILITIES
   // ============================================================
 

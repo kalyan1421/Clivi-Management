@@ -2,19 +2,23 @@
 /// Maps to the `user_profiles` table in Supabase
 class UserProfileModel {
   final String id;
+  final String? email;
   final String role;
   final String? fullName;
   final String? phone;
   final String? avatarUrl;
+  final String? companyId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   const UserProfileModel({
     required this.id,
+    this.email,
     required this.role,
     this.fullName,
     this.phone,
     this.avatarUrl,
+    this.companyId,
     this.createdAt,
     this.updatedAt,
   });
@@ -23,10 +27,12 @@ class UserProfileModel {
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
     return UserProfileModel(
       id: json['id'] as String,
+      email: json['email'] as String?,
       role: json['role'] as String? ?? 'site_manager',
       fullName: json['full_name'] as String?,
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
+      companyId: json['company_id'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -40,10 +46,12 @@ class UserProfileModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      if (email != null) 'email': email,
       'role': role,
       'full_name': fullName,
       'phone': phone,
       'avatar_url': avatarUrl,
+      if (companyId != null) 'company_id': companyId,
       'updated_at': DateTime.now().toIso8601String(),
     };
   }
@@ -61,19 +69,23 @@ class UserProfileModel {
   /// Create a copy with updated fields
   UserProfileModel copyWith({
     String? id,
+    String? email,
     String? role,
     String? fullName,
     String? phone,
     String? avatarUrl,
+    String? companyId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return UserProfileModel(
       id: id ?? this.id,
+      email: email ?? this.email,
       role: role ?? this.role,
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      companyId: companyId ?? this.companyId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -81,7 +93,7 @@ class UserProfileModel {
 
   @override
   String toString() {
-    return 'UserProfileModel(id: $id, role: $role, fullName: $fullName)';
+    return 'UserProfileModel(id: $id, email: $email, role: $role, fullName: $fullName)';
   }
 
   @override
@@ -89,18 +101,23 @@ class UserProfileModel {
     if (identical(this, other)) return true;
     return other is UserProfileModel &&
         other.id == id &&
+        other.email == email &&
         other.role == role &&
         other.fullName == fullName &&
         other.phone == phone &&
-        other.avatarUrl == avatarUrl;
+        other.avatarUrl == avatarUrl &&
+        other.companyId == companyId;
   }
 
   @override
   int get hashCode {
     return id.hashCode ^
+        email.hashCode ^
         role.hashCode ^
         fullName.hashCode ^
         phone.hashCode ^
-        avatarUrl.hashCode;
+        avatarUrl.hashCode ^
+        companyId.hashCode;
   }
 }
+

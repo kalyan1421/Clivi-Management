@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_client.dart';
 import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/utils/retry_helper.dart';
 import '../models/models.dart';
 
 /// Repository for all authentication-related Supabase operations
@@ -61,36 +62,33 @@ class AuthRepository {
 
       logger.i('User signed up: ${response.user!.email}');
 
-      // Retry logic with exponential backoff to wait for trigger-created profile
-      UserProfileModel? profile;
-      const maxRetries = 3;
-      const retryDelays = [100, 200, 400]; // milliseconds
+      // Use RetryHelper with exponential backoff to wait for trigger-created profile
+      final userId = response.user!.id;
       
-      for (int attempt = 0; attempt < maxRetries; attempt++) {
-        await Future.delayed(Duration(milliseconds: retryDelays[attempt]));
-        try {
-          profile = await getUserProfile(response.user!.id);
-          if (profile != null) {
-            // Update profile with additional info if provided
-            if (request.fullName != null || request.phone != null) {
-              final updates = <String, dynamic>{};
-              if (request.fullName != null) updates['full_name'] = request.fullName;
-              if (request.phone != null) updates['phone'] = request.phone;
+      final profile = await RetryHelper.retryUntil<UserProfileModel>(
+        () => getUserProfile(userId),
+        (result) => result != null,
+        maxAttempts: 5,
+        initialDelay: const Duration(milliseconds: 100),
+        maxDelay: const Duration(seconds: 2),
+      );
 
-              if (updates.isNotEmpty) {
-                profile = await updateUserProfile(
-                  userId: response.user!.id,
-                  updates: updates,
-                );
-              }
-            }
-            break; // Success, exit retry loop
-          }
-        } catch (e) {
-          if (attempt == maxRetries - 1) {
-            logger.w('Could not fetch profile after $maxRetries attempts: $e');
-            // Profile might not exist yet if trigger didn't fire
-            // This is okay - profile will be created on first login
+      // Update profile with additional info if provided and profile exists
+      UserProfileModel? finalProfile = profile;
+      if (profile != null && (request.fullName != null || request.phone != null)) {
+        final updates = <String, dynamic>{};
+        if (request.fullName != null) updates['full_name'] = request.fullName;
+        if (request.phone != null) updates['phone'] = request.phone;
+
+        if (updates.isNotEmpty) {
+          try {
+            finalProfile = await updateUserProfile(
+              userId: userId,
+              updates: updates,
+            );
+          } catch (e) {
+            logger.w('Could not update profile with additional info: $e');
+            // Continue with original profile
           }
         }
       }
@@ -98,7 +96,7 @@ class AuthRepository {
       return AuthResultModel.success(
         user: response.user!,
         session: response.session,
-        profile: profile,
+        profile: finalProfile,
       );
     } on AuthException catch (e) {
       logger.e('Sign up failed: ${e.message}');
@@ -146,8 +144,14 @@ class AuthRepository {
       await _client.auth.setSession(adminRefreshToken!);
       logger.i('Admin session restored');
 
-      // Wait for profile to be created by trigger
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Use RetryHelper to wait for profile to be created by trigger
+      final createdProfile = await RetryHelper.retryUntil<UserProfileModel>(
+        () => getUserProfile(newUserId),
+        (result) => result != null,
+        maxAttempts: 5,
+        initialDelay: const Duration(milliseconds: 100),
+        maxDelay: const Duration(seconds: 2),
+      );
 
       // Update the new user's profile with role and details
       try {

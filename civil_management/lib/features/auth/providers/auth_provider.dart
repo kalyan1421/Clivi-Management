@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../../../core/config/supabase_client.dart';
 import '../../../core/errors/app_exceptions.dart';
 import '../../../core/services/local_database_service.dart';
+import '../../../core/services/session_manager.dart';
 import '../data/models/models.dart';
 import '../data/repositories/auth_repository.dart';
 import 'auth_repository_provider.dart';
@@ -420,9 +421,25 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
 }
 
 /// Auth state provider - uses repository
+/// Uses ref.onDispose() for proper cleanup of stream subscriptions
 final authProvider = StateNotifierProvider<AuthNotifier, AppAuthState>((ref) {
   final repository = ref.watch(authRepositoryProvider);
-  return AuthNotifier(repository);
+  final notifier = AuthNotifier(repository);
+  
+  // Start session health check when provider is created
+  SessionManager.instance.startHealthCheck();
+  
+  // Properly dispose resources when provider is disposed
+  ref.onDispose(() {
+    notifier.dispose();
+    SessionManager.instance.stopHealthCheck();
+    logger.d('AuthProvider disposed, stream subscription cancelled');
+  });
+  
+  // Keep the provider alive to prevent premature disposal
+  ref.keepAlive();
+  
+  return notifier;
 });
 
 /// Convenience providers
