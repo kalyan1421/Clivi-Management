@@ -55,7 +55,12 @@ class _BlueprintViewerScreenState extends State<BlueprintViewerScreen> {
     final isPdf = widget.blueprint.fileName.toLowerCase().endsWith('.pdf');
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.blueprint.fileName)),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(widget.blueprint.fileName)),
       body: _buildBody(isPdf),
     );
   }

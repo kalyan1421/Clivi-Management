@@ -182,6 +182,10 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text(widget.isEditing ? 'Edit Project' : 'Create Project'),
       ),
       body: SingleChildScrollView(

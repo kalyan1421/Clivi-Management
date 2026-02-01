@@ -105,7 +105,12 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Upload Blueprint')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Upload Blueprint')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(

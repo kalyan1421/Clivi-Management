@@ -42,6 +42,10 @@ class _DailyMaterialLogScreenState extends ConsumerState<DailyMaterialLogScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text('Material Log - ${widget.projectName}'),
         bottom: TabBar(
           controller: _tabController,

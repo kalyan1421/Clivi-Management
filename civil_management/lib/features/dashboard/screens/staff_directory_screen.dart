@@ -19,6 +19,10 @@ class StaffDirectoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: const Text('Staff Directory'),
         actions: [
           IconButton(

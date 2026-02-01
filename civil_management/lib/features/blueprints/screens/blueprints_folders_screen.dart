@@ -20,7 +20,12 @@ class BlueprintsFoldersScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Blueprints: ${project.name}')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text('Blueprints: ${project.name}')),
       body: foldersAsync.when(
         loading: () => const LoadingWidget(),
         error: (err, stack) => AppErrorWidget(
