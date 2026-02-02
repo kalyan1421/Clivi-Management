@@ -23,6 +23,8 @@ import '../../features/inventory/screens/stock_list_screen.dart';
 import '../../features/inventory/screens/daily_material_log_screen.dart';
 import '../../features/labour/screens/labour_roster_screen.dart';
 import '../../features/labour/screens/attendance_screen.dart';
+import '../../features/projects/screens/project_operations_screen.dart';
+import '../../features/inventory/screens/supplier_list_screen.dart';
 
 /// Global router provider
 final routerProvider = Provider<GoRouter>((ref) {
@@ -100,6 +102,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/admin/staff-directory',
         name: 'admin-staff-directory',
         builder: (context, state) => const StaffDirectoryScreen(),
+      ),
+      GoRoute(
+        path: '/suppliers',
+        name: 'suppliers',
+        builder: (context, state) => const SupplierListScreen(),
       ),
 
       // Super Admin Routes
@@ -234,6 +241,26 @@ final routerProvider = Provider<GoRouter>((ref) {
               return AttendanceScreen(
                 projectId: projectId,
                 projectName: projectName,
+              );
+            },
+          ),
+          // Operations Route
+          GoRoute(
+            path: 'operations',
+            name: 'project-operations',
+            builder: (context, state) {
+              final projectId = state.pathParameters['id']!;
+              return ProjectOperationsScreen(projectId: projectId);
+            },
+          ),
+          // Reports Route (placeholder)
+          GoRoute(
+            path: 'reports',
+            name: 'project-reports',
+            builder: (context, state) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('Reports')),
+                body: const Center(child: Text('Reports coming soon...')),
               );
             },
           ),

@@ -261,15 +261,66 @@ class ProjectRepository {
     }
   }
 
-  /// Delete project
+  /// Soft delete project (sets deleted_at timestamp)
   Future<void> deleteProject(String projectId) async {
     try {
-      await _client.from('projects').delete().eq('id', projectId);
-      logger.i('Project deleted: $projectId');
-      _memoryCache.invalidateAll();
+      // Use RPC for soft delete with proper logging
+      final result = await _client.rpc(
+        'soft_delete_project',
+        params: {'p_project_id': projectId},
+      );
+      
+      if (result == true) {
+        logger.i('Project soft deleted: $projectId');
+        _memoryCache.invalidateAll();
+        // Clear from local cache too
+        await _localDb.clearProjectsCache();
+      } else {
+        throw DatabaseException('Failed to delete project');
+      }
     } on PostgrestException catch (e) {
       logger.e('Failed to delete project: ${e.message}');
       throw DatabaseException.fromPostgrest(e);
+    }
+  }
+
+  /// Get project statistics (material, labor, machinery counts)
+  Future<ProjectStats> getProjectStatsById(String projectId) async {
+    try {
+      final response = await _client.rpc(
+        'get_project_stats',
+        params: {'p_project_id': projectId},
+      );
+      
+      if (response == null) {
+        return ProjectStats.empty;
+      }
+      
+      return ProjectStats.fromJson(response as Map<String, dynamic>);
+    } on PostgrestException catch (e) {
+      logger.e('Failed to fetch project stats: ${e.message}');
+      return ProjectStats.empty;
+    }
+  }
+
+  /// Get material breakdown for a project
+  Future<List<MaterialBreakdown>> getMaterialBreakdown(String projectId) async {
+    try {
+      final response = await _client.rpc(
+        'get_project_material_breakdown',
+        params: {'p_project_id': projectId},
+      );
+      
+      if (response == null || response is! List) {
+        return [];
+      }
+      
+      return (response as List)
+          .map((json) => MaterialBreakdown.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      logger.e('Failed to fetch material breakdown: ${e.message}');
+      return [];
     }
   }
 

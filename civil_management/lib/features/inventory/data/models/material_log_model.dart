@@ -30,6 +30,10 @@ class MaterialLogModel {
   final String? itemName;
   final String? itemUnit;
 
+  // Supplier info (for inward logs)
+  final String? supplierId;
+  final String? supplierName;
+
   const MaterialLogModel({
     required this.id,
     required this.projectId,
@@ -43,11 +47,15 @@ class MaterialLogModel {
     this.notes,
     this.itemName,
     this.itemUnit,
+    this.supplierId,
+    this.supplierName,
   });
 
   factory MaterialLogModel.fromJson(Map<String, dynamic> json) {
     // Handle nested stock_items data
     final stockItem = json['stock_items'] as Map<String, dynamic>?;
+    // Handle nested supplier data
+    final supplier = json['suppliers'] as Map<String, dynamic>?;
 
     return MaterialLogModel(
       id: json['id'] as String,
@@ -64,6 +72,8 @@ class MaterialLogModel {
       notes: json['notes'] as String?,
       itemName: stockItem?['name'] as String?,
       itemUnit: stockItem?['unit'] as String?,
+      supplierId: json['supplier_id'] as String?,
+      supplierName: supplier?['name'] as String?,
     );
   }
 
@@ -76,6 +86,7 @@ class MaterialLogModel {
       'activity': activity,
       'challan_url': challanUrl,
       'notes': notes,
+      if (supplierId != null) 'supplier_id': supplierId,
     };
   }
 

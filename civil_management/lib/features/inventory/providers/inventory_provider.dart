@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/stock_item_model.dart';
 import '../data/models/material_log_model.dart';
+import '../data/models/supplier_model.dart';
 import '../data/repositories/inventory_repository.dart';
 
 /// Provider for inventory repository
@@ -47,3 +48,9 @@ final lowStockItemsProvider = FutureProvider.family<List<StockItemModel>, String
     return repository.getLowStockItems(projectId);
   },
 );
+
+/// Provider for all active suppliers
+final suppliersProvider = FutureProvider<List<SupplierModel>>((ref) async {
+  final repository = ref.watch(inventoryRepositoryProvider);
+  return repository.getSuppliers();
+});

@@ -3,6 +3,7 @@ import '../../../../core/config/supabase_client.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../models/stock_item_model.dart';
 import '../models/material_log_model.dart';
+import '../models/supplier_model.dart';
 
 /// Repository for inventory-related operations
 class InventoryRepository {
@@ -86,7 +87,8 @@ class InventoryRepository {
           .from('material_logs')
           .select('''
             *,
-            stock_items(name, unit)
+            stock_items(name, unit),
+            suppliers(name)
           ''')
           .eq('project_id', projectId);
 
@@ -116,7 +118,8 @@ class InventoryRepository {
           .insert(log.toInsertJson())
           .select('''
             *,
-            stock_items(name, unit)
+            stock_items(name, unit),
+            suppliers(name)
           ''')
           .single();
 
@@ -171,6 +174,67 @@ class InventoryRepository {
       // Fallback: get all and filter
       final allItems = await getStockItems(projectId);
       return allItems.where((item) => item.isLowStock).toList();
+    }
+  }
+
+  // ============================================================
+  // SUPPLIER CRUD
+  // ============================================================
+
+  /// Get all suppliers
+  Future<List<SupplierModel>> getSuppliers({bool activeOnly = true}) async {
+    try {
+      final query = activeOnly
+          ? _client.from('suppliers').select().eq('is_active', true).order('name')
+          : _client.from('suppliers').select().order('name');
+      final response = await query;
+      return (response as List)
+          .map((json) => SupplierModel.fromJson(json))
+          .toList();
+    } on PostgrestException catch (e) {
+      logger.e('Failed to fetch suppliers: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
+    }
+  }
+
+  /// Add a new supplier
+  Future<SupplierModel> addSupplier(SupplierModel supplier) async {
+    try {
+      final response = await _client
+          .from('suppliers')
+          .insert(supplier.toJson())
+          .select()
+          .single();
+      return SupplierModel.fromJson(response);
+    } on PostgrestException catch (e) {
+      logger.e('Failed to add supplier: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
+    }
+  }
+
+  /// Update a supplier
+  Future<void> updateSupplier(String supplierId, Map<String, dynamic> data) async {
+    try {
+      await _client
+          .from('suppliers')
+          .update(data)
+          .eq('id', supplierId);
+    } on PostgrestException catch (e) {
+      logger.e('Failed to update supplier: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
+    }
+  }
+
+  /// Delete a supplier (soft delete by setting is_active = false)
+  Future<void> deleteSupplier(String supplierId) async {
+    try {
+      await _client
+          .from('suppliers')
+          .update({'is_active': false})
+          .eq('id', supplierId);
+    } on PostgrestException catch (e) {
+      logger.e('Failed to delete supplier: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
     }
   }
 }

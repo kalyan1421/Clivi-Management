@@ -121,6 +121,15 @@ class LocalDatabaseService {
     }
   }
 
+  /// Clear all projects from cache
+  Future<void> clearProjectsCache() async {
+    try {
+      await _projectsBox.clear();
+    } catch (e) {
+      logger.w('Failed to clear projects cache: $e');
+    }
+  }
+
   // ============================================================
   // USER PROFILE
   // ============================================================

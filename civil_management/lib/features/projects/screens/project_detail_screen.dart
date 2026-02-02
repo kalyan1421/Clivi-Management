@@ -9,7 +9,8 @@ import '../data/models/project_model.dart';
 import '../providers/project_provider.dart';
 import 'widgets/assign_manager_sheet.dart';
 
-/// Project detail screen with tabs
+/// Project detail screen matching the design mockup
+/// Single scroll layout: Manager → Materials → Blueprints → Operations → Delete
 class ProjectDetailScreen extends ConsumerStatefulWidget {
   final String projectId;
 
@@ -20,22 +21,7 @@ class ProjectDetailScreen extends ConsumerStatefulWidget {
       _ProjectDetailScreenState();
 }
 
-class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
+class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(projectDetailProvider(widget.projectId));
@@ -43,53 +29,25 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     final isAdmin = role == UserRole.admin || role == UserRole.superAdmin;
 
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => context.pop(),
         ),
-        title: Text(state.project?.name ?? 'Project'),
+        title: Text(
+          state.project?.name ?? 'Project Details',
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
         actions: [
-          if (isAdmin && state.project != null) ...[
+          if (isAdmin && state.project != null)
             IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () =>
-                  context.push('/projects/${widget.projectId}/edit'),
+              icon: const Icon(Icons.edit_outlined, color: Colors.black),
+              onPressed: () => context.push('/projects/${widget.projectId}/edit'),
             ),
-            PopupMenuButton<String>(
-              onSelected: (value) => _handleMenuAction(value, state.project!),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'assign',
-                  child: ListTile(
-                    leading: Icon(Icons.person_add),
-                    title: Text('Assign Managers'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: ListTile(
-                    leading: Icon(Icons.delete, color: AppColors.error),
-                    title: Text(
-                      'Delete Project',
-                      style: TextStyle(color: AppColors.error),
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Overview', icon: Icon(Icons.info_outline)),
-            Tab(text: 'Team', icon: Icon(Icons.people_outline)),
-            Tab(text: 'Activity', icon: Icon(Icons.timeline)),
-          ],
-        ),
       ),
       body: _buildBody(state, isAdmin),
     );
@@ -113,29 +71,54 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
       return const AppErrorWidget(message: 'Project not found');
     }
 
-    return TabBarView(
-      controller: _tabController,
-      children: [
-        _OverviewTab(project: state.project!, isAdmin: isAdmin),
-        _TeamTab(
-          project: state.project!,
-          isAdmin: isAdmin,
-          onAssignTap: () => _showAssignManagerSheet(),
-        ),
-        _ActivityTab(project: state.project!),
-      ],
-    );
-  }
+    final project = state.project!;
 
-  void _handleMenuAction(String action, ProjectModel project) {
-    switch (action) {
-      case 'assign':
-        _showAssignManagerSheet();
-        break;
-      case 'delete':
-        _showDeleteConfirmation(project);
-        break;
-    }
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(projectDetailProvider(widget.projectId).notifier).refresh();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Manager Card
+            _ManagerCard(project: project, isAdmin: isAdmin, onAssignTap: _showAssignManagerSheet),
+            
+            const SizedBox(height: 16),
+            
+            // Material Stats Section
+            _MaterialStatsSection(projectId: widget.projectId),
+            
+            const SizedBox(height: 16),
+            
+            // Blueprints Section
+            _BlueprintsSection(project: project),
+            
+            const SizedBox(height: 16),
+            
+            // Operations Section
+            _OperationsSection(project: project),
+            
+            const SizedBox(height: 16),
+            
+            // Reports/Insights Section
+            _ReportsSection(project: project),
+            
+            // Delete Project Button (Admin only)
+            if (isAdmin) ...[
+              const SizedBox(height: 24),
+              _DeleteProjectButton(
+                project: project,
+                onDelete: () => _showDeleteConfirmation(project),
+              ),
+            ],
+            
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showAssignManagerSheet() {
@@ -150,9 +133,23 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Project'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.warning_amber, color: AppColors.error),
+            ),
+            const SizedBox(width: 12),
+            const Text('Delete Project'),
+          ],
+        ),
         content: Text(
-          'Are you sure you want to delete "${project.name}"?\n\nThis action cannot be undone.',
+          'Are you sure you want to delete "${project.name}"?\n\nThis project will be moved to trash and can be recovered within 30 days.',
         ),
         actions: [
           TextButton(
@@ -184,230 +181,176 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
   }
 }
 
-/// Overview tab
-class _OverviewTab extends StatelessWidget {
+/// Manager card with avatar, name, phone
+class _ManagerCard extends StatelessWidget {
   final ProjectModel project;
   final bool isAdmin;
+  final VoidCallback onAssignTap;
 
-  const _OverviewTab({required this.project, required this.isAdmin});
+  const _ManagerCard({
+    required this.project,
+    required this.isAdmin,
+    required this.onAssignTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    final manager = project.primaryManager;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Status Card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(project.status).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      _getStatusIcon(project.status),
-                      color: _getStatusColor(project.status),
-                      size: 30,
-                    ),
+          Row(
+            children: [
+              Text(
+                'MANAGER ASSIGNED',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const Spacer(),
+              if (isAdmin)
+                TextButton.icon(
+                  onPressed: onAssignTap,
+                  icon: Icon(
+                    manager != null ? Icons.edit : Icons.add,
+                    size: 16,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          project.status.displayName,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: _getStatusColor(project.status),
-                              ),
-                        ),
-                        if (project.startDate != null) ...[
-                          const SizedBox(height: 4),
+                  label: Text(manager != null ? 'Change' : 'Assign'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                child: Text(
+                  (manager?.userName ?? 'U')[0].toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      manager?.userName ?? 'Not Assigned',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (manager?.userPhone != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.phone, size: 14, color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
                           Text(
-                            _getDateRangeText(),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.textSecondary),
+                            manager!.userPhone!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ],
-                      ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (project.projectType != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: project.projectType!.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    project.projectType!.value,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: project.projectType!.color,
                     ),
                   ),
-                  if (project.budget != null)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Budget',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.textSecondary),
-                        ),
-                        Text(
-                          '₹${_formatBudget(project.budget!)}',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Details Section
-          _SectionCard(
-            title: 'Details',
-            icon: Icons.info_outline,
-            children: [
-              if (project.description != null &&
-                  project.description!.isNotEmpty)
-                _DetailRow(
-                  label: 'Description',
-                  value: project.description!,
-                  isMultiLine: true,
-                ),
-              if (project.location != null && project.location!.isNotEmpty)
-                _DetailRow(
-                  label: 'Location',
-                  value: project.location!,
-                  icon: Icons.location_on,
-                ),
-              _DetailRow(
-                label: 'Created',
-                value: _formatDate(project.createdAt),
-                icon: Icons.calendar_today,
-              ),
-              if (project.updatedAt != null)
-                _DetailRow(
-                  label: 'Last Updated',
-                  value: _formatDate(project.updatedAt),
-                  icon: Icons.update,
                 ),
             ],
           ),
+          
+          // Project info row
           const SizedBox(height: 16),
-
-          // Timeline Section
-          _SectionCard(
-            title: 'Timeline',
-            icon: Icons.timeline,
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          Row(
             children: [
-              _DetailRow(
-                label: 'Start Date',
-                value: project.startDate != null
-                    ? _formatDate(project.startDate)
-                    : 'Not set',
-                icon: Icons.play_arrow,
-              ),
-              _DetailRow(
-                label: 'End Date',
-                value: project.endDate != null
-                    ? _formatDate(project.endDate)
-                    : 'Not set',
-                icon: Icons.stop,
-              ),
-              if (project.startDate != null && project.endDate != null)
-                _DetailRow(
+              if (project.clientName != null) ...[
+                Expanded(
+                  child: _InfoItem(
+                    icon: Icons.business,
+                    label: 'Client',
+                    value: project.clientName!,
+                  ),
+                ),
+              ],
+              if (project.location != null) ...[
+                Expanded(
+                  child: _InfoItem(
+                    icon: Icons.location_on,
+                    label: 'Location',
+                    value: project.location!,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _InfoItem(
+                  icon: Icons.calendar_today,
                   label: 'Duration',
-                  value:
-                      '${project.endDate!.difference(project.startDate!).inDays} days',
-                  icon: Icons.hourglass_empty,
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Blueprints Section
-          _SectionCard(
-            title: 'Blueprints',
-            icon: Icons.photo_library_outlined,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('View Project Blueprints'),
-                subtitle: const Text('Access folders and files'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => context.go(
-                  '/projects/${project.id}/blueprints',
-                  extra: project,
+                  value: _getDurationText(),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // Inventory Section
-          _SectionCard(
-            title: 'Inventory',
-            icon: Icons.inventory_2_outlined,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.warehouse, color: Colors.blueGrey),
-                title: const Text('Stock Items'),
-                subtitle: const Text('Manage materials inventory'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => context.go(
-                  '/projects/${project.id}/stock',
-                  extra: project.name,
+              if (project.budget != null)
+                Expanded(
+                  child: _InfoItem(
+                    icon: Icons.currency_rupee,
+                    label: 'Budget',
+                    value: '₹${_formatBudget(project.budget!)}',
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.swap_vert, color: Colors.teal),
-                title: const Text('Material Log'),
-                subtitle: const Text('Track inward/outward movements'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => context.go(
-                  '/projects/${project.id}/material-log',
-                  extra: project.name,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // Workforce Section
-          _SectionCard(
-            title: 'Workforce',
-            icon: Icons.people_outlined,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.person, color: Colors.indigo),
-                title: const Text('Labour Roster'),
-                subtitle: const Text('Manage workers'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => context.go(
-                  '/projects/${project.id}/labour',
-                  extra: project.name,
-                ),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.event_available, color: Colors.green),
-                title: const Text('Daily Attendance'),
-                subtitle: const Text('Mark attendance for today'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => context.go(
-                  '/projects/${project.id}/attendance',
-                  extra: project.name,
-                ),
-              ),
             ],
           ),
         ],
@@ -415,17 +358,12 @@ class _OverviewTab extends StatelessWidget {
     );
   }
 
-  String _getDateRangeText() {
-    if (project.startDate == null) return '';
-    final start = _formatDate(project.startDate);
-    if (project.endDate == null) return 'Started $start';
-    final end = _formatDate(project.endDate);
+  String _getDurationText() {
+    if (project.startDate == null) return 'Not set';
+    final start = '${project.startDate!.day}/${project.startDate!.month}/${project.startDate!.year}';
+    if (project.endDate == null) return 'From $start';
+    final end = '${project.endDate!.day}/${project.endDate!.month}/${project.endDate!.year}';
     return '$start - $end';
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    return '${date.day}/${date.month}/${date.year}';
   }
 
   String _formatBudget(double budget) {
@@ -438,212 +376,173 @@ class _OverviewTab extends StatelessWidget {
     }
     return budget.toStringAsFixed(0);
   }
-
-  Color _getStatusColor(ProjectStatus status) {
-    switch (status) {
-      case ProjectStatus.planning:
-        return AppColors.info;
-      case ProjectStatus.inProgress:
-        return AppColors.success;
-      case ProjectStatus.onHold:
-        return AppColors.warning;
-      case ProjectStatus.completed:
-        return AppColors.primary;
-      case ProjectStatus.cancelled:
-        return AppColors.error;
-    }
-  }
-
-  IconData _getStatusIcon(ProjectStatus status) {
-    switch (status) {
-      case ProjectStatus.planning:
-        return Icons.edit_note;
-      case ProjectStatus.inProgress:
-        return Icons.play_circle;
-      case ProjectStatus.onHold:
-        return Icons.pause_circle;
-      case ProjectStatus.completed:
-        return Icons.check_circle;
-      case ProjectStatus.cancelled:
-        return Icons.cancel;
-    }
-  }
 }
 
-/// Team tab
-class _TeamTab extends StatelessWidget {
-  final ProjectModel project;
-  final bool isAdmin;
-  final VoidCallback onAssignTap;
+class _InfoItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
 
-  const _TeamTab({
-    required this.project,
-    required this.isAdmin,
-    required this.onAssignTap,
+  const _InfoItem({
+    required this.icon,
+    required this.label,
+    required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
-    final assignments = project.assignments ?? [];
-
-    if (assignments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.people_outline,
-              size: 64,
-              color: AppColors.textDisabled,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No team members assigned',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
-            ),
-            if (isAdmin) ...[
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: onAssignTap,
-                icon: const Icon(Icons.person_add),
-                label: const Text('Assign Managers'),
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: AppColors.textSecondary),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        if (isAdmin)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Text(
-                  '${assignments.length} Team Member${assignments.length > 1 ? 's' : ''}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: onAssignTap,
-                  icon: const Icon(Icons.edit, size: 18),
-                  label: const Text('Manage'),
-                ),
-              ],
-            ),
-          ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: assignments.length,
-            itemBuilder: (context, index) {
-              final assignment = assignments[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.siteManager.withOpacity(0.1),
-                    child: Text(
-                      (assignment.userName ?? 'U')[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: AppColors.siteManager,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  title: Text(assignment.userName ?? 'Unknown User'),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (assignment.userPhone != null)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.phone,
-                              size: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              assignment.userPhone!,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      Text(
-                        'Assigned: ${_formatDate(assignment.assignedAt)}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.siteManager.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      assignment.assignedRole.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.siteManager,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
           ),
         ),
       ],
     );
   }
+}
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'Unknown';
-    return '${date.day}/${date.month}/${date.year}';
+/// Material stats section with grid cards
+class _MaterialStatsSection extends ConsumerWidget {
+  final String projectId;
+
+  const _MaterialStatsSection({required this.projectId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // For now, show example stats - will be updated when RPC is applied
+    final materials = [
+      {'name': 'Steel', 'icon': Icons.iron, 'received': 100, 'consumed': 50, 'remaining': 50, 'unit': 'Tons'},
+      {'name': 'Cement', 'icon': Icons.format_color_fill, 'received': 500, 'consumed': 200, 'remaining': 300, 'unit': 'Bags'},
+    ];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section header styled like mockup
+          ...materials.map((mat) => _MaterialCard(
+            name: mat['name'] as String,
+            icon: mat['icon'] as IconData,
+            received: mat['received'] as int,
+            consumed: mat['consumed'] as int,
+            remaining: mat['remaining'] as int,
+            unit: mat['unit'] as String,
+          )),
+        ],
+      ),
+    );
   }
 }
 
-/// Activity tab (placeholder)
-class _ActivityTab extends StatelessWidget {
-  final ProjectModel project;
+class _MaterialCard extends StatelessWidget {
+  final String name;
+  final IconData icon;
+  final int received;
+  final int consumed;
+  final int remaining;
+  final String unit;
 
-  const _ActivityTab({required this.project});
+  const _MaterialCard({
+    required this.name,
+    required this.icon,
+    required this.received,
+    required this.consumed,
+    required this.remaining,
+    required this.unit,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.timeline, size: 64, color: AppColors.textDisabled),
-          const SizedBox(height: 16),
-          Text(
-            'Activity Log',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: AppColors.textSecondary),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Coming soon...',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textDisabled),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    _StatChip(label: 'Recv.', value: '$received $unit', color: AppColors.success),
+                    const SizedBox(width: 12),
+                    _StatChip(label: 'Cons.', value: '$consumed $unit', color: AppColors.warning),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$remaining',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+              Text(
+                'Remaining',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -651,102 +550,172 @@ class _ActivityTab extends StatelessWidget {
   }
 }
 
-/// Section card widget
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final List<Widget> children;
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
 
-  const _SectionCard({
-    required this.title,
-    required this.icon,
-    required this.children,
+  const _StatChip({
+    required this.label,
+    required this.value,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 20, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            ...children,
-          ],
+    return Row(
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
         ),
+        const SizedBox(width: 4),
+        Text(
+          '$label $value',
+          style: TextStyle(
+            fontSize: 11,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Blueprints section
+class _BlueprintsSection extends StatelessWidget {
+  final ProjectModel project;
+
+  const _BlueprintsSection({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionButton(
+      icon: Icons.photo_library_outlined,
+      title: 'Blueprints',
+      subtitle: 'View project drawings and files',
+      onTap: () => context.push('/projects/${project.id}/blueprints'),
+    );
+  }
+}
+
+/// Operations section
+class _OperationsSection extends StatelessWidget {
+  final ProjectModel project;
+
+  const _OperationsSection({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionButton(
+      icon: Icons.settings_outlined,
+      title: 'Operations',
+      subtitle: 'Log materials, machinery and labor',
+      onTap: () => context.push('/projects/${project.id}/operations'),
+    );
+  }
+}
+
+/// Reports section
+class _ReportsSection extends StatelessWidget {
+  final ProjectModel project;
+
+  const _ReportsSection({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionButton(
+      icon: Icons.bar_chart,
+      title: 'Reports / Insights',
+      subtitle: 'View analytics and reports',
+      onTap: () => context.push('/projects/${project.id}/reports'),
+    );
+  }
+}
+
+/// Reusable section button widget
+class _SectionButton extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SectionButton({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary),
+        onTap: onTap,
       ),
     );
   }
 }
 
-/// Detail row widget
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData? icon;
-  final bool isMultiLine;
+/// Delete project button
+class _DeleteProjectButton extends StatelessWidget {
+  final ProjectModel project;
+  final VoidCallback onDelete;
 
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    this.icon,
-    this.isMultiLine = false,
+  const _DeleteProjectButton({
+    required this.project,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: isMultiLine
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(value),
-              ],
-            )
-          : Row(
-              children: [
-                if (icon != null) ...[
-                  Icon(icon, size: 16, color: AppColors.textSecondary),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: Text(
-                    label,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                Text(
-                  value,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: OutlinedButton.icon(
+        onPressed: onDelete,
+        icon: const Icon(Icons.delete_outline, color: AppColors.error),
+        label: const Text('Delete Project', style: TextStyle(color: AppColors.error)),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.error),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          minimumSize: const Size(double.infinity, 48),
+        ),
+      ),
     );
   }
 }
