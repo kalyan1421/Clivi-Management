@@ -47,16 +47,20 @@ class SupplierListScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             'Add material vendors for better tracking',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSupplierList(BuildContext context, WidgetRef ref, List<SupplierModel> suppliers) {
+  Widget _buildSupplierList(
+    BuildContext context,
+    WidgetRef ref,
+    List<SupplierModel> suppliers,
+  ) {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(suppliersProvider);
@@ -90,7 +94,11 @@ class SupplierListScreen extends ConsumerWidget {
     );
   }
 
-  void _showEditSupplierDialog(BuildContext context, WidgetRef ref, SupplierModel supplier) {
+  void _showEditSupplierDialog(
+    BuildContext context,
+    WidgetRef ref,
+    SupplierModel supplier,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -105,7 +113,11 @@ class SupplierListScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, SupplierModel supplier) {
+  void _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    SupplierModel supplier,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -228,10 +240,7 @@ class _SupplierFormSheet extends StatefulWidget {
   final SupplierModel? supplier;
   final Future<void> Function(SupplierModel) onSave;
 
-  const _SupplierFormSheet({
-    this.supplier,
-    required this.onSave,
-  });
+  const _SupplierFormSheet({this.supplier, required this.onSave});
 
   @override
   State<_SupplierFormSheet> createState() => _SupplierFormSheetState();
@@ -252,11 +261,21 @@ class _SupplierFormSheetState extends State<_SupplierFormSheet> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.supplier?.name ?? '');
-    _contactController = TextEditingController(text: widget.supplier?.contactPerson ?? '');
-    _phoneController = TextEditingController(text: widget.supplier?.phone ?? '');
-    _emailController = TextEditingController(text: widget.supplier?.email ?? '');
-    _addressController = TextEditingController(text: widget.supplier?.address ?? '');
-    _notesController = TextEditingController(text: widget.supplier?.notes ?? '');
+    _contactController = TextEditingController(
+      text: widget.supplier?.contactPerson ?? '',
+    );
+    _phoneController = TextEditingController(
+      text: widget.supplier?.phone ?? '',
+    );
+    _emailController = TextEditingController(
+      text: widget.supplier?.email ?? '',
+    );
+    _addressController = TextEditingController(
+      text: widget.supplier?.address ?? '',
+    );
+    _notesController = TextEditingController(
+      text: widget.supplier?.notes ?? '',
+    );
     _selectedCategory = widget.supplier?.category;
   }
 
@@ -391,21 +410,21 @@ class _SupplierFormSheetState extends State<_SupplierFormSheet> {
       final supplier = SupplierModel(
         id: widget.supplier?.id ?? '',
         name: _nameController.text.trim(),
-        contactPerson: _contactController.text.trim().isEmpty 
-            ? null 
+        contactPerson: _contactController.text.trim().isEmpty
+            ? null
             : _contactController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty 
-            ? null 
+        phone: _phoneController.text.trim().isEmpty
+            ? null
             : _phoneController.text.trim(),
-        email: _emailController.text.trim().isEmpty 
-            ? null 
+        email: _emailController.text.trim().isEmpty
+            ? null
             : _emailController.text.trim(),
-        address: _addressController.text.trim().isEmpty 
-            ? null 
+        address: _addressController.text.trim().isEmpty
+            ? null
             : _addressController.text.trim(),
         category: _selectedCategory,
-        notes: _notesController.text.trim().isEmpty 
-            ? null 
+        notes: _notesController.text.trim().isEmpty
+            ? null
             : _notesController.text.trim(),
       );
 
@@ -413,9 +432,9 @@ class _SupplierFormSheetState extends State<_SupplierFormSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

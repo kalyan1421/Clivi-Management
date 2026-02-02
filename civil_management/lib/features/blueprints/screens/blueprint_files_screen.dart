@@ -28,7 +28,8 @@ class BlueprintFilesScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(folderName)),
+        title: Text(folderName),
+      ),
       body: filesAsync.when(
         loading: () => const LoadingWidget(),
         error: (err, stack) => AppErrorWidget(

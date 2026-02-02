@@ -166,7 +166,7 @@ class ProjectListNotifier extends StateNotifier<ProjectListState> {
   void search(String query) {
     _debounceTimer?.cancel();
     state = state.copyWith(searchQuery: query);
-    
+
     _debounceTimer = Timer(_debounceDuration, () {
       loadProjects();
     });

@@ -36,7 +36,7 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
   void _onScroll() {
     // Guard against accessing position after dispose
     if (!_scrollController.hasClients) return;
-    
+
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       ref.read(projectListProvider.notifier).loadMore();
@@ -296,7 +296,7 @@ class _ProjectCard extends StatelessWidget {
                     ),
                 ],
               ),
-              
+
               // Progress Bar (timeline based)
               if (project.startDate != null && project.endDate != null) ...[
                 const SizedBox(height: 12),
@@ -347,9 +347,7 @@ class _StatusChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: statusColor.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: statusColor.withValues(alpha: 0.5)),
       ),
       child: Text(
         status.displayName,
@@ -388,9 +386,9 @@ class _TimelineProgress extends StatelessWidget {
           children: [
             Text(
               'Timeline Progress',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
             ),
             Text(
               '${(progress * 100).toInt()}%',
@@ -419,15 +417,15 @@ class _TimelineProgress extends StatelessWidget {
     // If completed or cancelled, show appropriate progress
     if (status == ProjectStatus.completed) return 1.0;
     if (status == ProjectStatus.cancelled) return 0.0;
-    
+
     final now = DateTime.now();
     final totalDuration = endDate.difference(startDate).inDays;
     if (totalDuration <= 0) return 0.0;
-    
+
     final elapsed = now.difference(startDate).inDays;
     if (elapsed < 0) return 0.0;
     if (elapsed > totalDuration) return 1.0;
-    
+
     return elapsed / totalDuration;
   }
 
@@ -435,11 +433,11 @@ class _TimelineProgress extends StatelessWidget {
     if (status == ProjectStatus.completed) return Colors.green;
     if (status == ProjectStatus.cancelled) return Colors.grey;
     if (status == ProjectStatus.onHold) return Colors.orange;
-    
+
     // Check if behind schedule
     final now = DateTime.now();
     if (now.isAfter(endDate)) return Colors.red; // Overdue
-    
+
     if (progress < 0.25) return Colors.blue;
     if (progress < 0.5) return Colors.cyan;
     if (progress < 0.75) return Colors.orange;

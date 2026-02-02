@@ -207,16 +207,14 @@ class ErrorHandler {
   /// Show error snackbar
   static void showErrorSnackBar(BuildContext context, dynamic error) {
     final message = handle(error);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red[600],
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         action: SnackBarAction(
           label: 'Dismiss',
           textColor: Colors.white,
@@ -236,9 +234,7 @@ class ErrorHandler {
         backgroundColor: Colors.green[600],
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -251,9 +247,7 @@ class ErrorHandler {
         backgroundColor: Colors.orange[600],
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -266,9 +260,7 @@ class ErrorHandler {
         backgroundColor: Colors.blue[600],
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -317,11 +309,7 @@ class ErrorHandler {
     String? context,
     StackTrace? stackTrace,
   }) {
-    logger.e(
-      context ?? 'Error',
-      error: error,
-      stackTrace: stackTrace,
-    );
+    logger.e(context ?? 'Error', error: error, stackTrace: stackTrace);
   }
 
   /// Check if error is a network error
@@ -329,7 +317,7 @@ class ErrorHandler {
     if (error is SocketException) return true;
     if (error is NetworkException) return true;
     if (error is TimeoutException) return true;
-    
+
     final message = error.toString().toLowerCase();
     return message.contains('network') ||
         message.contains('connection') ||
@@ -341,7 +329,7 @@ class ErrorHandler {
   static bool isAuthError(dynamic error) {
     if (error is AuthException) return true;
     if (error is AppAuthException) return true;
-    
+
     final message = error.toString().toLowerCase();
     return message.contains('unauthorized') ||
         message.contains('unauthenticated') ||
@@ -352,7 +340,7 @@ class ErrorHandler {
   /// Check if error is a permission error
   static bool isPermissionError(dynamic error) {
     if (error is PermissionException) return true;
-    
+
     final message = error.toString().toLowerCase();
     return message.contains('permission') ||
         message.contains('forbidden') ||

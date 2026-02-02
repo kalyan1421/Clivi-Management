@@ -7,7 +7,7 @@ class RouteNames {
   // ============================================================
   // SPLASH & AUTH ROUTES
   // ============================================================
-  
+
   /// Splash screen route
   static const String splash = 'splash';
   static const String splashPath = '/splash';
@@ -31,7 +31,7 @@ class RouteNames {
   // ============================================================
   // DASHBOARD ROUTES
   // ============================================================
-  
+
   /// Super Admin dashboard route
   static const String superAdminDashboard = 'super-admin-dashboard';
   static const String superAdminDashboardPath = '/super-admin/dashboard';
@@ -47,7 +47,7 @@ class RouteNames {
   // ============================================================
   // PROJECT ROUTES
   // ============================================================
-  
+
   /// Projects list route
   static const String projects = 'projects';
   static const String projectsPath = '/projects';
@@ -67,23 +67,25 @@ class RouteNames {
   // ============================================================
   // BLUEPRINT ROUTES
   // ============================================================
-  
+
   /// Project blueprints route
   static const String projectBlueprints = 'project-blueprints';
   static const String projectBlueprintsPath = '/projects/:id/blueprints';
 
   /// Blueprint files route
   static const String blueprintFiles = 'project-blueprint-files';
-  static const String blueprintFilesPath = '/projects/:id/blueprints/:folderName';
+  static const String blueprintFilesPath =
+      '/projects/:id/blueprints/:folderName';
 
   /// Blueprint viewer route
   static const String blueprintViewer = 'project-blueprint-viewer';
-  static const String blueprintViewerPath = '/projects/:id/blueprints/:folderName/:fileId';
+  static const String blueprintViewerPath =
+      '/projects/:id/blueprints/:folderName/:fileId';
 
   // ============================================================
   // STOCK ROUTES
   // ============================================================
-  
+
   /// Stock list route
   static const String stock = 'stock';
   static const String stockPath = '/stock';
@@ -103,7 +105,7 @@ class RouteNames {
   // ============================================================
   // LABOUR ROUTES
   // ============================================================
-  
+
   /// Labour list route
   static const String labour = 'labour';
   static const String labourPath = '/labour';
@@ -123,7 +125,7 @@ class RouteNames {
   // ============================================================
   // BILLS ROUTES
   // ============================================================
-  
+
   /// Bills list route
   static const String bills = 'bills';
   static const String billsPath = '/bills';
@@ -139,7 +141,7 @@ class RouteNames {
   // ============================================================
   // MACHINERY ROUTES
   // ============================================================
-  
+
   /// Machinery list route
   static const String machinery = 'machinery';
   static const String machineryPath = '/machinery';
@@ -155,7 +157,7 @@ class RouteNames {
   // ============================================================
   // REPORTS ROUTES
   // ============================================================
-  
+
   /// Reports list route
   static const String reports = 'reports';
   static const String reportsPath = '/reports';
@@ -171,7 +173,7 @@ class RouteNames {
   // ============================================================
   // USER MANAGEMENT ROUTES
   // ============================================================
-  
+
   /// Users list route
   static const String users = 'users';
   static const String usersPath = '/users';
@@ -187,7 +189,7 @@ class RouteNames {
   // ============================================================
   // SETTINGS ROUTES
   // ============================================================
-  
+
   /// Settings route
   static const String settings = 'settings';
   static const String settingsPath = '/settings';
@@ -207,23 +209,29 @@ class RouteNames {
   // ============================================================
   // HELPER METHODS
   // ============================================================
-  
+
   /// Get project detail path with ID
-  static String getProjectDetailPath(String projectId) => '/projects/$projectId';
+  static String getProjectDetailPath(String projectId) =>
+      '/projects/$projectId';
 
   /// Get project edit path with ID
-  static String getEditProjectPath(String projectId) => '/projects/$projectId/edit';
+  static String getEditProjectPath(String projectId) =>
+      '/projects/$projectId/edit';
 
   /// Get project blueprints path with ID
-  static String getProjectBlueprintsPath(String projectId) => '/projects/$projectId/blueprints';
+  static String getProjectBlueprintsPath(String projectId) =>
+      '/projects/$projectId/blueprints';
 
   /// Get blueprint files path with project ID and folder name
-  static String getBlueprintFilesPath(String projectId, String folderName) => 
+  static String getBlueprintFilesPath(String projectId, String folderName) =>
       '/projects/$projectId/blueprints/$folderName';
 
   /// Get blueprint viewer path
-  static String getBlueprintViewerPath(String projectId, String folderName, String fileId) => 
-      '/projects/$projectId/blueprints/$folderName/$fileId';
+  static String getBlueprintViewerPath(
+    String projectId,
+    String folderName,
+    String fileId,
+  ) => '/projects/$projectId/blueprints/$folderName/$fileId';
 
   /// Get stock detail path with ID
   static String getStockDetailPath(String stockId) => '/stock/$stockId';
@@ -235,7 +243,8 @@ class RouteNames {
   static String getBillDetailPath(String billId) => '/bills/$billId';
 
   /// Get machinery detail path with ID
-  static String getMachineryDetailPath(String machineryId) => '/machinery/$machineryId';
+  static String getMachineryDetailPath(String machineryId) =>
+      '/machinery/$machineryId';
 
   /// Get user detail path with ID
   static String getUserDetailPath(String userId) => '/users/$userId';
@@ -243,7 +252,7 @@ class RouteNames {
   // ============================================================
   // ROUTE LISTS
   // ============================================================
-  
+
   /// Public routes that don't require authentication
   static const List<String> publicRoutes = [
     splashPath,
@@ -262,10 +271,7 @@ class RouteNames {
   ];
 
   /// Routes accessible only by Super Admin
-  static const List<String> superAdminOnlyRoutes = [
-    usersPath,
-    inviteUserPath,
-  ];
+  static const List<String> superAdminOnlyRoutes = [usersPath, inviteUserPath];
 
   /// Routes accessible by Admin and Super Admin
   static const List<String> adminRoutes = [
@@ -283,5 +289,6 @@ class RouteNames {
   static bool requiresAdmin(String path) => adminRoutes.contains(path);
 
   /// Check if route requires super admin privileges
-  static bool requiresSuperAdmin(String path) => superAdminOnlyRoutes.contains(path);
+  static bool requiresSuperAdmin(String path) =>
+      superAdminOnlyRoutes.contains(path);
 }

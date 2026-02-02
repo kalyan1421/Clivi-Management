@@ -29,7 +29,12 @@ class ProjectRepository {
   }) async {
     // For filtered/searched queries, skip disk cache (use memory cache only)
     if (search != null || status != null || page > 0) {
-      return _fetchFromApi(search: search, status: status, page: page, pageSize: pageSize);
+      return _fetchFromApi(
+        search: search,
+        status: status,
+        page: page,
+        pageSize: pageSize,
+      );
     }
 
     // CACHE-FIRST: Return cached data immediately for main list
@@ -44,11 +49,16 @@ class ProjectRepository {
     }
 
     // No cache, fetch from API
-    final projects = await _fetchFromApi(search: search, status: status, page: page, pageSize: pageSize);
-    
+    final projects = await _fetchFromApi(
+      search: search,
+      status: status,
+      page: page,
+      pageSize: pageSize,
+    );
+
     // Save to local cache
     await _localDb.saveProjects(projects);
-    
+
     return projects;
   }
 
@@ -57,7 +67,9 @@ class ProjectRepository {
     try {
       final freshProjects = await _fetchFromApi();
       await _localDb.saveProjects(freshProjects);
-      logger.i('Background refresh: saved ${freshProjects.length} projects to cache');
+      logger.i(
+        'Background refresh: saved ${freshProjects.length} projects to cache',
+      );
     } catch (e) {
       logger.w('Background refresh failed: $e');
     }
@@ -94,7 +106,7 @@ class ProjectRepository {
         // Cursor: get items older than current cursor
         query = query.or(
           'created_at.lt.$cursorCreatedAt,'
-          'and(created_at.eq.$cursorCreatedAt,id.lt.$cursorId)'
+          'and(created_at.eq.$cursorCreatedAt,id.lt.$cursorId)',
         );
       }
 
@@ -111,7 +123,6 @@ class ProjectRepository {
       throw DatabaseException.fromPostgrest(e);
     }
   }
-
 
   /// Fetch projects from Supabase API
   Future<List<ProjectModel>> _fetchFromApi({
@@ -269,7 +280,7 @@ class ProjectRepository {
         'soft_delete_project',
         params: {'p_project_id': projectId},
       );
-      
+
       if (result == true) {
         logger.i('Project soft deleted: $projectId');
         _memoryCache.invalidateAll();
@@ -291,11 +302,11 @@ class ProjectRepository {
         'get_project_stats',
         params: {'p_project_id': projectId},
       );
-      
+
       if (response == null) {
         return ProjectStats.empty;
       }
-      
+
       return ProjectStats.fromJson(response as Map<String, dynamic>);
     } on PostgrestException catch (e) {
       logger.e('Failed to fetch project stats: ${e.message}');
@@ -310,13 +321,15 @@ class ProjectRepository {
         'get_project_material_breakdown',
         params: {'p_project_id': projectId},
       );
-      
+
       if (response == null || response is! List) {
         return [];
       }
-      
+
       return (response as List)
-          .map((json) => MaterialBreakdown.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) => MaterialBreakdown.fromJson(json as Map<String, dynamic>),
+          )
           .toList();
     } on PostgrestException catch (e) {
       logger.e('Failed to fetch material breakdown: ${e.message}');
@@ -501,7 +514,7 @@ class ProjectRepository {
 
       final dataList = response as List;
       stats['total'] = dataList.length;
-      
+
       for (final row in dataList) {
         final status = row['status'] as String?;
         if (status != null && stats.containsKey(status)) {

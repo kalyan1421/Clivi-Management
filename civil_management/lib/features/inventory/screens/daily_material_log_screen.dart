@@ -19,7 +19,8 @@ class DailyMaterialLogScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<DailyMaterialLogScreen> createState() => _DailyMaterialLogScreenState();
+  ConsumerState<DailyMaterialLogScreen> createState() =>
+      _DailyMaterialLogScreenState();
 }
 
 class _DailyMaterialLogScreenState extends ConsumerState<DailyMaterialLogScreen>
@@ -58,14 +59,8 @@ class _DailyMaterialLogScreenState extends ConsumerState<DailyMaterialLogScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _LogListTab(
-            projectId: widget.projectId,
-            logType: LogType.inward,
-          ),
-          _LogListTab(
-            projectId: widget.projectId,
-            logType: LogType.outward,
-          ),
+          _LogListTab(projectId: widget.projectId, logType: LogType.inward),
+          _LogListTab(projectId: widget.projectId, logType: LogType.outward),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -78,12 +73,14 @@ class _DailyMaterialLogScreenState extends ConsumerState<DailyMaterialLogScreen>
 
   void _showAddLogDialog(BuildContext context) {
     final stockItemsAsync = ref.read(stockItemsProvider(widget.projectId));
-    
+
     stockItemsAsync.whenData((items) {
       if (items.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('No stock items available. Ask admin to add materials first.'),
+            content: Text(
+              'No stock items available. Ask admin to add materials first.',
+            ),
           ),
         );
         return;
@@ -95,7 +92,9 @@ class _DailyMaterialLogScreenState extends ConsumerState<DailyMaterialLogScreen>
         builder: (context) => _AddLogBottomSheet(
           projectId: widget.projectId,
           stockItems: items,
-          initialLogType: _tabController.index == 0 ? LogType.inward : LogType.outward,
+          initialLogType: _tabController.index == 0
+              ? LogType.inward
+              : LogType.outward,
           onAdded: () {
             ref.invalidate(inwardLogsProvider(widget.projectId));
             ref.invalidate(outwardLogsProvider(widget.projectId));
@@ -111,10 +110,7 @@ class _LogListTab extends ConsumerWidget {
   final String projectId;
   final LogType logType;
 
-  const _LogListTab({
-    required this.projectId,
-    required this.logType,
-  });
+  const _LogListTab({required this.projectId, required this.logType});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -137,14 +133,16 @@ class _LogListTab extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            logType == LogType.inward ? Icons.inbox_outlined : Icons.outbox_outlined,
+            logType == LogType.inward
+                ? Icons.inbox_outlined
+                : Icons.outbox_outlined,
             size: 64,
             color: Colors.grey[400],
           ),
           const SizedBox(height: 16),
           Text(
-            logType == LogType.inward 
-                ? 'No materials received yet' 
+            logType == LogType.inward
+                ? 'No materials received yet'
                 : 'No materials used yet',
             style: Theme.of(context).textTheme.titleMedium,
           ),
@@ -153,7 +151,11 @@ class _LogListTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildLogList(BuildContext context, WidgetRef ref, List<MaterialLogModel> logs) {
+  Widget _buildLogList(
+    BuildContext context,
+    WidgetRef ref,
+    List<MaterialLogModel> logs,
+  ) {
     return RefreshIndicator(
       onRefresh: () async {
         if (logType == LogType.inward) {
@@ -182,7 +184,7 @@ class _MaterialLogCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd MMM, hh:mm a');
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -193,17 +195,22 @@ class _MaterialLogCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: log.logType == LogType.inward 
-                        ? Colors.green.withOpacity(0.2) 
+                    color: log.logType == LogType.inward
+                        ? Colors.green.withOpacity(0.2)
                         : Colors.orange.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     log.logType.displayName,
                     style: TextStyle(
-                      color: log.logType == LogType.inward ? Colors.green : Colors.orange,
+                      color: log.logType == LogType.inward
+                          ? Colors.green
+                          : Colors.orange,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -243,7 +250,9 @@ class _MaterialLogCard extends StatelessWidget {
             ],
             const SizedBox(height: 8),
             Text(
-              log.loggedAt != null ? dateFormat.format(log.loggedAt!) : 'Unknown date',
+              log.loggedAt != null
+                  ? dateFormat.format(log.loggedAt!)
+                  : 'Unknown date',
               style: TextStyle(color: Colors.grey[500], fontSize: 12),
             ),
             if (log.notes != null && log.notes!.isNotEmpty) ...[
@@ -289,7 +298,9 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
   void initState() {
     super.initState();
     _selectedLogType = widget.initialLogType;
-    _selectedItem = widget.stockItems.isNotEmpty ? widget.stockItems.first : null;
+    _selectedItem = widget.stockItems.isNotEmpty
+        ? widget.stockItems.first
+        : null;
   }
 
   @override
@@ -318,7 +329,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            
+
             // Log Type Toggle
             SegmentedButton<LogType>(
               segments: const [
@@ -326,10 +337,11 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
                 ButtonSegment(value: LogType.outward, label: Text('Used')),
               ],
               selected: {_selectedLogType},
-              onSelectionChanged: (v) => setState(() => _selectedLogType = v.first),
+              onSelectionChanged: (v) =>
+                  setState(() => _selectedLogType = v.first),
             ),
             const SizedBox(height: 16),
-            
+
             // Material Selection
             DropdownButtonFormField<StockItemModel>(
               value: _selectedItem,
@@ -338,15 +350,19 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
                 border: OutlineInputBorder(),
               ),
               items: widget.stockItems
-                  .map((item) => DropdownMenuItem(
-                        value: item,
-                        child: Text('${item.name} (${item.quantity} ${item.unit})'),
-                      ))
+                  .map(
+                    (item) => DropdownMenuItem(
+                      value: item,
+                      child: Text(
+                        '${item.name} (${item.quantity} ${item.unit})',
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _selectedItem = v),
             ),
             const SizedBox(height: 16),
-            
+
             // Quantity
             TextField(
               controller: _quantityController,
@@ -358,7 +374,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Activity (for outward only)
             if (_selectedLogType == LogType.outward) ...[
               DropdownButtonFormField<String>(
@@ -374,7 +390,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Notes
             TextField(
               controller: _notesController,
@@ -385,7 +401,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Submit Button
             FilledButton(
               onPressed: _isSubmitting ? null : _submitLog,
@@ -432,9 +448,9 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

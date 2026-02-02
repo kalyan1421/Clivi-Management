@@ -13,25 +13,24 @@ class UploadHelper {
     String? contentType,
     int maxRetries = 3,
   }) async {
-    return RetryHelper.withRetry(
-      () async {
-        logger.i('Uploading to $bucket/$path (${bytes.length} bytes)');
-        
-        await supabase.storage.from(bucket).uploadBinary(
-          path,
-          bytes,
-          fileOptions: FileOptions(
-            upsert: true, // Allows retry without conflict
-            contentType: contentType,
-          ),
-        );
-        
-        final url = supabase.storage.from(bucket).getPublicUrl(path);
-        logger.i('Upload complete: $url');
-        return url;
-      },
-      maxAttempts: maxRetries,
-    );
+    return RetryHelper.withRetry(() async {
+      logger.i('Uploading to $bucket/$path (${bytes.length} bytes)');
+
+      await supabase.storage
+          .from(bucket)
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+              upsert: true, // Allows retry without conflict
+              contentType: contentType,
+            ),
+          );
+
+      final url = supabase.storage.from(bucket).getPublicUrl(path);
+      logger.i('Upload complete: $url');
+      return url;
+    }, maxAttempts: maxRetries);
   }
 
   /// Generate unique file path with timestamp to prevent collisions
@@ -43,4 +42,3 @@ class UploadHelper {
     return '$folder/${sanitized}_$timestamp.$extension';
   }
 }
-

@@ -28,7 +28,8 @@ class StaffDirectoryScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.person_add),
             tooltip: 'Add Site Manager',
-            onPressed: () => Navigator.pushNamed(context, '/admin/site-managers/add'),
+            onPressed: () =>
+                Navigator.pushNamed(context, '/admin/site-managers/add'),
           ),
         ],
       ),
@@ -70,16 +71,20 @@ class StaffDirectoryScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             'Add site managers from the button above',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStaffList(BuildContext context, WidgetRef ref, List<UserProfileModel> managers) {
+  Widget _buildStaffList(
+    BuildContext context,
+    WidgetRef ref,
+    List<UserProfileModel> managers,
+  ) {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(siteManagersListProvider);
@@ -173,23 +178,25 @@ class _StaffCard extends StatelessWidget {
         await launchUrl(uri);
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Cannot make call to $phone')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Cannot make call to $phone')));
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 }
 
 /// Provider for list of site managers
-final siteManagersListProvider = FutureProvider<List<UserProfileModel>>((ref) async {
+final siteManagersListProvider = FutureProvider<List<UserProfileModel>>((
+  ref,
+) async {
   final authRepo = ref.watch(authRepositoryProvider);
   return authRepo.getUsersByRole('site_manager');
 });

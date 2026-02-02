@@ -15,7 +15,7 @@ class DashboardRepository {
   Future<DashboardStats> getStats() async {
     try {
       final response = await _client.rpc('get_dashboard_stats');
-      
+
       if (response == null) {
         return DashboardStats.empty;
       }

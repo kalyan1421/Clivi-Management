@@ -59,16 +59,20 @@ class StockListScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             'Add materials like Cement, Sand, Steel',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStockList(BuildContext context, WidgetRef ref, List<StockItemModel> items) {
+  Widget _buildStockList(
+    BuildContext context,
+    WidgetRef ref,
+    List<StockItemModel> items,
+  ) {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(stockItemsProvider(projectId));
@@ -122,9 +126,21 @@ class StockListScreen extends ConsumerWidget {
                     child: DropdownButtonFormField<String>(
                       value: selectedUnit,
                       decoration: const InputDecoration(labelText: 'Unit'),
-                      items: ['bags', 'kg', 'tons', 'pieces', 'liters', 'sq.ft', 'cu.ft']
-                          .map((u) => DropdownMenuItem(value: u, child: Text(u)))
-                          .toList(),
+                      items:
+                          [
+                                'bags',
+                                'kg',
+                                'tons',
+                                'pieces',
+                                'liters',
+                                'sq.ft',
+                                'cu.ft',
+                              ]
+                              .map(
+                                (u) =>
+                                    DropdownMenuItem(value: u, child: Text(u)),
+                              )
+                              .toList(),
                       onChanged: (v) => selectedUnit = v ?? 'bags',
                     ),
                   ),
@@ -149,7 +165,7 @@ class StockListScreen extends ConsumerWidget {
           FilledButton(
             onPressed: () async {
               if (nameController.text.isEmpty) return;
-              
+
               final repository = ref.read(inventoryRepositoryProvider);
               final newItem = StockItemModel(
                 id: '',
@@ -159,7 +175,7 @@ class StockListScreen extends ConsumerWidget {
                 unit: selectedUnit,
                 lowStockThreshold: double.tryParse(thresholdController.text),
               );
-              
+
               await repository.addStockItem(newItem);
               ref.invalidate(stockItemsProvider(projectId));
               if (context.mounted) Navigator.pop(context);
@@ -184,10 +200,7 @@ class _StockItemCard extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: item.stockStatusColor.withOpacity(0.2),
-          child: Icon(
-            Icons.inventory,
-            color: item.stockStatusColor,
-          ),
+          child: Icon(Icons.inventory, color: item.stockStatusColor),
         ),
         title: Text(
           item.name,

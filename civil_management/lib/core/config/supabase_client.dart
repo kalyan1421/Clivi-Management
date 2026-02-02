@@ -80,7 +80,7 @@ class SupabaseConfig {
 
   static Future<void> _refreshConnection() async {
     _connectionState = ConnectionState.connected;
-    
+
     // Resume realtime if it was paused
     if (_isRealtimePaused) {
       try {
@@ -91,7 +91,7 @@ class SupabaseConfig {
         logger.w('Failed to resume realtime: $e');
       }
     }
-    
+
     // Refresh session if expiring soon (within 5 minutes)
     final session = supabase.auth.currentSession;
     if (session != null) {

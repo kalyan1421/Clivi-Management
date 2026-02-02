@@ -69,12 +69,12 @@ class CurrencyFormatter {
   /// Format without decimals for whole numbers (₹1,23,456)
   static String formatSimple(double? amount) {
     if (amount == null) return '${AppConstants.currencySymbol}0';
-    
+
     // If amount is a whole number, format without decimals
     if (amount == amount.truncateToDouble()) {
       return _simpleFormat.format(amount);
     }
-    
+
     return _rupeeFormat.format(amount);
   }
 
@@ -87,13 +87,13 @@ class CurrencyFormatter {
   /// Format with custom decimal places
   static String formatWithDecimals(double? amount, int decimals) {
     if (amount == null) return '${AppConstants.currencySymbol}0';
-    
+
     final formatter = NumberFormat.currency(
       locale: AppConstants.defaultLocale,
       symbol: AppConstants.currencySymbol,
       decimalDigits: decimals,
     );
-    
+
     return formatter.format(amount);
   }
 
@@ -104,11 +104,11 @@ class CurrencyFormatter {
   /// Format in Indian notation (₹1.5 Cr, ₹25 L, ₹50 K)
   static String formatIndian(double? amount) {
     if (amount == null || amount == 0) return '${AppConstants.currencySymbol}0';
-    
+
     final symbol = AppConstants.currencySymbol;
     final absAmount = amount.abs();
     final sign = amount < 0 ? '-' : '';
-    
+
     if (absAmount >= 10000000) {
       // Crores (1 Cr = 10,000,000)
       final crores = absAmount / 10000000;
@@ -122,7 +122,7 @@ class CurrencyFormatter {
       final thousands = absAmount / 1000;
       return '$sign$symbol${_formatDecimal(thousands)} K';
     }
-    
+
     return '$sign$symbol${_formatDecimal(absAmount)}';
   }
 
@@ -152,14 +152,14 @@ class CurrencyFormatter {
   /// Parse currency string to double
   static double? parse(String? value) {
     if (value == null || value.isEmpty) return null;
-    
+
     // Remove currency symbol, commas, and spaces
     final cleaned = value
         .replaceAll(AppConstants.currencySymbol, '')
         .replaceAll(',', '')
         .replaceAll(' ', '')
         .trim();
-    
+
     return double.tryParse(cleaned);
   }
 
@@ -175,26 +175,26 @@ class CurrencyFormatter {
   /// Format for display with sign (+ / -)
   static String formatWithSign(double? amount) {
     if (amount == null) return '${AppConstants.currencySymbol}0.00';
-    
+
     final formatted = format(amount.abs());
-    
+
     if (amount > 0) {
       return '+$formatted';
     } else if (amount < 0) {
       return '-$formatted';
     }
-    
+
     return formatted;
   }
 
   /// Format for accounting (negative in parentheses)
   static String formatAccounting(double? amount) {
     if (amount == null) return '${AppConstants.currencySymbol}0.00';
-    
+
     if (amount < 0) {
       return '(${format(amount.abs())})';
     }
-    
+
     return format(amount);
   }
 
@@ -214,15 +214,15 @@ class CurrencyFormatter {
   /// Format percentage change
   static String formatPercentChange(double? value) {
     if (value == null) return '0%';
-    
+
     final formatted = value.abs().toStringAsFixed(1);
-    
+
     if (value > 0) {
       return '+$formatted%';
     } else if (value < 0) {
       return '-$formatted%';
     }
-    
+
     return '0%';
   }
 

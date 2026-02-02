@@ -11,17 +11,17 @@ class AppTextStyles {
   // ============================================================
   // FONT FAMILIES
   // ============================================================
-  
+
   /// Primary font family for headings
   static String get headingFontFamily => GoogleFonts.poppins().fontFamily!;
-  
+
   /// Secondary font family for body text
   static String get bodyFontFamily => GoogleFonts.inter().fontFamily!;
 
   // ============================================================
   // DISPLAY STYLES (Large titles)
   // ============================================================
-  
+
   /// Display Large - 57px Bold
   static TextStyle get displayLarge => GoogleFonts.poppins(
     fontSize: 57,
@@ -50,7 +50,7 @@ class AppTextStyles {
   // ============================================================
   // HEADLINE STYLES (Section titles)
   // ============================================================
-  
+
   /// Headline Large - 32px SemiBold
   static TextStyle get headlineLarge => GoogleFonts.poppins(
     fontSize: 32,
@@ -78,7 +78,7 @@ class AppTextStyles {
   // ============================================================
   // TITLE STYLES (Card titles, list items)
   // ============================================================
-  
+
   /// Title Large - 22px Medium
   static TextStyle get titleLarge => GoogleFonts.poppins(
     fontSize: 22,
@@ -108,7 +108,7 @@ class AppTextStyles {
   // ============================================================
   // BODY STYLES (Paragraph text)
   // ============================================================
-  
+
   /// Body Large - 16px Regular
   static TextStyle get bodyLarge => GoogleFonts.inter(
     fontSize: 16,
@@ -139,7 +139,7 @@ class AppTextStyles {
   // ============================================================
   // LABEL STYLES (Buttons, chips, form labels)
   // ============================================================
-  
+
   /// Label Large - 14px Medium
   static TextStyle get labelLarge => GoogleFonts.inter(
     fontSize: 14,
@@ -170,7 +170,7 @@ class AppTextStyles {
   // ============================================================
   // CUSTOM STYLES
   // ============================================================
-  
+
   /// Button text style
   static TextStyle get button => GoogleFonts.inter(
     fontSize: 14,
@@ -237,7 +237,7 @@ class AppTextStyles {
   // ============================================================
   // TEXT THEME
   // ============================================================
-  
+
   /// Get complete TextTheme for Material Theme
   static TextTheme get textTheme => TextTheme(
     displayLarge: displayLarge,
@@ -260,7 +260,7 @@ class AppTextStyles {
   // ============================================================
   // HELPER METHODS
   // ============================================================
-  
+
   /// Apply color to any text style
   static TextStyle withColor(TextStyle style, Color color) {
     return style.copyWith(color: color);

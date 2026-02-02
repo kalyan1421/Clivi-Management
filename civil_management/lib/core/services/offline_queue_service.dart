@@ -22,7 +22,9 @@ class OfflineQueueService {
 
   Future<void> _openBox() async {
     _queueBox = await Hive.openBox<Map>(_queueBoxName);
-    logger.i('Offline queue initialized with ${_queueBox.length} pending items');
+    logger.i(
+      'Offline queue initialized with ${_queueBox.length} pending items',
+    );
   }
 
   /// Enqueue a write operation for later sync
@@ -32,9 +34,10 @@ class OfflineQueueService {
     required Map<String, dynamic> data,
     String? idempotencyKey,
   }) async {
-    final key = idempotencyKey ?? 
+    final key =
+        idempotencyKey ??
         '${table}_${operation}_${DateTime.now().millisecondsSinceEpoch}';
-    
+
     await _queueBox.put(key, {
       'table': table,
       'operation': operation,
@@ -42,14 +45,14 @@ class OfflineQueueService {
       'created_at': DateTime.now().toIso8601String(),
       'attempts': 0,
     });
-    
+
     logger.i('Enqueued offline operation: $key');
   }
 
   /// Process all pending operations
   Future<void> processQueue() async {
     if (_isSyncing || _queueBox.isEmpty) return;
-    
+
     _isSyncing = true;
     logger.i('Processing offline queue: ${_queueBox.length} items');
 

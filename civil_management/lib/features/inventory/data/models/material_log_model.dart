@@ -91,7 +91,7 @@ class MaterialLogModel {
   }
 
   @override
-  String toString() => 
+  String toString() =>
       'MaterialLog(${logType.displayName}: $quantity ${itemUnit ?? ''} of ${itemName ?? itemId})';
 }
 

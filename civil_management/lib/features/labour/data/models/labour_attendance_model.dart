@@ -64,7 +64,9 @@ class LabourAttendanceModel {
       labourId: json['labour_id'] as String,
       projectId: json['project_id'] as String,
       date: DateTime.parse(json['date'] as String),
-      status: AttendanceStatus.fromString(json['status'] as String? ?? 'present'),
+      status: AttendanceStatus.fromString(
+        json['status'] as String? ?? 'present',
+      ),
       hoursWorked: (json['hours_worked'] as num?)?.toDouble(),
       notes: json['notes'] as String?,
       recordedBy: json['recorded_by'] as String?,

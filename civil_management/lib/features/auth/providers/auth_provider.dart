@@ -319,10 +319,10 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
   Future<void> signOut() async {
     try {
       await _repository.signOut();
-      
+
       // Clear local cached data
       await LocalDatabaseService.instance.clearAll();
-      
+
       state = const AppAuthState(
         user: null,
         role: null,
@@ -425,20 +425,20 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
 final authProvider = StateNotifierProvider<AuthNotifier, AppAuthState>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   final notifier = AuthNotifier(repository);
-  
+
   // Start session health check when provider is created
   SessionManager.instance.startHealthCheck();
-  
+
   // Properly dispose resources when provider is disposed
   ref.onDispose(() {
     notifier.dispose();
     SessionManager.instance.stopHealthCheck();
     logger.d('AuthProvider disposed, stream subscription cancelled');
   });
-  
+
   // Keep the provider alive to prevent premature disposal
   ref.keepAlive();
-  
+
   return notifier;
 });
 

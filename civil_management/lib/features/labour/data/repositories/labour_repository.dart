@@ -6,7 +6,7 @@ class LabourRepository {
   final SupabaseClient _client;
 
   LabourRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   // ==================== LABOUR CRUD ====================
 
@@ -105,21 +105,17 @@ class LabourRepository {
 
     // Combine
     return labourList.map((labour) {
-      return {
-        'labour': labour,
-        'attendance': attendanceMap[labour.id],
-      };
+      return {'labour': labour, 'attendance': attendanceMap[labour.id]};
     }).toList();
   }
 
   /// Mark attendance (upsert)
-  Future<LabourAttendanceModel> markAttendance(LabourAttendanceModel attendance) async {
+  Future<LabourAttendanceModel> markAttendance(
+    LabourAttendanceModel attendance,
+  ) async {
     final response = await _client
         .from('labour_attendance')
-        .upsert(
-          attendance.toUpsertJson(),
-          onConflict: 'labour_id,date',
-        )
+        .upsert(attendance.toUpsertJson(), onConflict: 'labour_id,date')
         .select('*, labour(name, phone, skill_type, daily_wage)')
         .single();
 
@@ -127,9 +123,11 @@ class LabourRepository {
   }
 
   /// Bulk mark attendance for multiple workers
-  Future<void> bulkMarkAttendance(List<LabourAttendanceModel> attendances) async {
+  Future<void> bulkMarkAttendance(
+    List<LabourAttendanceModel> attendances,
+  ) async {
     final data = attendances.map((a) => a.toUpsertJson()).toList();
-    
+
     await _client
         .from('labour_attendance')
         .upsert(data, onConflict: 'labour_id,date');
@@ -149,7 +147,7 @@ class LabourRepository {
         .lte('date', endDate.toIso8601String().split('T')[0]);
 
     final records = response as List;
-    
+
     int present = 0;
     int absent = 0;
     int halfDay = 0;

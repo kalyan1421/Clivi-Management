@@ -32,7 +32,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   @override
   Widget build(BuildContext context) {
     final labourWithAttendance = ref.watch(
-      labourWithAttendanceProvider((projectId: widget.projectId, date: _selectedDate)),
+      labourWithAttendanceProvider((
+        projectId: widget.projectId,
+        date: _selectedDate,
+      )),
     );
 
     return Scaffold(
@@ -47,7 +50,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             const Text('Attendance'),
             Text(
               DateFormat('dd MMM yyyy').format(_selectedDate),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.normal,
+              ),
             ),
           ],
         ),
@@ -92,9 +98,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     for (final item in data) {
       final labour = item['labour'] as LabourModel;
       final attendance = item['attendance'] as LabourAttendanceModel?;
-      
+
       if (!_attendanceMap.containsKey(labour.id)) {
-        _attendanceMap[labour.id] = attendance?.status ?? AttendanceStatus.present;
+        _attendanceMap[labour.id] =
+            attendance?.status ?? AttendanceStatus.present;
       }
     }
 
@@ -102,7 +109,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       children: [
         // Summary bar
         _AttendanceSummaryBar(attendanceMap: _attendanceMap),
-        
+
         // Worker list
         Expanded(
           child: ListView.builder(
@@ -110,7 +117,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             itemCount: data.length,
             itemBuilder: (context, index) {
               final labour = data[index]['labour'] as LabourModel;
-              final currentStatus = _attendanceMap[labour.id] ?? AttendanceStatus.present;
+              final currentStatus =
+                  _attendanceMap[labour.id] ?? AttendanceStatus.present;
 
               return _AttendanceCard(
                 labour: labour,
@@ -163,7 +171,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         _attendanceMap.clear();
       });
       ref.invalidate(
-        labourWithAttendanceProvider((projectId: widget.projectId, date: _selectedDate)),
+        labourWithAttendanceProvider((
+          projectId: widget.projectId,
+          date: _selectedDate,
+        )),
       );
     }
   }
@@ -204,9 +215,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       setState(() => _isSaving = false);
@@ -243,21 +254,9 @@ class _AttendanceSummaryBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _SummaryChip(
-            label: 'Present',
-            count: present,
-            color: Colors.green,
-          ),
-          _SummaryChip(
-            label: 'Half Day',
-            count: halfDay,
-            color: Colors.orange,
-          ),
-          _SummaryChip(
-            label: 'Absent',
-            count: absent,
-            color: Colors.red,
-          ),
+          _SummaryChip(label: 'Present', count: present, color: Colors.green),
+          _SummaryChip(label: 'Half Day', count: halfDay, color: Colors.orange),
+          _SummaryChip(label: 'Absent', count: absent, color: Colors.red),
         ],
       ),
     );
@@ -347,10 +346,7 @@ class _AttendanceCard extends StatelessWidget {
                   if (labour.skillType != null)
                     Text(
                       labour.skillType!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                 ],
               ),

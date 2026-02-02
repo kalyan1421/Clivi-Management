@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// A card widget for displaying dashboard metrics
-/// 
+///
 /// Features:
 /// - Icon with colored background
 /// - Metric value with optional animation
@@ -34,9 +34,7 @@ class MetricCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: AppColors.border.withValues(alpha: 0.5),
-        ),
+        side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -55,11 +53,7 @@ class MetricCard extends StatelessWidget {
                       color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      icon,
-                      size: 22,
-                      color: color,
-                    ),
+                    child: Icon(icon, size: 22, color: color),
                   ),
                   const Spacer(),
                   if (growth != null && !isLoading)
@@ -124,9 +118,9 @@ class MetricCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -162,10 +156,7 @@ class MetricCard extends StatelessWidget {
 class MetricCardRow extends StatelessWidget {
   final List<MetricCard> cards;
 
-  const MetricCardRow({
-    super.key,
-    required this.cards,
-  });
+  const MetricCardRow({super.key, required this.cards});
 
   @override
   Widget build(BuildContext context) {

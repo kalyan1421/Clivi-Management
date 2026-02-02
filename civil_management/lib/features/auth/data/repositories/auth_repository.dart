@@ -64,7 +64,7 @@ class AuthRepository {
 
       // Use RetryHelper with exponential backoff to wait for trigger-created profile
       final userId = response.user!.id;
-      
+
       final profile = await RetryHelper.retryUntil<UserProfileModel>(
         () => getUserProfile(userId),
         (result) => result != null,
@@ -75,7 +75,8 @@ class AuthRepository {
 
       // Update profile with additional info if provided and profile exists
       UserProfileModel? finalProfile = profile;
-      if (profile != null && (request.fullName != null || request.phone != null)) {
+      if (profile != null &&
+          (request.fullName != null || request.phone != null)) {
         final updates = <String, dynamic>{};
         if (request.fullName != null) updates['full_name'] = request.fullName;
         if (request.phone != null) updates['phone'] = request.phone;
@@ -120,7 +121,7 @@ class AuthRepository {
     final adminSession = currentSession;
     final adminAccessToken = adminSession?.accessToken;
     final adminRefreshToken = adminSession?.refreshToken;
-    
+
     if (adminSession == null) {
       throw AppAuthException('Admin must be logged in to create users');
     }
@@ -196,10 +197,11 @@ class AuthRepository {
         } catch (_) {}
       }
       logger.e('Create user error: $e');
-      throw AppAuthException('An unexpected error occurred while creating user');
+      throw AppAuthException(
+        'An unexpected error occurred while creating user',
+      );
     }
   }
-
 
   /// Sign out current user
   Future<void> signOut() async {

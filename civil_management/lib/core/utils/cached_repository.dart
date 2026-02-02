@@ -17,10 +17,7 @@ class CachedRepository<T> {
   });
 
   /// SWR: Return cached data immediately, refresh in background if stale
-  Future<T> getOrFetch(
-    String key,
-    Future<T> Function() fetcher,
-  ) async {
+  Future<T> getOrFetch(String key, Future<T> Function() fetcher) async {
     final cached = _cache[key];
 
     if (cached != null) {
@@ -100,4 +97,3 @@ class CacheEntry<T> {
 
   Duration get age => DateTime.now().difference(timestamp);
 }
-

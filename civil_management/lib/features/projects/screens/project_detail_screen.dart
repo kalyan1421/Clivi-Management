@@ -39,13 +39,17 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         ),
         title: Text(
           state.project?.name ?? 'Project Details',
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           if (isAdmin && state.project != null)
             IconButton(
               icon: const Icon(Icons.edit_outlined, color: Colors.black),
-              onPressed: () => context.push('/projects/${widget.projectId}/edit'),
+              onPressed: () =>
+                  context.push('/projects/${widget.projectId}/edit'),
             ),
         ],
       ),
@@ -75,7 +79,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.read(projectDetailProvider(widget.projectId).notifier).refresh();
+        await ref
+            .read(projectDetailProvider(widget.projectId).notifier)
+            .refresh();
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -83,28 +89,32 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Manager Card
-            _ManagerCard(project: project, isAdmin: isAdmin, onAssignTap: _showAssignManagerSheet),
-            
+            _ManagerCard(
+              project: project,
+              isAdmin: isAdmin,
+              onAssignTap: _showAssignManagerSheet,
+            ),
+
             const SizedBox(height: 16),
-            
+
             // Material Stats Section
             _MaterialStatsSection(projectId: widget.projectId),
-            
+
             const SizedBox(height: 16),
-            
+
             // Blueprints Section
             _BlueprintsSection(project: project),
-            
+
             const SizedBox(height: 16),
-            
+
             // Operations Section
             _OperationsSection(project: project),
-            
+
             const SizedBox(height: 16),
-            
+
             // Reports/Insights Section
             _ReportsSection(project: project),
-            
+
             // Delete Project Button (Admin only)
             if (isAdmin) ...[
               const SizedBox(height: 24),
@@ -113,7 +123,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 onDelete: () => _showDeleteConfirmation(project),
               ),
             ],
-            
+
             const SizedBox(height: 40),
           ],
         ),
@@ -196,7 +206,7 @@ class _ManagerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final manager = project.primaryManager;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -273,7 +283,11 @@ class _ManagerCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.phone, size: 14, color: AppColors.textSecondary),
+                          Icon(
+                            Icons.phone,
+                            size: 14,
+                            color: AppColors.textSecondary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             manager!.userPhone!,
@@ -290,7 +304,10 @@ class _ManagerCard extends StatelessWidget {
               ),
               if (project.projectType != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: project.projectType!.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -306,7 +323,7 @@ class _ManagerCard extends StatelessWidget {
                 ),
             ],
           ),
-          
+
           // Project info row
           const SizedBox(height: 16),
           const Divider(height: 1),
@@ -360,9 +377,11 @@ class _ManagerCard extends StatelessWidget {
 
   String _getDurationText() {
     if (project.startDate == null) return 'Not set';
-    final start = '${project.startDate!.day}/${project.startDate!.month}/${project.startDate!.year}';
+    final start =
+        '${project.startDate!.day}/${project.startDate!.month}/${project.startDate!.year}';
     if (project.endDate == null) return 'From $start';
-    final end = '${project.endDate!.day}/${project.endDate!.month}/${project.endDate!.year}';
+    final end =
+        '${project.endDate!.day}/${project.endDate!.month}/${project.endDate!.year}';
     return '$start - $end';
   }
 
@@ -401,10 +420,7 @@ class _InfoItem extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
               ),
               Text(
                 value,
@@ -433,8 +449,22 @@ class _MaterialStatsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // For now, show example stats - will be updated when RPC is applied
     final materials = [
-      {'name': 'Steel', 'icon': Icons.iron, 'received': 100, 'consumed': 50, 'remaining': 50, 'unit': 'Tons'},
-      {'name': 'Cement', 'icon': Icons.format_color_fill, 'received': 500, 'consumed': 200, 'remaining': 300, 'unit': 'Bags'},
+      {
+        'name': 'Steel',
+        'icon': Icons.iron,
+        'received': 100,
+        'consumed': 50,
+        'remaining': 50,
+        'unit': 'Tons',
+      },
+      {
+        'name': 'Cement',
+        'icon': Icons.format_color_fill,
+        'received': 500,
+        'consumed': 200,
+        'remaining': 300,
+        'unit': 'Bags',
+      },
     ];
 
     return Container(
@@ -443,14 +473,16 @@ class _MaterialStatsSection extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section header styled like mockup
-          ...materials.map((mat) => _MaterialCard(
-            name: mat['name'] as String,
-            icon: mat['icon'] as IconData,
-            received: mat['received'] as int,
-            consumed: mat['consumed'] as int,
-            remaining: mat['remaining'] as int,
-            unit: mat['unit'] as String,
-          )),
+          ...materials.map(
+            (mat) => _MaterialCard(
+              name: mat['name'] as String,
+              icon: mat['icon'] as IconData,
+              received: mat['received'] as int,
+              consumed: mat['consumed'] as int,
+              remaining: mat['remaining'] as int,
+              unit: mat['unit'] as String,
+            ),
+          ),
         ],
       ),
     );
@@ -516,9 +548,17 @@ class _MaterialCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    _StatChip(label: 'Recv.', value: '$received $unit', color: AppColors.success),
+                    _StatChip(
+                      label: 'Recv.',
+                      value: '$received $unit',
+                      color: AppColors.success,
+                    ),
                     const SizedBox(width: 12),
-                    _StatChip(label: 'Cons.', value: '$consumed $unit', color: AppColors.warning),
+                    _StatChip(
+                      label: 'Cons.',
+                      value: '$consumed $unit',
+                      color: AppColors.warning,
+                    ),
                   ],
                 ),
               ],
@@ -537,10 +577,7 @@ class _MaterialCard extends StatelessWidget {
               ),
               Text(
                 'Remaining',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -568,18 +605,12 @@ class _StatChip extends StatelessWidget {
         Container(
           width: 6,
           height: 6,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(
           '$label $value',
-          style: TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -677,15 +708,16 @@ class _SectionButton extends StatelessWidget {
           ),
           child: Icon(icon, color: AppColors.primary),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(
           subtitle,
           style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: AppColors.textSecondary,
+        ),
         onTap: onTap,
       ),
     );
@@ -697,10 +729,7 @@ class _DeleteProjectButton extends StatelessWidget {
   final ProjectModel project;
   final VoidCallback onDelete;
 
-  const _DeleteProjectButton({
-    required this.project,
-    required this.onDelete,
-  });
+  const _DeleteProjectButton({required this.project, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -709,7 +738,10 @@ class _DeleteProjectButton extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: onDelete,
         icon: const Icon(Icons.delete_outline, color: AppColors.error),
-        label: const Text('Delete Project', style: TextStyle(color: AppColors.error)),
+        label: const Text(
+          'Delete Project',
+          style: TextStyle(color: AppColors.error),
+        ),
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: AppColors.error),
           padding: const EdgeInsets.symmetric(vertical: 14),

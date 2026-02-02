@@ -35,11 +35,7 @@ class ActivityFeedItem extends StatelessWidget {
                     color: _getColor().withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    _getIcon(),
-                    size: 18,
-                    color: _getColor(),
-                  ),
+                  child: Icon(_getIcon(), size: 18, color: _getColor()),
                 ),
                 if (!isLast)
                   Container(
@@ -51,7 +47,7 @@ class ActivityFeedItem extends StatelessWidget {
               ],
             ),
             const SizedBox(width: 12),
-            
+
             // Content
             Expanded(
               child: Column(
@@ -78,9 +74,8 @@ class ActivityFeedItem extends StatelessWidget {
                         Flexible(
                           child: Text(
                             activity.projectName!,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -273,9 +268,9 @@ class ActivityFeed extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'No recent activity',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),

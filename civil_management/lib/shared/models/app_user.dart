@@ -5,34 +5,34 @@ import '../../features/auth/providers/auth_provider.dart';
 class AppUser {
   /// Unique user ID (from Supabase Auth)
   final String id;
-  
+
   /// User email address
   final String email;
-  
+
   /// User role (super_admin, admin, site_manager)
   final UserRole role;
-  
+
   /// Full name of the user
   final String? fullName;
-  
+
   /// Phone number
   final String? phone;
-  
+
   /// Avatar/profile picture URL
   final String? avatarUrl;
-  
+
   /// Whether email is verified
   final bool emailVerified;
-  
+
   /// Account creation timestamp
   final DateTime? createdAt;
-  
+
   /// Last update timestamp
   final DateTime? updatedAt;
-  
+
   /// Last sign-in timestamp
   final DateTime? lastSignInAt;
-  
+
   /// Additional metadata
   final Map<String, dynamic>? metadata;
 
@@ -55,7 +55,8 @@ class AppUser {
     return AppUser(
       id: json['id'] as String,
       email: json['email'] as String,
-      role: UserRole.fromString(json['role'] as String?) ?? UserRole.siteManager,
+      role:
+          UserRole.fromString(json['role'] as String?) ?? UserRole.siteManager,
       fullName: json['full_name'] as String?,
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
@@ -174,7 +175,9 @@ class AppUser {
       if (names.length >= 2) {
         return '${names.first[0]}${names.last[0]}'.toUpperCase();
       }
-      return names.first.substring(0, names.first.length >= 2 ? 2 : 1).toUpperCase();
+      return names.first
+          .substring(0, names.first.length >= 2 ? 2 : 1)
+          .toUpperCase();
     }
     return email.substring(0, 2).toUpperCase();
   }
@@ -183,19 +186,19 @@ class AppUser {
   String get roleDisplayName => role.displayName;
 
   /// Check if profile is complete
-  bool get isProfileComplete => 
+  bool get isProfileComplete =>
       fullName?.isNotEmpty == true && phone?.isNotEmpty == true;
 
   /// Get profile completion percentage
   int get profileCompletion {
     int complete = 0;
     const total = 4;
-    
+
     if (fullName?.isNotEmpty == true) complete++;
     if (phone?.isNotEmpty == true) complete++;
     if (avatarUrl?.isNotEmpty == true) complete++;
     if (emailVerified) complete++;
-    
+
     return ((complete / total) * 100).round();
   }
 
@@ -233,25 +236,25 @@ class UserPermissions {
   final bool canCreateProjects;
   final bool canEditProjects;
   final bool canDeleteProjects;
-  
+
   final bool canViewStock;
   final bool canManageStock;
-  
+
   final bool canViewLabour;
   final bool canManageLabour;
-  
+
   final bool canViewBills;
   final bool canManageBills;
-  
+
   final bool canViewBlueprints;
   final bool canUploadBlueprints;
-  
+
   final bool canViewMachinery;
   final bool canManageMachinery;
-  
+
   final bool canViewReports;
   final bool canGenerateReports;
-  
+
   final bool canManageUsers;
   final bool canManageRoles;
 

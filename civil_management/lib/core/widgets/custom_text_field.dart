@@ -7,82 +7,82 @@ import '../theme/app_colors.dart';
 class CustomTextField extends StatefulWidget {
   /// Text editing controller
   final TextEditingController? controller;
-  
+
   /// Field label text
   final String? label;
-  
+
   /// Hint text displayed when field is empty
   final String? hintText;
-  
+
   /// Helper text displayed below the field
   final String? helperText;
-  
+
   /// Error text (overrides helperText when present)
   final String? errorText;
-  
+
   /// Prefix icon
   final IconData? prefixIcon;
-  
+
   /// Suffix icon
   final Widget? suffixIcon;
-  
+
   /// Keyboard type
   final TextInputType? keyboardType;
-  
+
   /// Text input action
   final TextInputAction? textInputAction;
-  
+
   /// Whether the field is obscured (for passwords)
   final bool obscureText;
-  
+
   /// Whether the field is enabled
   final bool enabled;
-  
+
   /// Whether the field is read-only
   final bool readOnly;
-  
+
   /// Auto-focus on mount
   final bool autofocus;
-  
+
   /// Maximum lines
   final int maxLines;
-  
+
   /// Minimum lines
   final int? minLines;
-  
+
   /// Maximum length
   final int? maxLength;
-  
+
   /// Input formatters
   final List<TextInputFormatter>? inputFormatters;
-  
+
   /// Validation function
   final String? Function(String?)? validator;
-  
+
   /// On changed callback
   final void Function(String)? onChanged;
-  
+
   /// On submitted callback
   final void Function(String)? onSubmitted;
-  
+
   /// On tap callback
   final VoidCallback? onTap;
-  
+
   /// Focus node
   final FocusNode? focusNode;
-  
+
   /// Auto-validate mode
   final AutovalidateMode? autovalidateMode;
-  
+
   /// Text capitalization
   final TextCapitalization textCapitalization;
-  
+
   /// Content padding
   final EdgeInsetsGeometry? contentPadding;
-  
+
   /// Fill color
   final Color? fillColor;
-  
+
   /// Whether to show counter
   final bool showCounter;
 
@@ -151,10 +151,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       onTap: widget.onTap,
       autovalidateMode: widget.autovalidateMode,
       textCapitalization: widget.textCapitalization,
-      style: const TextStyle(
-        fontSize: 16,
-        color: AppColors.textPrimary,
-      ),
+      style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hintText,
@@ -162,7 +159,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
         errorText: widget.errorText,
         filled: true,
         fillColor: widget.fillColor ?? AppColors.surface,
-        contentPadding: widget.contentPadding ??
+        contentPadding:
+            widget.contentPadding ??
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         counterText: widget.showCounter ? null : '',
         prefixIcon: widget.prefixIcon != null

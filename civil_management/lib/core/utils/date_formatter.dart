@@ -18,13 +18,19 @@ class DateFormatter {
   static final DateFormat _timeFormat = DateFormat(AppConstants.timeFormat);
 
   /// Date and time format: dd/MM/yyyy HH:mm
-  static final DateFormat _dateTimeFormat = DateFormat(AppConstants.dateTimeFormat);
+  static final DateFormat _dateTimeFormat = DateFormat(
+    AppConstants.dateTimeFormat,
+  );
 
   /// API date format: yyyy-MM-dd
-  static final DateFormat _apiDateFormat = DateFormat(AppConstants.apiDateFormat);
+  static final DateFormat _apiDateFormat = DateFormat(
+    AppConstants.apiDateFormat,
+  );
 
   /// Display date format: MMM dd, yyyy
-  static final DateFormat _displayDateFormat = DateFormat(AppConstants.displayDateFormat);
+  static final DateFormat _displayDateFormat = DateFormat(
+    AppConstants.displayDateFormat,
+  );
 
   /// Day and month format: dd MMM
   static final DateFormat _dayMonthFormat = DateFormat('dd MMM');
@@ -311,10 +317,7 @@ class DateFormatter {
   /// Get list of dates between two dates
   static List<DateTime> getDateRange(DateTime start, DateTime end) {
     final days = daysBetween(start, end);
-    return List.generate(
-      days + 1,
-      (index) => start.add(Duration(days: index)),
-    );
+    return List.generate(days + 1, (index) => start.add(Duration(days: index)));
   }
 
   /// Format duration to readable string
@@ -334,23 +337,23 @@ class DateFormatter {
   /// Smart date display (Today, Yesterday, or date)
   static String formatSmart(DateTime? date) {
     if (date == null) return '-';
-    
+
     if (isToday(date)) {
       return 'Today, ${formatTime(date)}';
     }
-    
+
     if (isYesterday(date)) {
       return 'Yesterday, ${formatTime(date)}';
     }
-    
+
     if (isTomorrow(date)) {
       return 'Tomorrow, ${formatTime(date)}';
     }
-    
+
     if (isThisWeek(date)) {
       return DateFormat('EEEE, HH:mm').format(date);
     }
-    
+
     return formatDisplay(date);
   }
 }

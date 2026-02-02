@@ -11,10 +11,12 @@ class ProjectOperationsScreen extends ConsumerStatefulWidget {
   const ProjectOperationsScreen({super.key, required this.projectId});
 
   @override
-  ConsumerState<ProjectOperationsScreen> createState() => _ProjectOperationsScreenState();
+  ConsumerState<ProjectOperationsScreen> createState() =>
+      _ProjectOperationsScreenState();
 }
 
-class _ProjectOperationsScreenState extends ConsumerState<ProjectOperationsScreen>
+class _ProjectOperationsScreenState
+    extends ConsumerState<ProjectOperationsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -57,10 +59,7 @@ class _ProjectOperationsScreenState extends ConsumerState<ProjectOperationsScree
             ),
             Text(
               'Skyline Towers / Operations',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
           ],
         ),
@@ -168,13 +167,19 @@ class _MaterialsTabState extends State<_MaterialsTab> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => _showLogMaterialSheet(context, widget.projectId, _showReceived),
+                  onPressed: () => _showLogMaterialSheet(
+                    context,
+                    widget.projectId,
+                    _showReceived,
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: Text(_showReceived ? 'Save Material Entry' : 'Log Consumption'),
+                  child: Text(
+                    _showReceived ? 'Save Material Entry' : 'Log Consumption',
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -274,10 +279,7 @@ class _MaterialItem extends StatelessWidget {
               ),
               Text(
                 unit,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -287,7 +289,11 @@ class _MaterialItem extends StatelessWidget {
   }
 }
 
-void _showLogMaterialSheet(BuildContext context, String projectId, bool isReceived) {
+void _showLogMaterialSheet(
+  BuildContext context,
+  String projectId,
+  bool isReceived,
+) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -309,9 +315,9 @@ void _showLogMaterialSheet(BuildContext context, String projectId, bool isReceiv
             children: [
               Text(
                 isReceived ? 'Log Materials' : 'Log Consumption',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               IconButton(
@@ -380,7 +386,10 @@ class _FormField extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: AppColors.border),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
             ),
           ),
         ],
@@ -494,7 +503,13 @@ class _MachineryItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(date, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(
+                  date,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -539,9 +554,9 @@ void _showLogMachinerySheet(BuildContext context) {
             children: [
               Text(
                 'Log Machinery',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               IconButton(
@@ -559,9 +574,13 @@ void _showLogMachinerySheet(BuildContext context) {
           _FormField(label: 'Work Activity', hint: 'Enter description'),
           Row(
             children: [
-              Expanded(child: _FormField(label: 'Start Time', hint: '09:00')),
+              Expanded(
+                child: _FormField(label: 'Start Time', hint: '09:00'),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _FormField(label: 'End Time', hint: '18:00')),
+              Expanded(
+                child: _FormField(label: 'End Time', hint: '18:00'),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -598,7 +617,10 @@ class _LaborTab extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.85)],
+              colors: [
+                AppColors.primary,
+                AppColors.primary.withValues(alpha: 0.85),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -736,10 +758,7 @@ class _LaborItem extends StatelessWidget {
             backgroundColor: color.withValues(alpha: 0.1),
             child: Text(
               name[0].toUpperCase(),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: color),
             ),
           ),
           const SizedBox(width: 12),
@@ -748,7 +767,13 @@ class _LaborItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(role, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(
+                  role,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -797,9 +822,9 @@ void _showLogLaborSheet(BuildContext context) {
             children: [
               Text(
                 'Log Labor',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               IconButton(
@@ -815,13 +840,24 @@ void _showLogLaborSheet(BuildContext context) {
           const SizedBox(height: 20),
           _FormField(label: 'Contractor / Head', hint: 'Select contractor'),
           const SizedBox(height: 12),
-          Text('Worker Count', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+          Text(
+            'Worker Count',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
               _CounterChip(icon: Icons.person, label: 'Skilled', count: 0),
               const SizedBox(width: 12),
-              _CounterChip(icon: Icons.person_outline, label: 'Unskilled', count: 0),
+              _CounterChip(
+                icon: Icons.person_outline,
+                label: 'Unskilled',
+                count: 0,
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -872,10 +908,7 @@ class _CounterChip extends StatelessWidget {
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
             ),
-            Text(
-              '$count',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('$count', style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),

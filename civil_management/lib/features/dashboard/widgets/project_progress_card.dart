@@ -7,11 +7,7 @@ class ProjectProgressCard extends StatelessWidget {
   final ProjectSummary project;
   final VoidCallback? onTap;
 
-  const ProjectProgressCard({
-    super.key,
-    required this.project,
-    this.onTap,
-  });
+  const ProjectProgressCard({super.key, required this.project, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +15,7 @@ class ProjectProgressCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: AppColors.border.withValues(alpha: 0.5),
-        ),
+        side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -48,7 +42,7 @@ class ProjectProgressCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              
+
               // Progress bar
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
@@ -62,7 +56,7 @@ class ProjectProgressCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              
+
               // Progress text and days remaining
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -85,7 +79,7 @@ class ProjectProgressCard extends StatelessWidget {
                     ),
                 ],
               ),
-              
+
               // Location
               if (project.location != null) ...[
                 const SizedBox(height: 8),
@@ -227,9 +221,9 @@ class ProjectProgressList extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         'No active projects',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: AppColors.textSecondary,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
       ),
     );
   }

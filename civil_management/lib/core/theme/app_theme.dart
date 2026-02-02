@@ -99,18 +99,12 @@ class AppTheme {
           horizontal: 16,
           vertical: 16,
         ),
-        hintStyle: GoogleFonts.inter(
-          color: AppColors.textHint,
-          fontSize: 14,
-        ),
+        hintStyle: GoogleFonts.inter(color: AppColors.textHint, fontSize: 14),
         labelStyle: GoogleFonts.inter(
           color: AppColors.textSecondary,
           fontSize: 14,
         ),
-        errorStyle: GoogleFonts.inter(
-          color: AppColors.error,
-          fontSize: 12,
-        ),
+        errorStyle: GoogleFonts.inter(color: AppColors.error, fontSize: 12),
       ),
 
       // Elevated Button
@@ -235,7 +229,9 @@ class AppTheme {
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: AppColors.surface,
         selectedIconTheme: const IconThemeData(color: AppColors.primary),
-        unselectedIconTheme: const IconThemeData(color: AppColors.textSecondary),
+        unselectedIconTheme: const IconThemeData(
+          color: AppColors.textSecondary,
+        ),
         selectedLabelTextStyle: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -345,7 +341,7 @@ class AppTheme {
 
       // Text Theme (using Google Fonts)
       textTheme: AppTextStyles.textTheme,
-      
+
       // Primary Text Theme
       primaryTextTheme: AppTextStyles.textTheme,
     );
@@ -406,10 +402,7 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: darkSurfaceVariant,
-        hintStyle: GoogleFonts.inter(
-          color: darkTextSecondary,
-          fontSize: 14,
-        ),
+        hintStyle: GoogleFonts.inter(color: darkTextSecondary, fontSize: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: darkBorder),

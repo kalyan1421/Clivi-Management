@@ -10,44 +10,50 @@ final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
 });
 
 /// Provider for stock items of a project
-final stockItemsProvider = FutureProvider.family<List<StockItemModel>, String>(
-  (ref, projectId) async {
-    final repository = ref.watch(inventoryRepositoryProvider);
-    return repository.getStockItems(projectId);
-  },
-);
+final stockItemsProvider = FutureProvider.family<List<StockItemModel>, String>((
+  ref,
+  projectId,
+) async {
+  final repository = ref.watch(inventoryRepositoryProvider);
+  return repository.getStockItems(projectId);
+});
 
 /// Provider for material logs of a project
-final materialLogsProvider = FutureProvider.family<List<MaterialLogModel>, String>(
-  (ref, projectId) async {
-    final repository = ref.watch(inventoryRepositoryProvider);
-    return repository.getMaterialLogs(projectId);
-  },
-);
+final materialLogsProvider =
+    FutureProvider.family<List<MaterialLogModel>, String>((
+      ref,
+      projectId,
+    ) async {
+      final repository = ref.watch(inventoryRepositoryProvider);
+      return repository.getMaterialLogs(projectId);
+    });
 
 /// Provider for inward logs only
-final inwardLogsProvider = FutureProvider.family<List<MaterialLogModel>, String>(
-  (ref, projectId) async {
-    final repository = ref.watch(inventoryRepositoryProvider);
-    return repository.getMaterialLogs(projectId, type: LogType.inward);
-  },
-);
+final inwardLogsProvider =
+    FutureProvider.family<List<MaterialLogModel>, String>((
+      ref,
+      projectId,
+    ) async {
+      final repository = ref.watch(inventoryRepositoryProvider);
+      return repository.getMaterialLogs(projectId, type: LogType.inward);
+    });
 
 /// Provider for outward logs only
-final outwardLogsProvider = FutureProvider.family<List<MaterialLogModel>, String>(
-  (ref, projectId) async {
-    final repository = ref.watch(inventoryRepositoryProvider);
-    return repository.getMaterialLogs(projectId, type: LogType.outward);
-  },
-);
+final outwardLogsProvider =
+    FutureProvider.family<List<MaterialLogModel>, String>((
+      ref,
+      projectId,
+    ) async {
+      final repository = ref.watch(inventoryRepositoryProvider);
+      return repository.getMaterialLogs(projectId, type: LogType.outward);
+    });
 
 /// Provider for low stock alerts
-final lowStockItemsProvider = FutureProvider.family<List<StockItemModel>, String>(
-  (ref, projectId) async {
-    final repository = ref.watch(inventoryRepositoryProvider);
-    return repository.getLowStockItems(projectId);
-  },
-);
+final lowStockItemsProvider =
+    FutureProvider.family<List<StockItemModel>, String>((ref, projectId) async {
+      final repository = ref.watch(inventoryRepositoryProvider);
+      return repository.getLowStockItems(projectId);
+    });
 
 /// Provider for all active suppliers
 final suppliersProvider = FutureProvider<List<SupplierModel>>((ref) async {

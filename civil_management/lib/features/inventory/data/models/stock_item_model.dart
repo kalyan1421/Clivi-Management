@@ -55,7 +55,7 @@ class StockItemModel {
     };
   }
 
-  bool get isLowStock => 
+  bool get isLowStock =>
       lowStockThreshold != null && quantity <= lowStockThreshold!;
 
   Color get stockStatusColor {
@@ -89,5 +89,6 @@ class StockItemModel {
   }
 
   @override
-  String toString() => 'StockItemModel(id: $id, name: $name, qty: $quantity $unit)';
+  String toString() =>
+      'StockItemModel(id: $id, name: $name, qty: $quantity $unit)';
 }

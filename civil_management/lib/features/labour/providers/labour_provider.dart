@@ -9,42 +9,47 @@ final labourRepositoryProvider = Provider<LabourRepository>((ref) {
 });
 
 /// Labour list for a project
-final projectLabourProvider = FutureProvider.family<List<LabourModel>, String>(
-  (ref, projectId) async {
-    final repo = ref.watch(labourRepositoryProvider);
-    return repo.getLabourByProject(projectId);
-  },
-);
+final projectLabourProvider = FutureProvider.family<List<LabourModel>, String>((
+  ref,
+  projectId,
+) async {
+  final repo = ref.watch(labourRepositoryProvider);
+  return repo.getLabourByProject(projectId);
+});
 
 /// Active labour for a project
-final activeLabourProvider = FutureProvider.family<List<LabourModel>, String>(
-  (ref, projectId) async {
-    final repo = ref.watch(labourRepositoryProvider);
-    return repo.getActiveLabourByProject(projectId);
-  },
-);
+final activeLabourProvider = FutureProvider.family<List<LabourModel>, String>((
+  ref,
+  projectId,
+) async {
+  final repo = ref.watch(labourRepositoryProvider);
+  return repo.getActiveLabourByProject(projectId);
+});
 
 /// Attendance for a specific date
-final attendanceByDateProvider = FutureProvider.family<List<LabourAttendanceModel>, ({String projectId, DateTime date})>(
-  (ref, params) async {
-    final repo = ref.watch(labourRepositoryProvider);
-    return repo.getAttendanceByDate(params.projectId, params.date);
-  },
-);
+final attendanceByDateProvider =
+    FutureProvider.family<
+      List<LabourAttendanceModel>,
+      ({String projectId, DateTime date})
+    >((ref, params) async {
+      final repo = ref.watch(labourRepositoryProvider);
+      return repo.getAttendanceByDate(params.projectId, params.date);
+    });
 
 /// Labour with attendance status for marking
-final labourWithAttendanceProvider = FutureProvider.family<List<Map<String, dynamic>>, ({String projectId, DateTime date})>(
-  (ref, params) async {
-    final repo = ref.watch(labourRepositoryProvider);
-    return repo.getLabourWithAttendance(params.projectId, params.date);
-  },
-);
+final labourWithAttendanceProvider =
+    FutureProvider.family<
+      List<Map<String, dynamic>>,
+      ({String projectId, DateTime date})
+    >((ref, params) async {
+      final repo = ref.watch(labourRepositoryProvider);
+      return repo.getLabourWithAttendance(params.projectId, params.date);
+    });
 
 /// Today's attendance summary
-final todayAttendanceSummaryProvider = FutureProvider.family<Map<String, dynamic>, String>(
-  (ref, projectId) async {
-    final repo = ref.watch(labourRepositoryProvider);
-    final today = DateTime.now();
-    return repo.getAttendanceSummary(projectId, today, today);
-  },
-);
+final todayAttendanceSummaryProvider =
+    FutureProvider.family<Map<String, dynamic>, String>((ref, projectId) async {
+      final repo = ref.watch(labourRepositoryProvider);
+      final today = DateTime.now();
+      return repo.getAttendanceSummary(projectId, today, today);
+    });

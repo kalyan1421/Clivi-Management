@@ -127,7 +127,9 @@ class BlueprintRepository {
         await _client.storage.from('blueprints').remove([filePath]);
       } catch (cleanupError) {
         // Log cleanup failure for monitoring orphaned files
-        logger.w('Failed to cleanup uploaded file after DB error: $cleanupError');
+        logger.w(
+          'Failed to cleanup uploaded file after DB error: $cleanupError',
+        );
       }
       logger.e('Failed to create blueprint record: ${e.message}');
       throw DatabaseException.fromPostgrest(e);

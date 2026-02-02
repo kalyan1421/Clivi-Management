@@ -60,7 +60,8 @@ class _BlueprintViewerScreenState extends State<BlueprintViewerScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(widget.blueprint.fileName)),
+        title: Text(widget.blueprint.fileName),
+      ),
       body: _buildBody(isPdf),
     );
   }
@@ -77,12 +78,12 @@ class _BlueprintViewerScreenState extends State<BlueprintViewerScreen> {
           children: [
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Failed to load file', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _loadSignedUrl,
-              child: const Text('Retry'),
+            Text(
+              'Failed to load file',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
+            const SizedBox(height: 8),
+            TextButton(onPressed: _loadSignedUrl, child: const Text('Retry')),
           ],
         ),
       );
@@ -124,4 +125,3 @@ class _BlueprintViewerScreenState extends State<BlueprintViewerScreen> {
     );
   }
 }
-

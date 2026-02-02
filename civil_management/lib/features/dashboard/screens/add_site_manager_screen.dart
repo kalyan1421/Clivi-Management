@@ -12,7 +12,8 @@ class AddSiteManagerScreen extends ConsumerStatefulWidget {
   const AddSiteManagerScreen({super.key});
 
   @override
-  ConsumerState<AddSiteManagerScreen> createState() => _AddSiteManagerScreenState();
+  ConsumerState<AddSiteManagerScreen> createState() =>
+      _AddSiteManagerScreenState();
 }
 
 class _AddSiteManagerScreenState extends ConsumerState<AddSiteManagerScreen> {
@@ -46,14 +47,16 @@ class _AddSiteManagerScreenState extends ConsumerState<AddSiteManagerScreen> {
     });
 
     try {
-      await ref.read(authProvider.notifier).createSiteManager(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        fullName: _fullNameController.text.trim(),
-        phone: _phoneController.text.trim().isNotEmpty 
-            ? _phoneController.text.trim() 
-            : null,
-      );
+      await ref
+          .read(authProvider.notifier)
+          .createSiteManager(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            fullName: _fullNameController.text.trim(),
+            phone: _phoneController.text.trim().isNotEmpty
+                ? _phoneController.text.trim()
+                : null,
+          );
 
       if (!mounted) return;
 
@@ -131,16 +134,14 @@ class _AddSiteManagerScreenState extends ConsumerState<AddSiteManagerScreen> {
                           children: [
                             Text(
                               'New Site Manager',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Fill in the details below to create a new site manager account.',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.textSecondary),
                             ),
                           ],
                         ),
@@ -217,7 +218,9 @@ class _AddSiteManagerScreenState extends ConsumerState<AddSiteManagerScreen> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                        _isPasswordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
                       onPressed: () {
                         setState(() {
@@ -260,7 +263,8 @@ class _AddSiteManagerScreenState extends ConsumerState<AddSiteManagerScreen> {
                       ),
                       onPressed: () {
                         setState(() {
-                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                          _isConfirmPasswordVisible =
+                              !_isConfirmPasswordVisible;
                         });
                       },
                     ),
@@ -289,7 +293,8 @@ class _AddSiteManagerScreenState extends ConsumerState<AddSiteManagerScreen> {
                     children: [
                       Text(
                         'Password Requirements:',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.info,
                             ),
@@ -331,10 +336,9 @@ class _AddSiteManagerScreenState extends ConsumerState<AddSiteManagerScreen> {
           const SizedBox(width: 8),
           Text(
             text,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: AppColors.textSecondary),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),

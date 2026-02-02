@@ -25,7 +25,8 @@ class BlueprintsFoldersScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('Blueprints: ${project.name}')),
+        title: Text('Blueprints: ${project.name}'),
+      ),
       body: foldersAsync.when(
         loading: () => const LoadingWidget(),
         error: (err, stack) => AppErrorWidget(

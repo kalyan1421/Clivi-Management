@@ -6,7 +6,9 @@ import '../../../features/auth/data/models/user_profile_model.dart';
 import '../../../features/auth/providers/auth_repository_provider.dart';
 
 /// Provider to fetch all site managers
-final siteManagersProvider = FutureProvider<List<UserProfileModel>>((ref) async {
+final siteManagersProvider = FutureProvider<List<UserProfileModel>>((
+  ref,
+) async {
   final repository = ref.watch(authRepositoryProvider);
   return repository.getUsersByRole('site_manager');
 });
@@ -57,15 +59,15 @@ class SiteManagerManagementScreen extends ConsumerWidget {
                   Text(
                     'No Site Managers Yet',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Tap the button below to add your first site manager',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -108,8 +110,8 @@ class SiteManagerManagementScreen extends ConsumerWidget {
                     title: Text(
                       manager.fullName ?? 'Unknown',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,10 +129,10 @@ class SiteManagerManagementScreen extends ConsumerWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   manager.phone!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(color: AppColors.textSecondary),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
                                 ),
                               ],
                             ),
@@ -140,9 +142,7 @@ class SiteManagerManagementScreen extends ConsumerWidget {
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               'Added ${_formatDate(manager.createdAt!)}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
+                              style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: AppColors.textSecondary),
                             ),
                           ),
@@ -160,9 +160,9 @@ class SiteManagerManagementScreen extends ConsumerWidget {
                       child: Text(
                         'Site Manager',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.siteManager,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: AppColors.siteManager,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -185,10 +185,9 @@ class SiteManagerManagementScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               Text(
                 error.toString(),
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),

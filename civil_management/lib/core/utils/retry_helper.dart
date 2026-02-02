@@ -13,39 +13,39 @@ class RetryHelper {
     bool Function(Exception)? retryIf,
   }) async {
     int attempt = 0;
-    
+
     while (true) {
       try {
         attempt++;
         return await operation();
       } on Exception catch (e) {
         final shouldRetry = retryIf?.call(e) ?? _isRetryable(e);
-        
+
         if (attempt >= maxAttempts || !shouldRetry) {
           logger.w('Retry exhausted after $attempt attempts: $e');
           rethrow;
         }
-        
+
         // Exponential backoff with jitter
         final baseDelay = initialDelay * pow(2, attempt - 1);
-        final jitter = Duration(
-          milliseconds: Random().nextInt(500),
-        );
+        final jitter = Duration(milliseconds: Random().nextInt(500));
         final delay = baseDelay + jitter;
         final cappedDelay = delay > maxDelay ? maxDelay : delay;
-        
-        logger.i('Retry attempt $attempt/$maxAttempts after ${cappedDelay.inMilliseconds}ms');
+
+        logger.i(
+          'Retry attempt $attempt/$maxAttempts after ${cappedDelay.inMilliseconds}ms',
+        );
         await Future.delayed(cappedDelay);
       }
     }
   }
 
   /// Retry with a condition check (useful for waiting on async processes)
-  /// 
+  ///
   /// [operation] - The async function that returns a result
   /// [condition] - Function to check if result is acceptable
   /// [maxAttempts] - Maximum number of attempts
-  /// 
+  ///
   /// Returns the result when condition is met, or null if all attempts fail
   static Future<T?> retryUntil<T>(
     Future<T?> Function() operation,
@@ -64,7 +64,7 @@ class RetryHelper {
           logger.d('retryUntil succeeded on attempt $attempt');
           return result;
         }
-        
+
         if (attempt >= maxAttempts) {
           logger.w('retryUntil condition not met after $maxAttempts attempts');
           return result; // Return last result even if condition not met
@@ -83,7 +83,9 @@ class RetryHelper {
           maxDelay.inMilliseconds,
         ),
       );
-      logger.d('retryUntil waiting ${delay.inMilliseconds}ms before attempt ${attempt + 1}/$maxAttempts');
+      logger.d(
+        'retryUntil waiting ${delay.inMilliseconds}ms before attempt ${attempt + 1}/$maxAttempts',
+      );
       await Future.delayed(delay);
     }
 
@@ -104,4 +106,3 @@ class RetryHelper {
         msg.contains('unavailable');
   }
 }
-

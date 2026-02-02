@@ -47,7 +47,8 @@ class DashboardStatsState {
 class DashboardStatsNotifier extends StateNotifier<DashboardStatsState> {
   final DashboardRepository _repository;
 
-  DashboardStatsNotifier(this._repository) : super(const DashboardStatsState()) {
+  DashboardStatsNotifier(this._repository)
+    : super(const DashboardStatsState()) {
     _loadCachedStats();
     fetchStats();
   }
@@ -105,9 +106,9 @@ class DashboardStatsNotifier extends StateNotifier<DashboardStatsState> {
 /// Dashboard stats provider
 final dashboardStatsProvider =
     StateNotifierProvider<DashboardStatsNotifier, DashboardStatsState>((ref) {
-  final repository = ref.watch(dashboardRepositoryProvider);
-  return DashboardStatsNotifier(repository);
-});
+      final repository = ref.watch(dashboardRepositoryProvider);
+      return DashboardStatsNotifier(repository);
+    });
 
 /// Recent activity state
 class RecentActivityState {
@@ -144,7 +145,8 @@ class RecentActivityNotifier extends StateNotifier<RecentActivityState> {
   final DashboardRepository _repository;
   static const int _pageSize = 10;
 
-  RecentActivityNotifier(this._repository) : super(const RecentActivityState()) {
+  RecentActivityNotifier(this._repository)
+    : super(const RecentActivityState()) {
     fetchActivity();
   }
 
@@ -161,10 +163,7 @@ class RecentActivityNotifier extends StateNotifier<RecentActivityState> {
       );
     } catch (e) {
       logger.e('Failed to fetch activity: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -198,9 +197,9 @@ class RecentActivityNotifier extends StateNotifier<RecentActivityState> {
 /// Recent activity provider
 final recentActivityProvider =
     StateNotifierProvider<RecentActivityNotifier, RecentActivityState>((ref) {
-  final repository = ref.watch(dashboardRepositoryProvider);
-  return RecentActivityNotifier(repository);
-});
+      final repository = ref.watch(dashboardRepositoryProvider);
+      return RecentActivityNotifier(repository);
+    });
 
 /// Active projects state
 class ActiveProjectsState {
@@ -232,7 +231,8 @@ class ActiveProjectsState {
 class ActiveProjectsNotifier extends StateNotifier<ActiveProjectsState> {
   final DashboardRepository _repository;
 
-  ActiveProjectsNotifier(this._repository) : super(const ActiveProjectsState()) {
+  ActiveProjectsNotifier(this._repository)
+    : super(const ActiveProjectsState()) {
     fetchProjects();
   }
 
@@ -242,16 +242,10 @@ class ActiveProjectsNotifier extends StateNotifier<ActiveProjectsState> {
 
     try {
       final projects = await _repository.getActiveProjectsSummary();
-      state = state.copyWith(
-        projects: projects,
-        isLoading: false,
-      );
+      state = state.copyWith(projects: projects, isLoading: false);
     } catch (e) {
       logger.e('Failed to fetch active projects: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -262,9 +256,9 @@ class ActiveProjectsNotifier extends StateNotifier<ActiveProjectsState> {
 /// Active projects provider
 final activeProjectsProvider =
     StateNotifierProvider<ActiveProjectsNotifier, ActiveProjectsState>((ref) {
-  final repository = ref.watch(dashboardRepositoryProvider);
-  return ActiveProjectsNotifier(repository);
-});
+      final repository = ref.watch(dashboardRepositoryProvider);
+      return ActiveProjectsNotifier(repository);
+    });
 
 /// Convenience providers
 final dashboardStatsValueProvider = Provider<DashboardStats>((ref) {

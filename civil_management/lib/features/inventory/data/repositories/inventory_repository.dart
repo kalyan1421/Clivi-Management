@@ -145,7 +145,9 @@ class InventoryRepository {
           .update({'quantity': newQty})
           .eq('id', log.itemId);
 
-      logger.i('Material log added: ${log.logType.displayName} ${log.quantity}');
+      logger.i(
+        'Material log added: ${log.logType.displayName} ${log.quantity}',
+      );
       return MaterialLogModel.fromJson(response);
     } on PostgrestException catch (e) {
       logger.e('Failed to add material log: ${e.message}');
@@ -185,7 +187,11 @@ class InventoryRepository {
   Future<List<SupplierModel>> getSuppliers({bool activeOnly = true}) async {
     try {
       final query = activeOnly
-          ? _client.from('suppliers').select().eq('is_active', true).order('name')
+          ? _client
+                .from('suppliers')
+                .select()
+                .eq('is_active', true)
+                .order('name')
           : _client.from('suppliers').select().order('name');
       final response = await query;
       return (response as List)
@@ -213,12 +219,12 @@ class InventoryRepository {
   }
 
   /// Update a supplier
-  Future<void> updateSupplier(String supplierId, Map<String, dynamic> data) async {
+  Future<void> updateSupplier(
+    String supplierId,
+    Map<String, dynamic> data,
+  ) async {
     try {
-      await _client
-          .from('suppliers')
-          .update(data)
-          .eq('id', supplierId);
+      await _client.from('suppliers').update(data).eq('id', supplierId);
     } on PostgrestException catch (e) {
       logger.e('Failed to update supplier: ${e.message}');
       throw DatabaseException.fromPostgrest(e);

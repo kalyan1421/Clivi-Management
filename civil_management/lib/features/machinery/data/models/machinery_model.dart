@@ -1,0 +1,3 @@
+class MachineryModel {
+  // Placeholder
+}

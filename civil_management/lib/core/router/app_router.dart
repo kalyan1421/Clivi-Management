@@ -158,7 +158,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               if (project == null) {
                 return const Scaffold(
                   body: Center(
-                    child: Text('Error: Project data not provided. Please navigate from the project detail page.'),
+                    child: Text(
+                      'Error: Project data not provided. Please navigate from the project detail page.',
+                    ),
                   ),
                 );
               }
@@ -185,7 +187,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                   if (blueprint == null) {
                     return const Scaffold(
                       body: Center(
-                        child: Text('Error: Blueprint data not provided. Please navigate from the files list.'),
+                        child: Text(
+                          'Error: Blueprint data not provided. Please navigate from the files list.',
+                        ),
                       ),
                     );
                   }
@@ -252,8 +256,57 @@ final routerProvider = Provider<GoRouter>((ref) {
               final projectId = state.pathParameters['id']!;
               return ProjectOperationsScreen(projectId: projectId);
             },
+            routes: [
+              GoRoute(
+                path: 'materials',
+                name: 'project-materials',
+                builder: (context, state) => const Placeholder(), // MaterialsTabScreen
+              ),
+              GoRoute(
+                path: 'machinery',
+                name: 'project-machinery',
+                builder: (context, state) => const Placeholder(), // MachineryTabScreen
+              ),
+              GoRoute(
+                path: 'labour',
+                name: 'project-labour-tab',
+                builder: (context, state) => const Placeholder(), // LabourTabScreen
+              ),
+            ],
           ),
-          // Reports Route (placeholder)
+          // Materials Routes
+          GoRoute(
+            path: 'materials/receive',
+            name: 'material-receive',
+            builder: (context, state) => const Placeholder(), // MaterialReceiveScreen
+          ),
+          GoRoute(
+            path: 'materials/consume',
+            name: 'material-consume',
+            builder: (context, state) => const Placeholder(), // MaterialConsumeScreen
+          ),
+          GoRoute(
+             path: 'materials/stock',
+             name: 'material-stock',
+             builder: (context, state) => const Placeholder(), // StockLedgerScreen
+          ),
+          GoRoute(
+             path: 'materials/receipt/:receiptId',
+             name: 'receipt-detail',
+             builder: (context, state) => const Placeholder(), // ReceiptDetailScreen
+          ),
+          // Machinery & Labour Specifics (Logs)
+          GoRoute(
+             path: 'machinery/log',
+             name: 'machinery-log',
+             builder: (context, state) => const Placeholder(), // MachineryLogScreen
+          ),
+          GoRoute(
+             path: 'labour/attendance',
+             name: 'labour-attendance', // Duplicate check with existing?
+             builder: (context, state) => const Placeholder(), // AttendanceLogScreen
+          ),
+          // Reports Route
           GoRoute(
             path: 'reports',
             name: 'project-reports',
@@ -263,6 +316,23 @@ final routerProvider = Provider<GoRouter>((ref) {
                 body: const Center(child: Text('Reports coming soon...')),
               );
             },
+            routes: [
+               GoRoute(
+                 path: 'stock',
+                 name: 'report-stock',
+                 builder: (context, state) => const Placeholder(),
+               ),
+               GoRoute(
+                 path: 'machinery',
+                 name: 'report-machinery',
+                 builder: (context, state) => const Placeholder(),
+               ),
+               GoRoute(
+                 path: 'labour',
+                 name: 'report-labour',
+                 builder: (context, state) => const Placeholder(),
+               ),
+            ],
           ),
         ],
       ),

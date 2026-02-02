@@ -67,7 +67,9 @@ class DatabaseException extends AppException {
       return 'You do not have permission to perform this action';
     }
     // In debug mode, show actual error for debugging; in release show generic message
-    return kDebugMode ? 'Database error: $message' : 'Database operation failed';
+    return kDebugMode
+        ? 'Database error: $message'
+        : 'Database operation failed';
   }
 }
 

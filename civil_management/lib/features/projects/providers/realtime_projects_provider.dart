@@ -40,7 +40,8 @@ class RealtimeProjectEvent {
 
     return RealtimeProjectEvent(
       type: type,
-      projectId: (payload.newRecord['id'] ?? payload.oldRecord['id'])?.toString(),
+      projectId: (payload.newRecord['id'] ?? payload.oldRecord['id'])
+          ?.toString(),
       newRecord: payload.newRecord,
       oldRecord: payload.oldRecord,
     );
@@ -51,20 +52,23 @@ class RealtimeProjectEvent {
 /// Listens to INSERT, UPDATE, DELETE events on projects table
 final realtimeProjectsProvider = StreamProvider<RealtimeProjectEvent>((ref) {
   final controller = StreamController<RealtimeProjectEvent>();
-  
+
   // Subscribe to realtime changes
-  final channel = supabase.channel('projects_realtime')
-    .onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'projects',
-      callback: (payload) {
-        final event = RealtimeProjectEvent.fromPayload(payload);
-        controller.add(event);
-        logger.i('Realtime: ${event.type.name} on project ${event.projectId}');
-      },
-    )
-    .subscribe();
+  final channel = supabase
+      .channel('projects_realtime')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'projects',
+        callback: (payload) {
+          final event = RealtimeProjectEvent.fromPayload(payload);
+          controller.add(event);
+          logger.i(
+            'Realtime: ${event.type.name} on project ${event.projectId}',
+          );
+        },
+      )
+      .subscribe();
 
   ref.onDispose(() {
     channel.unsubscribe();
@@ -75,7 +79,8 @@ final realtimeProjectsProvider = StreamProvider<RealtimeProjectEvent>((ref) {
 });
 
 /// Notifier that handles realtime project updates
-class RealtimeProjectsNotifier extends StateNotifier<AsyncValue<List<ProjectModel>>> {
+class RealtimeProjectsNotifier
+    extends StateNotifier<AsyncValue<List<ProjectModel>>> {
   final Ref _ref;
   StreamSubscription? _subscription;
 
@@ -89,7 +94,7 @@ class RealtimeProjectsNotifier extends StateNotifier<AsyncValue<List<ProjectMode
       final repository = _ref.read(projectRepositoryProvider);
       final projects = await repository.getProjects();
       state = AsyncValue.data(projects);
-      
+
       // Start listening to realtime events
       _listenToRealtimeEvents();
     } catch (e, st) {
@@ -106,7 +111,7 @@ class RealtimeProjectsNotifier extends StateNotifier<AsyncValue<List<ProjectMode
 
   Future<void> _handleEvent(RealtimeProjectEvent event) async {
     final repository = _ref.read(projectRepositoryProvider);
-    
+
     switch (event.type) {
       case RealtimeEventType.insert:
       case RealtimeEventType.update:
@@ -123,7 +128,7 @@ class RealtimeProjectsNotifier extends StateNotifier<AsyncValue<List<ProjectMode
         // Remove the deleted project from current list
         final current = state.valueOrNull ?? [];
         state = AsyncValue.data(
-          current.where((p) => p.id != event.projectId).toList()
+          current.where((p) => p.id != event.projectId).toList(),
         );
         break;
     }
@@ -137,6 +142,10 @@ class RealtimeProjectsNotifier extends StateNotifier<AsyncValue<List<ProjectMode
 }
 
 /// Provider for live projects with realtime updates
-final liveProjectsNotifierProvider = StateNotifierProvider<RealtimeProjectsNotifier, AsyncValue<List<ProjectModel>>>((ref) {
-  return RealtimeProjectsNotifier(ref);
-});
+final liveProjectsNotifierProvider =
+    StateNotifierProvider<
+      RealtimeProjectsNotifier,
+      AsyncValue<List<ProjectModel>>
+    >((ref) {
+      return RealtimeProjectsNotifier(ref);
+    });

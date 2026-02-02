@@ -18,13 +18,13 @@ class Validators {
   /// Validate email address
   static String? email(String? value, {String? fieldName}) {
     final field = fieldName ?? 'Email';
-    
+
     if (value == null || value.trim().isEmpty) {
       return '$field is required';
     }
 
     final trimmed = value.trim();
-    
+
     if (!_emailRegex.hasMatch(trimmed)) {
       return 'Please enter a valid email address';
     }
@@ -89,10 +89,11 @@ class Validators {
   /// Check password strength (returns 0-4)
   static int passwordStrength(String password) {
     int strength = 0;
-    
+
     if (password.length >= 8) strength++;
     if (password.length >= 12) strength++;
-    if (_hasUpperCase.hasMatch(password) && _hasLowerCase.hasMatch(password)) strength++;
+    if (_hasUpperCase.hasMatch(password) && _hasLowerCase.hasMatch(password))
+      strength++;
     if (_hasDigit.hasMatch(password)) strength++;
     if (_hasSpecialChar.hasMatch(password)) strength++;
 
@@ -124,7 +125,7 @@ class Validators {
   /// Validate name (full name, first name, etc.)
   static String? name(String? value, {String? fieldName}) {
     final field = fieldName ?? 'Name';
-    
+
     if (value == null || value.trim().isEmpty) {
       return '$field is required';
     }
@@ -152,9 +153,7 @@ class Validators {
   // ============================================================
 
   /// Indian phone number regex (10 digits, optionally with +91 or 0)
-  static final RegExp _phoneRegex = RegExp(
-    r'^(?:\+91|91|0)?[6-9]\d{9}$',
-  );
+  static final RegExp _phoneRegex = RegExp(r'^(?:\+91|91|0)?[6-9]\d{9}$');
 
   /// Validate phone number
   static String? phone(String? value, {bool required = false}) {
@@ -179,7 +178,7 @@ class Validators {
   /// Validate required field
   static String? required(String? value, {String? fieldName}) {
     final field = fieldName ?? 'This field';
-    
+
     if (value == null || value.trim().isEmpty) {
       return '$field is required';
     }
@@ -190,7 +189,7 @@ class Validators {
   /// Validate required selection (dropdown, etc.)
   static String? requiredSelection<T>(T? value, {String? fieldName}) {
     final field = fieldName ?? 'Selection';
-    
+
     if (value == null) {
       return 'Please select a $field';
     }
@@ -205,13 +204,13 @@ class Validators {
   /// Validate positive number
   static String? positiveNumber(String? value, {String? fieldName}) {
     final field = fieldName ?? 'Value';
-    
+
     if (value == null || value.trim().isEmpty) {
       return '$field is required';
     }
 
     final number = double.tryParse(value.trim());
-    
+
     if (number == null) {
       return 'Please enter a valid number';
     }
@@ -231,13 +230,13 @@ class Validators {
     String? fieldName,
   }) {
     final field = fieldName ?? 'Value';
-    
+
     if (value == null || value.trim().isEmpty) {
       return '$field is required';
     }
 
     final number = double.tryParse(value.trim());
-    
+
     if (number == null) {
       return 'Please enter a valid number';
     }
@@ -250,15 +249,19 @@ class Validators {
   }
 
   /// Validate integer
-  static String? integer(String? value, {String? fieldName, bool required = true}) {
+  static String? integer(
+    String? value, {
+    String? fieldName,
+    bool required = true,
+  }) {
     final field = fieldName ?? 'Value';
-    
+
     if (value == null || value.trim().isEmpty) {
       return required ? '$field is required' : null;
     }
 
     final number = int.tryParse(value.trim());
-    
+
     if (number == null) {
       return 'Please enter a whole number';
     }
@@ -271,18 +274,22 @@ class Validators {
   // ============================================================
 
   /// Validate currency amount
-  static String? currency(String? value, {String? fieldName, bool required = true}) {
+  static String? currency(
+    String? value, {
+    String? fieldName,
+    bool required = true,
+  }) {
     final field = fieldName ?? 'Amount';
-    
+
     if (value == null || value.trim().isEmpty) {
       return required ? '$field is required' : null;
     }
 
     // Remove currency symbol and commas
     final cleaned = value.replaceAll(RegExp(r'[₹,\s]'), '');
-    
+
     final amount = double.tryParse(cleaned);
-    
+
     if (amount == null) {
       return 'Please enter a valid amount';
     }
@@ -301,7 +308,7 @@ class Validators {
   /// Validate date is not empty
   static String? dateRequired(DateTime? value, {String? fieldName}) {
     final field = fieldName ?? 'Date';
-    
+
     if (value == null) {
       return 'Please select a $field';
     }
@@ -312,7 +319,7 @@ class Validators {
   /// Validate date is in the future
   static String? futureDate(DateTime? value, {String? fieldName}) {
     final field = fieldName ?? 'Date';
-    
+
     if (value == null) {
       return 'Please select a $field';
     }
@@ -327,7 +334,7 @@ class Validators {
   /// Validate date is in the past
   static String? pastDate(DateTime? value, {String? fieldName}) {
     final field = fieldName ?? 'Date';
-    
+
     if (value == null) {
       return 'Please select a $field';
     }
@@ -359,7 +366,7 @@ class Validators {
   /// Validate minimum length
   static String? minLength(String? value, int minLen, {String? fieldName}) {
     final field = fieldName ?? 'This field';
-    
+
     if (value == null || value.trim().isEmpty) {
       return '$field is required';
     }
@@ -374,7 +381,7 @@ class Validators {
   /// Validate maximum length
   static String? maxLength(String? value, int maxLen, {String? fieldName}) {
     final field = fieldName ?? 'This field';
-    
+
     if (value != null && value.trim().length > maxLen) {
       return '$field must be less than $maxLen characters';
     }
@@ -396,7 +403,7 @@ class Validators {
     }
 
     final extension = fileName.split('.').last.toLowerCase();
-    
+
     if (!allowedExtensions.contains(extension)) {
       return 'Allowed file types: ${allowedExtensions.join(", ")}';
     }
@@ -405,7 +412,10 @@ class Validators {
   }
 
   /// Validate file size
-  static String? fileSize(int? sizeInBytes, {int maxSize = AppConstants.maxFileSize}) {
+  static String? fileSize(
+    int? sizeInBytes, {
+    int maxSize = AppConstants.maxFileSize,
+  }) {
     if (sizeInBytes == null) {
       return 'Unable to determine file size';
     }
@@ -474,7 +484,7 @@ class Validators {
     }
 
     final upper = value.trim().toUpperCase();
-    
+
     if (!_panRegex.hasMatch(upper)) {
       return 'Please enter a valid PAN number';
     }
@@ -494,7 +504,7 @@ class Validators {
     }
 
     final upper = value.trim().toUpperCase();
-    
+
     if (!_gstRegex.hasMatch(upper)) {
       return 'Please enter a valid GST number';
     }

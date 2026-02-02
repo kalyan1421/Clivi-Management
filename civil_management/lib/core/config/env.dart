@@ -63,21 +63,27 @@ class Env {
     try {
       final url = dotenv.env['SUPABASE_URL'];
       final key = dotenv.env['SUPABASE_ANON_KEY'];
-      
+
       if (kDebugMode) {
-        print('ENV Validate: SUPABASE_URL = ${url != null ? "present (${url.length} chars)" : "MISSING"}');
-        print('ENV Validate: SUPABASE_ANON_KEY = ${key != null ? "present (${key.length} chars)" : "MISSING"}');
+        print(
+          'ENV Validate: SUPABASE_URL = ${url != null ? "present (${url.length} chars)" : "MISSING"}',
+        );
+        print(
+          'ENV Validate: SUPABASE_ANON_KEY = ${key != null ? "present (${key.length} chars)" : "MISSING"}',
+        );
       }
-      
+
       if (url == null || url.isEmpty) {
-        if (kDebugMode) print('ENV Validate: FAILED - SUPABASE_URL missing or empty');
+        if (kDebugMode)
+          print('ENV Validate: FAILED - SUPABASE_URL missing or empty');
         return false;
       }
       if (key == null || key.isEmpty) {
-        if (kDebugMode) print('ENV Validate: FAILED - SUPABASE_ANON_KEY missing or empty');
+        if (kDebugMode)
+          print('ENV Validate: FAILED - SUPABASE_ANON_KEY missing or empty');
         return false;
       }
-      
+
       if (kDebugMode) print('ENV Validate: SUCCESS');
       return true;
     } catch (e) {

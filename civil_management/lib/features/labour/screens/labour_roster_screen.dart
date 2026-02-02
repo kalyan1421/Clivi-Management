@@ -73,10 +73,18 @@ class LabourRosterScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLabourList(BuildContext context, WidgetRef ref, List<LabourModel> labourList) {
+  Widget _buildLabourList(
+    BuildContext context,
+    WidgetRef ref,
+    List<LabourModel> labourList,
+  ) {
     // Separate active and inactive
-    final active = labourList.where((l) => l.status == LabourStatus.active).toList();
-    final inactive = labourList.where((l) => l.status == LabourStatus.inactive).toList();
+    final active = labourList
+        .where((l) => l.status == LabourStatus.active)
+        .toList();
+    final inactive = labourList
+        .where((l) => l.status == LabourStatus.inactive)
+        .toList();
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -96,15 +104,17 @@ class LabourRosterScreen extends ConsumerWidget {
           if (active.isNotEmpty) ...[
             Text(
               'Active Workers (${active.length})',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ...active.map((labour) => _LabourCard(
-              labour: labour,
-              onToggleStatus: () => _toggleStatus(ref, labour),
-            )),
+            ...active.map(
+              (labour) => _LabourCard(
+                labour: labour,
+                onToggleStatus: () => _toggleStatus(ref, labour),
+              ),
+            ),
           ],
 
           // Inactive workers
@@ -118,10 +128,12 @@ class LabourRosterScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ...inactive.map((labour) => _LabourCard(
-              labour: labour,
-              onToggleStatus: () => _toggleStatus(ref, labour),
-            )),
+            ...inactive.map(
+              (labour) => _LabourCard(
+                labour: labour,
+                onToggleStatus: () => _toggleStatus(ref, labour),
+              ),
+            ),
           ],
         ],
       ),
@@ -156,10 +168,7 @@ class _SummaryCard extends StatelessWidget {
   final int totalWorkers;
   final int activeWorkers;
 
-  const _SummaryCard({
-    required this.totalWorkers,
-    required this.activeWorkers,
-  });
+  const _SummaryCard({required this.totalWorkers, required this.activeWorkers});
 
   @override
   Widget build(BuildContext context) {
@@ -230,10 +239,7 @@ class _LabourCard extends StatelessWidget {
   final LabourModel labour;
   final VoidCallback onToggleStatus;
 
-  const _LabourCard({
-    required this.labour,
-    required this.onToggleStatus,
-  });
+  const _LabourCard({required this.labour, required this.onToggleStatus});
 
   @override
   Widget build(BuildContext context) {
@@ -278,9 +284,11 @@ class _LabourCard extends StatelessWidget {
           itemBuilder: (context) => [
             PopupMenuItem(
               value: 'toggle',
-              child: Text(labour.status == LabourStatus.active
-                  ? 'Mark Inactive'
-                  : 'Mark Active'),
+              child: Text(
+                labour.status == LabourStatus.active
+                    ? 'Mark Inactive'
+                    : 'Mark Active',
+              ),
             ),
           ],
         ),
@@ -293,10 +301,7 @@ class _AddLabourSheet extends ConsumerStatefulWidget {
   final String projectId;
   final VoidCallback onAdded;
 
-  const _AddLabourSheet({
-    required this.projectId,
-    required this.onAdded,
-  });
+  const _AddLabourSheet({required this.projectId, required this.onAdded});
 
   @override
   ConsumerState<_AddLabourSheet> createState() => _AddLabourSheetState();
@@ -335,9 +340,9 @@ class _AddLabourSheetState extends ConsumerState<_AddLabourSheet> {
           children: [
             Text(
               'Add New Worker',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -408,7 +413,7 @@ class _AddLabourSheetState extends ConsumerState<_AddLabourSheet> {
 
     try {
       final repo = ref.read(labourRepositoryProvider);
-      
+
       final labour = LabourModel(
         id: '',
         name: _nameController.text.trim(),
@@ -433,9 +438,9 @@ class _AddLabourSheetState extends ConsumerState<_AddLabourSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       setState(() => _isLoading = false);

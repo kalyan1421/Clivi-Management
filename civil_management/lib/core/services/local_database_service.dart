@@ -21,7 +21,7 @@ class LocalDatabaseService {
   /// Initialize Hive and open boxes
   static Future<void> init() async {
     await Hive.initFlutter();
-    
+
     _instance = LocalDatabaseService._();
     await _instance!._openBoxes();
   }
@@ -67,10 +67,13 @@ class LocalDatabaseService {
         if (value is Map) {
           return MapEntry(key.toString(), _deepConvertMap(value));
         } else if (value is List) {
-          return MapEntry(key.toString(), value.map((item) {
-            if (item is Map) return _deepConvertMap(item);
-            return item;
-          }).toList());
+          return MapEntry(
+            key.toString(),
+            value.map((item) {
+              if (item is Map) return _deepConvertMap(item);
+              return item;
+            }).toList(),
+          );
         }
         return MapEntry(key.toString(), value);
       });
@@ -192,7 +195,10 @@ class LocalDatabaseService {
 
   /// Set last sync time for a box
   Future<void> _setLastSync(String boxName) async {
-    await _metadataBox.put('${boxName}_last_sync', DateTime.now().toIso8601String());
+    await _metadataBox.put(
+      '${boxName}_last_sync',
+      DateTime.now().toIso8601String(),
+    );
   }
 
   /// Get last sync time for a box
@@ -203,7 +209,10 @@ class LocalDatabaseService {
   }
 
   /// Check if cache is stale (older than duration)
-  bool isCacheStale(String boxName, {Duration maxAge = const Duration(minutes: 5)}) {
+  bool isCacheStale(
+    String boxName, {
+    Duration maxAge = const Duration(minutes: 5),
+  }) {
     final lastSync = getLastSync(boxName);
     if (lastSync == null) return true;
     return DateTime.now().difference(lastSync) > maxAge;
@@ -225,7 +234,7 @@ class LocalDatabaseService {
         clearAll();
         return null;
       }
-      
+
       final state = _metadataBox.get('app_state');
       if (state == null) return null;
       return Map<String, dynamic>.from(state as Map);

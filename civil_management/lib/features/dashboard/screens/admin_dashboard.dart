@@ -30,12 +30,12 @@ class AdminDashboard extends ConsumerWidget {
               children: [
                 // Header with avatar and notifications
                 _buildHeader(context, profile?.fullName ?? 'Admin'),
-                
+
                 // Blue stats card
                 _buildStatsCard(context, statsState),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Operations section
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -44,18 +44,17 @@ class AdminDashboard extends ConsumerWidget {
                     children: [
                       Text(
                         'Operations',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 16),
                       _buildOperationsGrid(context),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Active Projects section
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -64,9 +63,8 @@ class AdminDashboard extends ConsumerWidget {
                     children: [
                       Text(
                         'Active Projects',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       TextButton(
                         onPressed: () => context.push('/projects'),
@@ -80,9 +78,9 @@ class AdminDashboard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 _buildProjectsList(context, projectsState),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Recent Operations section
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -95,7 +93,7 @@ class AdminDashboard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 _buildRecentOperations(context, activityState),
-                
+
                 const SizedBox(height: 100), // Space for bottom nav
               ],
             ),
@@ -148,13 +146,16 @@ class AdminDashboard extends ConsumerWidget {
 
   Widget _buildStatsCard(BuildContext context, DashboardStatsState state) {
     final stats = state.stats;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.85)],
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withValues(alpha: 0.85),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -300,9 +301,9 @@ class AdminDashboard extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -379,9 +380,14 @@ class AdminDashboard extends ConsumerWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: _getTypeColor(project.projectType).withValues(alpha: 0.1),
+                    color: _getTypeColor(
+                      project.projectType,
+                    ).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -396,9 +402,12 @@ class AdminDashboard extends ConsumerWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: project.status == 'in_progress' 
+                    color: project.status == 'in_progress'
                         ? AppColors.success.withValues(alpha: 0.1)
                         : AppColors.warning.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
@@ -408,8 +417,8 @@ class AdminDashboard extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: project.status == 'in_progress' 
-                          ? AppColors.success 
+                      color: project.status == 'in_progress'
+                          ? AppColors.success
                           : AppColors.warning,
                     ),
                   ),
@@ -419,9 +428,9 @@ class AdminDashboard extends ConsumerWidget {
             const SizedBox(height: 12),
             Text(
               project.name,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Row(
@@ -489,7 +498,10 @@ class AdminDashboard extends ConsumerWidget {
     }
   }
 
-  Widget _buildRecentOperations(BuildContext context, RecentActivityState state) {
+  Widget _buildRecentOperations(
+    BuildContext context,
+    RecentActivityState state,
+  ) {
     if (state.isLoading && state.activities.isEmpty) {
       return _buildOperationsLoading();
     }
@@ -557,7 +569,9 @@ class AdminDashboard extends ConsumerWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: _getOperationColor(activity.operationType).withValues(alpha: 0.1),
+              color: _getOperationColor(
+                activity.operationType,
+              ).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -573,9 +587,9 @@ class AdminDashboard extends ConsumerWidget {
               children: [
                 Text(
                   activity.title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -594,10 +608,7 @@ class AdminDashboard extends ConsumerWidget {
           ),
           Text(
             activity.relativeTime,
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
       ),

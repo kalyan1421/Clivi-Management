@@ -110,7 +110,8 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Upload Blueprint')),
+        title: const Text('Upload Blueprint'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
