@@ -219,6 +219,35 @@ class LocalDatabaseService {
   }
 
   // ============================================================
+  // RECENT ACTIVITY
+  // ============================================================
+
+  /// Get cached recent activity
+  List<Map<String, dynamic>>? getRecentActivity() {
+    try {
+      final json = _metadataBox.get('recent_activity');
+      if (json == null) return null;
+      
+      if (json is List) {
+        return json.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return null;
+    } catch (e) {
+      logger.w('Failed to read recent activity from cache: $e');
+      return null;
+    }
+  }
+
+  /// Save recent activity to cache
+  Future<void> saveRecentActivity(List<Map<String, dynamic>> activities) async {
+    try {
+      await _metadataBox.put('recent_activity', activities);
+    } catch (e) {
+      logger.w('Failed to save recent activity to cache: $e');
+    }
+  }
+
+  // ============================================================
   // APP STATE PERSISTENCE (Process Death Recovery)
   // ============================================================
 

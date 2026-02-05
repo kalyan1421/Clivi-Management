@@ -205,46 +205,51 @@ class _ProjectCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row
-              Row(
+              // Type and Location Header
+               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      project.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  if (project.projectType != null) ...[
+                    Text(
+                      project.projectType!.value.toUpperCase(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: project.projectType!.color,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                    ),
+                    if (project.location != null) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.circle,
+                        size: 4,
+                        color: AppColors.textSecondary,
                       ),
-                    ),
-                  ),
-                  _StatusChip(status: project.status),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Location
-              if (project.location != null) ...[
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
+                      const SizedBox(width: 8),
+                    ],
+                  ],
+                  if (project.location != null)
                     Expanded(
                       child: Text(
                         project.location!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                              color: AppColors.textSecondary,
+                            ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Name
+              Text(
+                project.name,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+              ),
+              const SizedBox(height: 12),
 
               // Info row
               Row(
@@ -297,15 +302,43 @@ class _ProjectCard extends StatelessWidget {
                 ],
               ),
 
-              // Progress Bar (timeline based)
-              if (project.startDate != null && project.endDate != null) ...[
-                const SizedBox(height: 12),
-                _TimelineProgress(
-                  startDate: project.startDate!,
-                  endDate: project.endDate!,
-                  status: project.status,
-                ),
-              ],
+              // Progress Bar (Financial/Completion)
+              const SizedBox(height: 12),
+               Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Completion',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                      ),
+                      Text(
+                        '${project.progress}%',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: _getProgressColor(project.progress),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: project.progress / 100,
+                      backgroundColor: AppColors.border.withValues(alpha: 0.3),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _getProgressColor(project.progress),
+                      ),
+                      minHeight: 8,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -330,6 +363,13 @@ class _ProjectCard extends StatelessWidget {
       return '${(budget / 1000).toStringAsFixed(1)}K';
     }
     return budget.toStringAsFixed(0);
+  }
+
+  Color _getProgressColor(int progress) {
+    if (progress < 25) return AppColors.error;
+    if (progress < 50) return AppColors.warning;
+    if (progress < 75) return AppColors.info;
+    return AppColors.success;
   }
 }
 
@@ -361,89 +401,7 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-/// Timeline progress widget - shows completion based on dates
-class _TimelineProgress extends StatelessWidget {
-  final DateTime startDate;
-  final DateTime endDate;
-  final ProjectStatus status;
 
-  const _TimelineProgress({
-    required this.startDate,
-    required this.endDate,
-    required this.status,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = _calculateProgress();
-    final progressColor = _getProgressColor(progress);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Timeline Progress',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-            ),
-            Text(
-              '${(progress * 100).toInt()}%',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: progressColor,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: progress,
-            backgroundColor: Colors.grey[200],
-            valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-            minHeight: 6,
-          ),
-        ),
-      ],
-    );
-  }
-
-  double _calculateProgress() {
-    // If completed or cancelled, show appropriate progress
-    if (status == ProjectStatus.completed) return 1.0;
-    if (status == ProjectStatus.cancelled) return 0.0;
-
-    final now = DateTime.now();
-    final totalDuration = endDate.difference(startDate).inDays;
-    if (totalDuration <= 0) return 0.0;
-
-    final elapsed = now.difference(startDate).inDays;
-    if (elapsed < 0) return 0.0;
-    if (elapsed > totalDuration) return 1.0;
-
-    return elapsed / totalDuration;
-  }
-
-  Color _getProgressColor(double progress) {
-    if (status == ProjectStatus.completed) return Colors.green;
-    if (status == ProjectStatus.cancelled) return Colors.grey;
-    if (status == ProjectStatus.onHold) return Colors.orange;
-
-    // Check if behind schedule
-    final now = DateTime.now();
-    if (now.isAfter(endDate)) return Colors.red; // Overdue
-
-    if (progress < 0.25) return Colors.blue;
-    if (progress < 0.5) return Colors.cyan;
-    if (progress < 0.75) return Colors.orange;
-    return Colors.green;
-  }
-}
 
 /// Filter bottom sheet
 class _FilterSheet extends StatelessWidget {

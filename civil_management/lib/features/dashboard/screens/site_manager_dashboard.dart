@@ -179,6 +179,7 @@ class SiteManagerDashboard extends ConsumerWidget {
               value: stats.activeProjects.toString().padLeft(2, '0'),
               label: 'Active Projects',
               isLoading: state.isLoading,
+              growth: '${stats.growthPercentage > 0 ? '+' : ''}${stats.growthPercentage}%',
             ),
           ),
           Container(
@@ -206,6 +207,7 @@ class SiteManagerDashboard extends ConsumerWidget {
     required String value,
     required String label,
     required bool isLoading,
+    String? growth,
   }) {
     return Column(
       children: [
@@ -244,6 +246,35 @@ class SiteManagerDashboard extends ConsumerWidget {
             color: Colors.white.withValues(alpha: 0.8),
           ),
         ),
+        if (growth != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.trending_up,
+                  size: 14,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  growth,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -265,7 +296,7 @@ class SiteManagerDashboard extends ConsumerWidget {
           label: 'Materials',
           onTap: () {
             if (projectId != null) {
-              context.push('/projects/$projectId/inventory');
+              context.push('/projects/$projectId/stock');
             } else {
               _showNoProjectMessage(context);
             }
@@ -275,7 +306,13 @@ class SiteManagerDashboard extends ConsumerWidget {
           context,
           icon: Icons.construction,
           label: 'Machinery',
-          onTap: () {},
+          onTap: () {
+              if (projectId != null) {
+              context.push('/projects/$projectId/operations/machinery');
+            } else {
+              _showNoProjectMessage(context);
+            }
+          },
         ),
         _buildOperationItem(
           context,
@@ -754,13 +791,13 @@ class SiteManagerDashboard extends ConsumerWidget {
                 icon: Icons.receipt_long,
                 label: 'Bills',
                 isSelected: currentIndex == 2,
-                onTap: () {},
+                onTap: () => context.push('/bills'),
               ),
               _buildNavItem(
                 icon: Icons.bar_chart,
                 label: 'Reports',
                 isSelected: currentIndex == 3,
-                onTap: () {},
+                onTap: () => context.push('/reports'),
               ),
               _buildNavItem(
                 icon: Icons.person_outline,
@@ -795,9 +832,9 @@ class SiteManagerDashboard extends ConsumerWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              fontSize: 10,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
             ),
           ),
         ],

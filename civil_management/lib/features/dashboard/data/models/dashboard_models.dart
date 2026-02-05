@@ -96,6 +96,19 @@ class OperationLog {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'operation_type': operationType,
+      'entity_type': entityType,
+      'title': title,
+      'description': description,
+      'project_name': projectName,
+      'user_name': userName,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
   /// Get icon data based on operation type
   String get iconName {
     switch (entityType) {

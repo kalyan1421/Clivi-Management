@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/supabase_client.dart';
 import '../../../core/services/local_database_service.dart';
@@ -124,6 +125,7 @@ class RecentActivityState {
     this.error,
   });
 
+
   RecentActivityState copyWith({
     List<OperationLog>? activities,
     bool? isLoading,
@@ -144,11 +146,59 @@ class RecentActivityState {
 class RecentActivityNotifier extends StateNotifier<RecentActivityState> {
   final DashboardRepository _repository;
   static const int _pageSize = 10;
+  // ignore: unused_field
+  StreamSubscription<OperationLog>? _subscription;
 
   RecentActivityNotifier(this._repository)
     : super(const RecentActivityState()) {
+    _loadCachedActivity();
     fetchActivity();
+    _subscribeToRealtime();
   }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  /// Load cached activity from local storage
+  void _loadCachedActivity() {
+    try {
+      final cached = LocalDatabaseService.instance.getRecentActivity();
+      if (cached != null && cached.isNotEmpty) {
+        final activities = cached
+            .map((json) => OperationLog.fromJson(json))
+            .toList();
+        state = state.copyWith(activities: activities, isLoading: false);
+      }
+    } catch (e) {
+      logger.w('Failed to load cached activity: $e');
+    }
+  }
+
+  /// Subscribe to real-time updates
+  void _subscribeToRealtime() {
+    _subscription = _repository.subscribeToActivity().listen(
+      (log) {
+        // Prepend new log to the list
+        state = state.copyWith(
+          activities: [log, ...state.activities],
+        );
+        
+        // Update cache
+        if (state.activities.isNotEmpty) {
+           LocalDatabaseService.instance.saveRecentActivity(
+             state.activities.take(20).map((e) => e.toJson()).toList()
+           );
+        }
+      },
+      onError: (e) {
+        logger.w('Realtime subscription error: $e');
+      },
+    );
+  }
+
 
   /// Fetch initial activity
   Future<void> fetchActivity() async {
@@ -160,6 +210,11 @@ class RecentActivityNotifier extends StateNotifier<RecentActivityState> {
         activities: activities,
         isLoading: false,
         hasMore: activities.length >= _pageSize,
+      );
+
+      // Cache the activities
+      await LocalDatabaseService.instance.saveRecentActivity(
+        activities.map((e) => e.toJson()).toList(),
       );
     } catch (e) {
       logger.e('Failed to fetch activity: $e');

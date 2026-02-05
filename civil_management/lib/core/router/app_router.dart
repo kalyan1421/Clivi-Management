@@ -8,7 +8,7 @@ import '../../features/dashboard/screens/add_site_manager_screen.dart';
 import '../../features/dashboard/screens/staff_directory_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/dashboard/screens/super_admin_dashboard.dart';
-import '../../features/dashboard/screens/admin_dashboard.dart';
+import '../../features/dashboard/screens/admin_dashboard_shell.dart';
 import '../../features/dashboard/screens/site_manager_dashboard.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/projects/screens/project_list_screen.dart';
@@ -25,6 +25,9 @@ import '../../features/labour/screens/labour_roster_screen.dart';
 import '../../features/labour/screens/attendance_screen.dart';
 import '../../features/projects/screens/project_operations_screen.dart';
 import '../../features/inventory/screens/supplier_list_screen.dart';
+import '../../features/reports/screens/reports_screen.dart';
+import '../../features/bills/screens/bills_screen.dart';
+import '../../features/bills/screens/create_bill_screen.dart';
 
 /// Global router provider
 final routerProvider = Provider<GoRouter>((ref) {
@@ -120,7 +123,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/dashboard',
         name: 'admin-dashboard',
-        builder: (context, state) => const AdminDashboard(),
+        builder: (context, state) => const AdminDashboardShell(),
       ),
 
       // Site Manager Routes
@@ -128,6 +131,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/site-manager/dashboard',
         name: 'site-manager-dashboard',
         builder: (context, state) => const SiteManagerDashboard(),
+      ),
+      GoRoute(
+        path: '/reports',
+        name: 'reports',
+        builder: (context, state) => const ReportsScreen(),
+      ),
+      GoRoute(
+        path: '/bills',
+        name: 'bills',
+        builder: (context, state) => const BillsScreen(),
+        routes: [
+           GoRoute(
+            path: 'create',
+            name: 'create-bill',
+            builder: (context, state) => const CreateBillScreen(),
+          ),
+        ],
       ),
 
       // Project Routes
@@ -311,10 +331,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'reports',
             name: 'project-reports',
             builder: (context, state) {
-              return Scaffold(
-                appBar: AppBar(title: const Text('Reports')),
-                body: const Center(child: Text('Reports coming soon...')),
-              );
+              final projectId = state.pathParameters['id'];
+              return ReportsScreen(projectId: projectId);
             },
             routes: [
                GoRoute(
