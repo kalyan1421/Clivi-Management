@@ -5,43 +5,56 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_client.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../models/bill_model.dart';
+import 'package:flutter/foundation.dart'; // For debugPrint
 
 class BillRepository {
   final SupabaseClient _client;
 
   BillRepository({SupabaseClient? client}) : _client = client ?? supabase;
 
-  /// Fetch bills with optional filters
-  Future<List<BillModel>> getBills({
-    String? projectId,
-    BillStatus? status,
-  }) async {
+  /// Get bills for a specific project (NOT all bills)
+  Future<List<BillModel>> getBillsByProject(String projectId, {String? status}) async {
     try {
-      // Explicitly specify the foreign key constraint for created_by relation
-      var query = _client.from('bills').select('*, projects(name), user_profiles:user_profiles!bills_created_by_fkey(full_name)');
-
-      if (projectId != null) {
-        query = query.eq('project_id', projectId);
-      }
+      var query = _client
+          .from('bills')
+          .select('''
+            *,
+            creator:user_profiles!bills_created_by_fkey(id, full_name, email),
+            approver:user_profiles!bills_approved_by_fkey(id, full_name, email),
+            project:projects!bills_project_id_fkey(id, name)
+          ''')
+          .eq('project_id', projectId);
 
       if (status != null) {
-        query = query.eq('status', status.value);
+        query = query.eq('status', status);
       }
-      
-      // Default sort by date desc
-      final orderedQuery = query.order('bill_date', ascending: false);
 
-      final response = await orderedQuery;
+      // Apply sort order at the end
+      final response = await query.order('created_at', ascending: false);
       return (response as List).map((json) => BillModel.fromJson(json)).toList();
     } on PostgrestException catch (e) {
       throw DatabaseException.fromPostgrest(e);
     } catch (e) {
-      throw Exception('Failed to load bills: $e');
+      throw Exception('Failed to fetch bills: $e');
     }
   }
 
-  /// Create a new bill with optional receipt upload
-  Future<BillModel> createBill(BillModel bill, {List<int>? receiptBytes, String? receiptName}) async {
+  /// Create a new bill
+  Future<BillModel> createBill({
+    required String projectId,
+    required String title,
+    required double amount,
+    required String billType,
+    String? description,
+    String? vendorName,
+    String? paymentType,
+    String? paymentStatus,
+    List<int>? receiptBytes,
+    String? receiptName,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
     try {
       String? receiptUrl;
 
@@ -53,7 +66,7 @@ class BillRepository {
 
         await _client.storage.from('receipts').uploadBinary(
               filePath,
-              Uint8List.fromList(receiptBytes), 
+              Uint8List.fromList(receiptBytes),
               fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
             );
 
@@ -61,14 +74,29 @@ class BillRepository {
         receiptUrl = _client.storage.from('receipts').getPublicUrl(filePath);
       }
 
-      final billData = bill.copyWith(receiptUrl: receiptUrl).toJson();
-      // Remove null fields to let DB defaults work
-      billData.removeWhere((key, value) => value == null);
+      final data = {
+        'project_id': projectId,
+        'title': title,
+        'amount': amount,
+        'bill_type': billType,
+        'description': description,
+        'vendor_name': vendorName,
+        'payment_type': paymentType,
+        'payment_status': paymentStatus ?? 'need_to_pay',
+        'status': 'pending',
+        'created_by': userId,
+        'raised_by': userId,
+        'receipt_url': receiptUrl,
+        'bill_date': DateTime.now().toIso8601String().split('T').first,
+      };
 
       final response = await _client
           .from('bills')
-          .insert(billData)
-          .select('*, projects(name), user_profiles:user_profiles!bills_created_by_fkey(full_name)')
+          .insert(data)
+          .select('''
+            *,
+            creator:user_profiles!bills_created_by_fkey(id, full_name, email)
+          ''')
           .single();
 
       return BillModel.fromJson(response);
@@ -79,16 +107,103 @@ class BillRepository {
     }
   }
 
-  /// Update bill status
-  Future<void> updateStatus(String id, BillStatus status) async {
+  /// Update a bill (only pending bills can be updated by site managers)
+  Future<BillModel> updateBill(String billId, Map<String, dynamic> updates) async {
+    updates['updated_at'] = DateTime.now().toIso8601String();
+    
     try {
-      await _client
+      final response = await _client
           .from('bills')
-          .update({'status': status.value}).eq('id', id);
+          .update(updates)
+          .eq('id', billId)
+          .select('''
+            *,
+            creator:user_profiles!bills_created_by_fkey(id, full_name, email),
+            approver:user_profiles!bills_approved_by_fkey(id, full_name, email)
+          ''')
+          .single();
+
+      return BillModel.fromJson(response);
     } on PostgrestException catch (e) {
       throw DatabaseException.fromPostgrest(e);
     } catch (e) {
-      throw Exception('Failed to update status: $e');
+      throw Exception('Failed to update bill: $e');
     }
+  }
+
+  /// Approve a bill (Admin only)
+  Future<BillModel> approveBill(String billId) async {
+    final userId = _client.auth.currentUser?.id;
+    
+    try {
+      final response = await _client
+          .from('bills')
+          .update({
+            'status': 'approved',
+            'approved_by': userId,
+            'approved_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', billId)
+          .select('''
+            *,
+            creator:user_profiles!bills_created_by_fkey(id, full_name, email),
+            approver:user_profiles!bills_approved_by_fkey(id, full_name, email)
+          ''')
+          .single();
+
+      return BillModel.fromJson(response);
+    } on PostgrestException catch (e) {
+      throw DatabaseException.fromPostgrest(e);
+    } catch (e) {
+      throw Exception('Failed to approve bill: $e');
+    }
+  }
+
+  /// Reject a bill (Admin only)
+  Future<BillModel> rejectBill(String billId, {String? reason}) async {
+    final userId = _client.auth.currentUser?.id;
+    
+    try {
+      final response = await _client
+          .from('bills')
+          .update({
+            'status': 'rejected',
+            'approved_by': userId,
+            'approved_at': DateTime.now().toIso8601String(),
+            'description': reason, // Store rejection reason if description field is used for it, or check if 'rejection_reason' column exists? Guide mapped it to 'description'.
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', billId)
+          .select()
+          .single();
+
+      return BillModel.fromJson(response);
+    } on PostgrestException catch (e) {
+      throw DatabaseException.fromPostgrest(e);
+    } catch (e) {
+      throw Exception('Failed to reject bill: $e');
+    }
+  }
+
+  /// Delete a bill
+  Future<void> deleteBill(String billId) async {
+    try {
+      await _client.from('bills').delete().eq('id', billId);
+    } on PostgrestException catch (e) {
+      throw DatabaseException.fromPostgrest(e);
+    } catch (e) {
+      throw Exception('Failed to delete bill: $e');
+    }
+  }
+
+  /// Stream bills for real-time updates
+  Stream<List<BillModel>> streamBillsByProject(String projectId) {
+    return _client
+        .from('bills')
+        .stream(primaryKey: ['id'])
+        .eq('project_id', projectId)
+        .order('created_at', ascending: false)
+        .map((data) => data.map((json) => BillModel.fromJson(json)).toList());
   }
 }

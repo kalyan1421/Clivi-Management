@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/labour_model.dart';
 import '../models/labour_attendance_model.dart';
+import '../models/daily_labour_log.dart';
 
 class LabourRepository {
   final SupabaseClient _client;
@@ -172,5 +173,32 @@ class LabourRepository {
       'halfDay': halfDay,
       'total': records.length,
     };
+  }
+
+  // ==================== DAILY LABOUR LOGS (Force Reports) ====================
+
+  Future<void> createDailyLog(DailyLabourLog log) async {
+    await _client.from('daily_labour_logs').insert(log.toInsertJson());
+  }
+
+  Stream<List<DailyLabourLog>> streamDailyLogs(String projectId) {
+    return _client
+        .from('daily_labour_logs')
+        .stream(primaryKey: ['id'])
+        .eq('project_id', projectId)
+        .order('log_date', ascending: false)
+        .map((data) => data.map((json) => DailyLabourLog.fromJson(json)).toList());
+  }
+  
+  // ==================== STREAMS ====================
+
+  /// Stream labour for real-time updates
+  Stream<List<LabourModel>> streamLabourByProject(String projectId) {
+    return _client
+        .from('labour')
+        .stream(primaryKey: ['id'])
+        .eq('project_id', projectId)
+        .order('created_at', ascending: false)
+        .map((data) => data.map((json) => LabourModel.fromJson(json)).toList());
   }
 }

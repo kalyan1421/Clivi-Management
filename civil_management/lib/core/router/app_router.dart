@@ -123,14 +123,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/dashboard',
         name: 'admin-dashboard',
-        builder: (context, state) => const AdminDashboardShell(),
+        builder: (context, state) => const DashboardShell(),
       ),
 
       // Site Manager Routes
       GoRoute(
         path: '/site-manager/dashboard',
         name: 'site-manager-dashboard',
-        builder: (context, state) => const SiteManagerDashboard(),
+        builder: (context, state) => const DashboardShell(),
       ),
       GoRoute(
         path: '/reports',
@@ -174,17 +174,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'blueprints',
             name: 'project-blueprints',
             builder: (context, state) {
-              final project = state.extra as ProjectModel?;
-              if (project == null) {
-                return const Scaffold(
-                  body: Center(
-                    child: Text(
-                      'Error: Project data not provided. Please navigate from the project detail page.',
-                    ),
-                  ),
-                );
-              }
-              return BlueprintsFoldersScreen(project: project);
+              final projectId = state.pathParameters['id']!;
+              return BlueprintsFoldersScreen(projectId: projectId);
             },
           ),
           GoRoute(

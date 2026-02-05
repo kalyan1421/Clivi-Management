@@ -8,6 +8,8 @@ import '../../auth/providers/auth_provider.dart';
 import '../data/models/project_model.dart';
 import '../providers/project_provider.dart';
 import 'widgets/assign_manager_sheet.dart';
+import '../../materials/data/models/stock_item.dart';
+import '../../materials/providers/stock_provider.dart';
 
 /// Project detail screen matching the design mockup
 /// Single scroll layout: Manager → Materials → Blueprints → Operations → Delete
@@ -447,48 +449,169 @@ class _MaterialStatsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // For now, show example stats - will be updated when RPC is applied
-    final materials = [
-      {
-        'name': 'Steel',
-        'icon': Icons.iron,
-        'received': 100,
-        'consumed': 50,
-        'remaining': 50,
-        'unit': 'Tons',
-      },
-      {
-        'name': 'Cement',
-        'icon': Icons.format_color_fill,
-        'received': 500,
-        'consumed': 200,
-        'remaining': 300,
-        'unit': 'Bags',
-      },
-    ];
+    final stockAsync = ref.watch(stockItemsStreamProvider(projectId));
+    final logsAsync = ref.watch(materialLogsProvider(projectId));
 
+    // Combine data
+    return stockAsync.when(
+      data: (items) {
+        if (items.isEmpty) return _buildEmptyState();
+
+        return logsAsync.when(
+          data: (logs) {
+             // Basic computation
+             // This assumes logs contain all history. 
+             // Ideally this should be server-side.
+             
+             final stats = items.map((item) {
+                final itemLogs = logs.where((l) => l.itemId == item.id);
+                double received = 0;
+                double consumed = 0;
+                for (var log in itemLogs) {
+                  if (log.quantity > 0) received += log.quantity; // assuming positive is inward? 
+                  // Wait, logs have 'logType' or 'quantity_change'.
+                  // Check MaterialLog model. 
+                  // If quantity is absolute, check logType.
+                  if (log.logType == 'inward') received += log.quantity;
+                  if (log.logType == 'outward') consumed += log.quantity; // Assuming stored as positive
+                }
+                
+                return _MaterialCard(
+                   name: item.name,
+                   icon: Icons.grid_view, // Placeholder
+                   received: received.toInt(),
+                   consumed: consumed.toInt(),
+                   remaining: item.quantity.toInt(),
+                   unit: item.unit,
+                );
+             }).toList();
+             
+             // Sort by activity or name
+             // stats.sort...
+
+             return SizedBox(
+              height: 140, 
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: stats.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) => SizedBox(
+                  width: 280, 
+                  child: stats[index],
+                ),
+              ),
+             );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => const SizedBox(), // Fail silently or show error
+        );
+      },
+      loading: () => const Center(child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: CircularProgressIndicator(strokeWidth: 2),
+      )),
+      error: (err, _) => Text('Error loading stock: $err', style: const TextStyle(color: Colors.red)),
+    );
+  }
+
+  Widget _buildEmptyState() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Section header styled like mockup
-          ...materials.map(
-            (mat) => _MaterialCard(
-              name: mat['name'] as String,
-              icon: mat['icon'] as IconData,
-              received: mat['received'] as int,
-              consumed: mat['consumed'] as int,
-              remaining: mat['remaining'] as int,
-              unit: mat['unit'] as String,
-            ),
-          ),
+          Icon(Icons.inventory_2_outlined, color: Colors.grey),
+          SizedBox(width: 8),
+          Text('No materials tracked yet', style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
   }
 }
 
+class _StockItemCard extends StatelessWidget {
+  final StockItem item;
+
+  const _StockItemCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.inventory_2, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '${item.quantity} ${item.unit}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${item.quantity}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+              const Text(
+                'Current Stock',
+                style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 class _MaterialCard extends StatelessWidget {
   final String name;
   final IconData icon;

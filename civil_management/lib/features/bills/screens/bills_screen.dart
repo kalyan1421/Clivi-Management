@@ -8,6 +8,7 @@ import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../data/models/bill_model.dart';
 import '../providers/bill_provider.dart';
+import 'package:civil_management/features/projects/providers/project_provider.dart';
 
 class BillsScreen extends ConsumerStatefulWidget {
   const BillsScreen({super.key});
@@ -19,6 +20,7 @@ class BillsScreen extends ConsumerStatefulWidget {
 class _BillsScreenState extends ConsumerState<BillsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  String? _selectedProjectId;
 
   @override
   void initState() {
@@ -26,24 +28,19 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_handleTabSelection);
 
-    // Initial load
+    // Initial load of projects
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadBills();
+      ref.read(projectListProvider.notifier).loadProjects();
     });
   }
 
   void _handleTabSelection() {
     if (_tabController.indexIsChanging) {
-      _loadBills();
+      setState(() {}); // Rebuild to filter list
     }
   }
 
-  void _loadBills() {
-    final status = _getCurrentTabStatus();
-    ref.read(billListProvider.notifier).loadBills(status: status);
-  }
-
-  BillStatus? _getCurrentTabStatus() {
+  BillStatus _getCurrentTabStatus() {
     switch (_tabController.index) {
       case 0:
         return BillStatus.pending;
@@ -66,11 +63,65 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(billListProvider);
+    final projectState = ref.watch(projectListProvider);
+
+    // Auto-select first project if none selected
+    if (_selectedProjectId == null && projectState.projects.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedProjectId == null) {
+          setState(() {
+            _selectedProjectId = projectState.projects.first.id;
+          });
+        }
+      });
+    }
+
+    final AsyncValue<List<BillModel>> billsAsync = _selectedProjectId == null
+        ? const AsyncValue.data([])
+        : ref.watch(billsStreamProvider(_selectedProjectId!));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bills & Expenses'),
+        actions: [
+          if (projectState.projects.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedProjectId,
+                  hint: const Text('Select Project', style: TextStyle(fontSize: 12)),
+                  icon: const Icon(Icons.arrow_drop_down, size: 20),
+                  isDense: true,
+                  items: projectState.projects.map((p) {
+                    return DropdownMenuItem(
+                      value: p.id,
+                      child: Text(
+                        p.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedProjectId = value;
+                      });
+                    }
+                  },
+                ),
+              ),
+            ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
@@ -78,24 +129,32 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.primary,
           tabs: [
-            _buildTab('Pending'), // TODO: Add Badges
+            _buildTab('Pending'),
             _buildTab('Approved'),
             _buildTab('Paid'),
             _buildTab('Rejected'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: List.generate(4, (index) {
-          return RefreshIndicator(
-            onRefresh: () async => _loadBills(),
-            child: _buildBillList(state),
-          );
-        }),
-      ),
+      body: _selectedProjectId == null && projectState.projects.isEmpty
+          ? const Center(child: Text('No projects found'))
+          : _selectedProjectId == null
+              ? const Center(child: Text('Please select a project'))
+              : billsAsync.when(
+                  data: (bills) {
+                    final status = _getCurrentTabStatus();
+                    final filteredBills =
+                        bills.where((b) => b.status == status).toList();
+                    return _buildBillList(filteredBills);
+                  },
+                  loading: () => const LoadingWidget(message: 'Loading bills...'),
+                  error: (err, stack) => AppErrorWidget(
+                    message: err.toString(),
+                    onRetry: () => ref.refresh(billsStreamProvider(_selectedProjectId!)),
+                  ),
+                ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/bills/create'), // Updated route
+        onPressed: () => context.push('/bills/create'),
         child: const Icon(Icons.add),
       ),
     );
@@ -105,24 +164,14 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
     return Tab(child: Text(text));
   }
 
-  Widget _buildBillList(BillListState state) {
-    if (state.isLoading && state.bills.isEmpty) {
-      return const LoadingWidget(message: 'Loading bills...');
-    }
-
-    if (state.error != null && state.bills.isEmpty) {
-      return AppErrorWidget(
-        message: state.error!,
-        onRetry: _loadBills,
-      );
-    }
-
-    if (state.bills.isEmpty) {
+  Widget _buildBillList(List<BillModel> bills) {
+    if (bills.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.receipt_long_outlined, size: 64, color: AppColors.textSecondary),
+            Icon(Icons.receipt_long_outlined,
+                size: 64, color: AppColors.textSecondary),
             const SizedBox(height: 16),
             Text(
               'No bills found',
@@ -135,7 +184,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
 
     // Grouping Logic
     final groupedBills = <String, List<BillModel>>{};
-    for (var bill in state.bills) {
+    for (var bill in bills) {
       final dateKey = _getDateKey(bill.billDate);
       if (!groupedBills.containsKey(dateKey)) {
         groupedBills[dateKey] = [];
@@ -148,7 +197,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
       itemCount: groupedBills.length,
       itemBuilder: (context, index) {
         final dateKey = groupedBills.keys.elementAt(index);
-        final bills = groupedBills[dateKey]!;
+        final dateBills = groupedBills[dateKey]!;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +213,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                 ),
               ),
             ),
-            ...bills.map((bill) => _BillCard(bill: bill)),
+            ...dateBills.map((bill) => _BillCard(bill: bill)),
           ],
         );
       },
@@ -219,10 +268,9 @@ class _BillCard extends StatelessWidget {
               Text(
                 bill.projectName!,
                 style: TextStyle(
-                  fontSize: 12, 
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w500
-                ),
+                    fontSize: 12,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500),
               ),
           ],
         ),
@@ -264,6 +312,14 @@ class _BillCard extends StatelessWidget {
 
   IconData _getTypeIcon(BillType type) {
     switch (type) {
+      case BillType.workers:
+        return Icons.group;
+      case BillType.materials:
+        return Icons.inventory_2;
+      case BillType.transport:
+        return Icons.local_shipping;
+      case BillType.equipmentRent:
+        return Icons.handyman;
       case BillType.expense:
         return Icons.outbound;
       case BillType.income:

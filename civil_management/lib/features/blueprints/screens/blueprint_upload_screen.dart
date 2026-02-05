@@ -11,9 +11,9 @@ import '../../projects/data/models/project_model.dart';
 import '../providers/blueprints_provider.dart';
 
 class BlueprintUploadScreen extends ConsumerStatefulWidget {
-  final ProjectModel project;
+  final String projectId;
 
-  const BlueprintUploadScreen({super.key, required this.project});
+  const BlueprintUploadScreen({super.key, required this.projectId});
 
   @override
   ConsumerState<BlueprintUploadScreen> createState() =>
@@ -60,7 +60,7 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
       await ref
           .read(blueprintRepositoryProvider)
           .uploadBlueprint(
-            projectId: widget.project.id,
+            projectId: widget.projectId,
             folderName: _folderNameController.text.trim(),
             isAdminOnly: _isAdminOnly,
             file: _selectedFile!,

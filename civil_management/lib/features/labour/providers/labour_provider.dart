@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/labour_model.dart';
 import '../data/models/labour_attendance_model.dart';
 import '../data/repositories/labour_repository.dart';
+import '../data/models/daily_labour_log.dart';
 
 /// Repository provider
 final labourRepositoryProvider = Provider<LabourRepository>((ref) {
@@ -53,3 +54,10 @@ final todayAttendanceSummaryProvider =
       final today = DateTime.now();
       return repo.getAttendanceSummary(projectId, today, today);
     });
+
+/// Daily Labour Logs (Force Reports) Stream
+final dailyLabourLogsProvider =
+    StreamProvider.family<List<DailyLabourLog>, String>((ref, projectId) {
+  final repo = ref.watch(labourRepositoryProvider);
+  return repo.streamDailyLogs(projectId);
+});

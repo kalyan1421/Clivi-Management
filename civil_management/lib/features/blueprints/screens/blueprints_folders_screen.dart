@@ -5,18 +5,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../projects/data/models/project_model.dart';
-import '../providers/blueprints_provider.dart';
+import '../../projects/providers/project_provider.dart'; // Corrected path
+import '../providers/blueprints_provider.dart'; // Added missing import
 import 'blueprint_upload_screen.dart';
 
 class BlueprintsFoldersScreen extends ConsumerWidget {
-  final ProjectModel project;
+  final String projectId;
 
-  const BlueprintsFoldersScreen({super.key, required this.project});
+  const BlueprintsFoldersScreen({super.key, required this.projectId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final foldersAsync = ref.watch(blueprintFoldersProvider(project.id));
+    // Watch project for name
+    final projectAsync = ref.watch(projectDetailProvider(projectId));
+    final projectName = projectAsync.project?.name ?? 'Unknown Project';
+
+    final foldersAsync = ref.watch(blueprintFoldersProvider(projectId));
     final authState = ref.watch(authProvider);
 
     return Scaffold(
@@ -25,13 +29,13 @@ class BlueprintsFoldersScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('Blueprints: ${project.name}'),
+        title: Text('Blueprints: $projectName'),
       ),
       body: foldersAsync.when(
         loading: () => const LoadingWidget(),
         error: (err, stack) => AppErrorWidget(
           message: err.toString(),
-          onRetry: () => ref.invalidate(blueprintFoldersProvider(project.id)),
+          onRetry: () => ref.invalidate(blueprintFoldersProvider(projectId)),
         ),
         data: (folders) {
           if (folders.isEmpty) {
@@ -70,7 +74,7 @@ class BlueprintsFoldersScreen extends ConsumerWidget {
             itemCount: folders.length,
             itemBuilder: (context, index) {
               final folder = folders[index];
-              return FolderGridTile(folder: folder, projectId: project.id);
+              return FolderGridTile(folder: folder, projectId: projectId);
             },
           );
         },
@@ -96,7 +100,7 @@ class BlueprintsFoldersScreen extends ConsumerWidget {
         ),
         child: FractionallySizedBox(
           heightFactor: 0.75,
-          child: BlueprintUploadScreen(project: project),
+          child: BlueprintUploadScreen(projectId: projectId),
         ),
       ),
     );

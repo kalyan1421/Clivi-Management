@@ -94,7 +94,7 @@ class AdminDashboard extends ConsumerWidget {
                 const SizedBox(height: 12),
                 _buildRecentOperations(context, activityState),
 
-                const SizedBox(height: 100), // Space for bottom nav
+                const SizedBox(height: 24),
               ],
             ),
           ),

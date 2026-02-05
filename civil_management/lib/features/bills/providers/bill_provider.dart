@@ -5,7 +5,7 @@ import '../data/models/bill_model.dart';
 import '../data/repositories/bill_repository.dart';
 
 // ============================================================
-// REPO PROVIDER
+// REPOSITORY PROVIDER
 // ============================================================
 
 final billRepositoryProvider = Provider<BillRepository>((ref) {
@@ -13,92 +13,90 @@ final billRepositoryProvider = Provider<BillRepository>((ref) {
 });
 
 // ============================================================
-// STATE
+// STREAMS (READ)
 // ============================================================
 
-class BillListState {
-  final List<BillModel> bills;
-  final bool isLoading;
-  final String? error;
-
-  const BillListState({
-    this.bills = const [],
-    this.isLoading = false,
-    this.error,
-  });
-
-  BillListState copyWith({
-    List<BillModel>? bills,
-    bool? isLoading,
-    String? error,
-  }) {
-    return BillListState(
-      bills: bills ?? this.bills,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
-  }
-}
+/// Real-time stream of bills for a specific project
+final billsStreamProvider = StreamProvider.family<List<BillModel>, String>((ref, projectId) {
+  final repository = ref.watch(billRepositoryProvider);
+  return repository.streamBillsByProject(projectId);
+});
 
 // ============================================================
-// NOTIFIERS
+// CONTROLLER (WRITE)
 // ============================================================
 
-class BillListNotifier extends StateNotifier<BillListState> {
+class BillController extends StateNotifier<AsyncValue<void>> {
   final BillRepository _repository;
 
-  BillListNotifier(this._repository) : super(const BillListState());
+  BillController(this._repository) : super(const AsyncValue.data(null));
 
-  Future<void> loadBills({String? projectId, BillStatus? status}) async {
+  Future<bool> createBill({
+    required String projectId,
+    required String title,
+    required double amount,
+    required String billType,
+    String? description,
+    String? vendorName,
+    String? paymentType,
+    String? paymentStatus,
+    List<int>? receiptBytes,
+    String? receiptName,
+  }) async {
+    state = const AsyncValue.loading();
     try {
-      state = state.copyWith(isLoading: true, error: null);
-      final bills = await _repository.getBills(
+      await _repository.createBill(
         projectId: projectId,
-        status: status,
+        title: title,
+        amount: amount,
+        billType: billType,
+        description: description,
+        vendorName: vendorName,
+        paymentType: paymentType,
+        paymentStatus: paymentStatus,
+        receiptBytes: receiptBytes,
+        receiptName: receiptName,
       );
-      state = state.copyWith(bills: bills, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: ExceptionHandler.getMessage(e),
-      );
-    }
-  }
-
-  Future<void> refresh({String? projectId, BillStatus? status}) async {
-    await loadBills(projectId: projectId, status: status);
-  }
-}
-
-class CreateBillNotifier extends StateNotifier<AsyncValue<void>> {
-  final BillRepository _repository;
-
-  CreateBillNotifier(this._repository) : super(const AsyncValue.data(null));
-
-  Future<bool> createBill(BillModel bill, {List<int>? receiptBytes, String? receiptName}) async {
-    try {
-      state = const AsyncValue.loading();
-      await _repository.createBill(bill, receiptBytes: receiptBytes, receiptName: receiptName);
       state = const AsyncValue.data(null);
       return true;
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       return false;
     }
   }
+
+  Future<void> approveBill(String billId) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.approveBill(billId);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> rejectBill(String billId, {String? reason}) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.rejectBill(billId, reason: reason);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> deleteBill(String billId) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.deleteBill(billId);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 }
 
-// ============================================================
-// PROVIDERS
-// ============================================================
-
-/// Provider for the list of bills
-final billListProvider = StateNotifierProvider<BillListNotifier, BillListState>(
-  (ref) => BillListNotifier(ref.watch(billRepositoryProvider)),
-);
-
-/// Provider for creating bills
-final createBillProvider =
-    StateNotifierProvider<CreateBillNotifier, AsyncValue<void>>(
-      (ref) => CreateBillNotifier(ref.watch(billRepositoryProvider)),
-    );
+// Controller Provider
+final billControllerProvider = StateNotifierProvider<BillController, AsyncValue<void>>((ref) {
+  return BillController(ref.watch(billRepositoryProvider));
+});

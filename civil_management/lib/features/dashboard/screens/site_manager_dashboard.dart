@@ -94,13 +94,12 @@ class SiteManagerDashboard extends ConsumerWidget {
                 const SizedBox(height: 12),
                 _buildRecentOperations(context, activityState),
 
-                const SizedBox(height: 100), // Space for bottom nav
+                const SizedBox(height: 24), // Use standard spacing
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(context, 0),
     );
   }
 
@@ -757,88 +756,5 @@ class SiteManagerDashboard extends ConsumerWidget {
     }
   }
 
-  Widget _buildBottomNav(BuildContext context, int currentIndex) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                icon: Icons.home_filled,
-                label: 'Home',
-                isSelected: currentIndex == 0,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                icon: Icons.business,
-                label: 'Projects',
-                isSelected: currentIndex == 1,
-                onTap: () => context.push('/projects'),
-              ),
-              _buildNavItem(
-                icon: Icons.receipt_long,
-                label: 'Bills',
-                isSelected: currentIndex == 2,
-                onTap: () => context.push('/bills'),
-              ),
-              _buildNavItem(
-                icon: Icons.bar_chart,
-                label: 'Reports',
-                isSelected: currentIndex == 3,
-                onTap: () => context.push('/reports'),
-              ),
-              _buildNavItem(
-                icon: Icons.person_outline,
-                label: 'Profile',
-                isSelected: currentIndex == 4,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? AppColors.primary : AppColors.textSecondary,
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

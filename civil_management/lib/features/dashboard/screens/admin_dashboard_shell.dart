@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:civil_management/features/profile/screens/profile_screen.dart';
 import 'package:civil_management/features/projects/screens/project_list_screen.dart';
 import 'package:civil_management/features/bills/screens/bills_screen.dart';
 import 'package:civil_management/features/reports/screens/reports_screen.dart';
 import 'package:civil_management/features/dashboard/screens/admin_dashboard.dart';
+import 'package:civil_management/features/dashboard/screens/site_manager_dashboard.dart';
 import 'package:civil_management/core/theme/app_colors.dart';
+import 'package:civil_management/features/auth/providers/auth_provider.dart';
 
-class AdminDashboardShell extends StatefulWidget {
-  const AdminDashboardShell({super.key});
+class DashboardShell extends ConsumerStatefulWidget {
+  final int initialIndex;
+  
+  const DashboardShell({super.key, this.initialIndex = 0});
 
   @override
-  State<AdminDashboardShell> createState() => _AdminDashboardShellState();
+  ConsumerState<DashboardShell> createState() => _DashboardShellState();
 }
 
-class _AdminDashboardShellState extends State<AdminDashboardShell> {
-  int _selectedIndex = 0;
+class _DashboardShellState extends ConsumerState<DashboardShell> {
+  late int _selectedIndex;
 
-  final List<Widget> _pages = [
-    const AdminDashboard(),
-    const ProjectListScreen(),
-    const BillsScreen(),
-    const ReportsScreen(),
-    const ProfileScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -34,8 +35,28 @@ class _AdminDashboardShellState extends State<AdminDashboardShell> {
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(userProfileProvider);
+    final role = profile?.role ?? 'admin';
+    
+    final Widget homeScreen = role == 'site_manager' 
+        ? const SiteManagerDashboard() 
+        : const AdminDashboard();
+
+    final List<Widget> pages = [
+      homeScreen,
+      const ProjectListScreen(),
+      const BillsScreen(),
+      const ReportsScreen(),
+      const ProfileScreen(),
+    ];
+
+    // Ensure index is valid
+    if (_selectedIndex >= pages.length) {
+      _selectedIndex = 0;
+    }
+
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: _buildBottomNav(context, _selectedIndex),
     );
   }

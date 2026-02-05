@@ -46,6 +46,10 @@ enum BillStatus {
 }
 
 enum BillType {
+  workers('workers'),
+  materials('materials'),
+  transport('transport'),
+  equipmentRent('equipment_rent'),
   expense('expense'),
   income('income'),
   invoice('invoice');
@@ -62,6 +66,14 @@ enum BillType {
 
   String get label {
     switch (this) {
+      case BillType.workers:
+        return 'Workers';
+      case BillType.materials:
+        return 'Materials';
+      case BillType.transport:
+        return 'Transport';
+      case BillType.equipmentRent:
+        return 'Equipment Rent';
       case BillType.expense:
         return 'Expense';
       case BillType.income:
@@ -69,6 +81,41 @@ enum BillType {
       case BillType.invoice:
         return 'Invoice';
     }
+  }
+}
+
+enum PaymentType {
+  cash('cash'),
+  upi('upi'),
+  bankTransfer('bank_transfer'),
+  cheque('cheque');
+
+  final String value;
+  const PaymentType(this.value);
+
+  static PaymentType? fromString(String? type) {
+    if (type == null) return null;
+    return PaymentType.values.firstWhere(
+      (e) => e.value == type,
+      orElse: () => PaymentType.cash,
+    );
+  }
+}
+
+enum PaymentStatus {
+  needToPay('need_to_pay'),
+  advance('advance'),
+  halfPaid('half_paid'),
+  fullPaid('full_paid');
+
+  final String value;
+  const PaymentStatus(this.value);
+
+  static PaymentStatus fromString(String? status) {
+    return PaymentStatus.values.firstWhere(
+      (e) => e.value == status,
+      orElse: () => PaymentStatus.needToPay,
+    );
   }
 }
 
@@ -85,12 +132,17 @@ class BillModel {
   final String? vendorName;
   final String? receiptUrl;
   final String? createdBy;
+  final String? raisedBy;
   final String? approvedBy;
   final DateTime? createdAt;
+  final DateTime? approvedAt;
+  final PaymentType? paymentType;
+  final PaymentStatus paymentStatus;
 
   // Joined data (optional)
   final String? projectName;
   final String? createdByName;
+  final String? approvedByName;
 
   const BillModel({
     required this.id,
@@ -105,10 +157,15 @@ class BillModel {
     this.vendorName,
     this.receiptUrl,
     this.createdBy,
+    this.raisedBy,
     this.approvedBy,
     this.createdAt,
+    this.approvedAt,
+    this.paymentType,
+    this.paymentStatus = PaymentStatus.needToPay,
     this.projectName,
     this.createdByName,
+    this.approvedByName,
   });
 
   factory BillModel.fromJson(Map<String, dynamic> json) {
@@ -121,24 +178,28 @@ class BillModel {
       type: BillType.fromString(json['bill_type'] as String?),
       status: BillStatus.fromString(json['status'] as String?),
       billDate: DateTime.parse(json['bill_date'] as String),
-      dueDate:
-          json['due_date'] != null
-              ? DateTime.parse(json['due_date'] as String)
-              : null,
+      dueDate: json['due_date'] != null ? DateTime.parse(json['due_date'] as String) : null,
       vendorName: json['vendor_name'] as String?,
       receiptUrl: json['receipt_url'] as String?,
       createdBy: json['created_by'] as String?,
+      raisedBy: json['raised_by'] as String?,
       approvedBy: json['approved_by'] as String?,
-      createdAt:
-          json['created_at'] != null
-              ? DateTime.parse(json['created_at'] as String)
-              : null,
-      projectName:
-          json['projects'] != null ? json['projects']['name'] as String? : null,
-      createdByName:
-          json['user_profiles'] != null
-              ? json['user_profiles']['full_name'] as String?
-              : null,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      approvedAt: json['approved_at'] != null ? DateTime.parse(json['approved_at'] as String) : null,
+      paymentType: PaymentType.fromString(json['payment_type'] as String?),
+      paymentStatus: PaymentStatus.fromString(json['payment_status'] as String?),
+      
+      projectName: json['project'] != null 
+          ? json['project']['name'] as String? 
+          : (json['projects'] != null ? json['projects']['name'] as String? : null),
+          
+      createdByName: json['creator'] != null 
+          ? json['creator']['full_name'] as String? 
+          : (json['user_profiles'] != null ? json['user_profiles']['full_name'] as String? : null),
+          
+      approvedByName: json['approver'] != null 
+          ? json['approver']['full_name'] as String? 
+          : null,
     );
   }
 
@@ -155,7 +216,10 @@ class BillModel {
       'vendor_name': vendorName,
       'receipt_url': receiptUrl,
       'created_by': createdBy,
+      'raised_by': raisedBy,
       'approved_by': approvedBy,
+      'payment_type': paymentType?.value,
+      'payment_status': paymentStatus.value,
     };
   }
 
@@ -172,7 +236,10 @@ class BillModel {
     String? vendorName,
     String? receiptUrl,
     String? createdBy,
+    String? raisedBy,
     String? approvedBy,
+    PaymentType? paymentType,
+    PaymentStatus? paymentStatus,
   }) {
     return BillModel(
       id: id ?? this.id,
@@ -187,10 +254,15 @@ class BillModel {
       vendorName: vendorName ?? this.vendorName,
       receiptUrl: receiptUrl ?? this.receiptUrl,
       createdBy: createdBy ?? this.createdBy,
+      raisedBy: raisedBy ?? this.raisedBy,
       approvedBy: approvedBy ?? this.approvedBy,
       createdAt: createdAt,
+      approvedAt: approvedAt,
+      paymentType: paymentType ?? this.paymentType,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
       projectName: projectName,
       createdByName: createdByName,
+      approvedByName: approvedByName,
     );
   }
 }
