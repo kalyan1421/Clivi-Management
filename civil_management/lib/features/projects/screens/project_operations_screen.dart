@@ -312,6 +312,7 @@ void _showLogMaterialSheet(
   bool isReceived,
 ) {
   if (isReceived) {
+    debugPrint('OPEN RECEIVE SCREEN projectId=$projectId');
     Navigator.push(
       context,
       MaterialPageRoute(

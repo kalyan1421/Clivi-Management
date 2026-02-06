@@ -37,13 +37,14 @@ class MachineryRepository {
     required String type,
     String? registrationNo,
     required String ownershipType, // 'Own' or 'Rental'
-    String status = 'active',
+    String status = 'available', // ✅ Matches DB constraint
   }) async {
     await _client.from('machinery').insert({
       'name': name,
       'type': type,
       'registration_no': registrationNo,
       'ownership_type': ownershipType,
+      'status': status,
       'created_by': _client.auth.currentUser?.id,
     });
   }

@@ -29,9 +29,14 @@ class MaterialEntryForm {
   
   // Validation helper
   bool isValid() {
+    final qty = double.tryParse(quantityController.text) ?? 0;
+    final amount = double.tryParse(billAmountController.text) ?? 0;
+    
     return selectedMaterial != null &&
            selectedSupplier != null &&
            quantityController.text.isNotEmpty &&
+           qty > 0 && // Prevent 0 quantity
+           amount >= 0 && // Allow 0 bill amount but not negative
            unitController.text.isNotEmpty &&
            billAmountController.text.isNotEmpty;
   }
@@ -85,14 +90,35 @@ class _MaterialReceiveScreenState extends ConsumerState<MaterialReceiveScreen> {
   }
 
   Future<void> _submitAll() async {
-    // Validate all
-    for (var entry in _entries) {
+    // 1) Validate entries first
+    for (final entry in _entries) {
       if (!entry.isValid()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill all required fields in all entries')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Please fill all required fields in all entries')),
+          );
+        }
         return;
       }
+    }
+
+    // 2) Validate projectId BEFORE calling backend
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    final pid = widget.projectId.trim();
+
+    if (!uuidRegex.hasMatch(pid) ||
+        pid == '00000000-0000-0000-0000-000000000000') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Invalid Project ID. Please open from Projects screen again.\n$pid')),
+        );
+      }
+      return;
     }
 
     setState(() => _isLoading = true);
@@ -100,18 +126,22 @@ class _MaterialReceiveScreenState extends ConsumerState<MaterialReceiveScreen> {
     try {
       final stockRepo = ref.read(stockRepositoryProvider);
 
-      for (var entry in _entries) {
+      for (final entry in _entries) {
+        // IMPORTANT: Send null grade if user didn’t select
+        final grade = (entry.selectedGrade?.gradeName.trim().isEmpty ?? true)
+            ? null
+            : entry.selectedGrade!.gradeName.trim();
+
         await stockRepo.logMaterialInward(
-          projectId: widget.projectId,
-          supplierId: entry.selectedSupplier!.id, // Valid ID
+          projectId: pid,
           stockItemName: entry.selectedMaterial!.name,
-          stockItemGrade: entry.selectedGrade?.gradeName,
+          stockItemGrade: grade,
           stockItemUnit: entry.unitController.text.trim(),
           quantity: double.parse(entry.quantityController.text),
+          supplierId: entry.selectedSupplier!.id,
           billAmount: double.parse(entry.billAmountController.text),
           paymentType: entry.paymentType,
-          activity: 'Material Received',
-          // Assuming we might want to capture notes/details separately or default to this activity
+          notes: null, // notes is not available in the form
         );
       }
 
@@ -124,7 +154,7 @@ class _MaterialReceiveScreenState extends ConsumerState<MaterialReceiveScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Failed to save material: $e')),
         );
       }
     } finally {
@@ -202,6 +232,16 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
   bool _loadingMaterials = false;
   bool _loadingGrades = false;
   bool _loadingSuppliers = false;
+
+  final List<String> _unitItems = const [
+    'Bags',
+    'Kg',
+    'Ton',
+    'CFT',
+    'Liters',
+    'Units',
+    'Cum'
+  ];
 
   @override
   void initState() {
@@ -364,7 +404,8 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
                       }
                       
                       // 2. Add Grade
-                      final newGrade = await masterRepo.addMaterialGrade(master.id, gradeName);
+                      final newGradeData = await masterRepo.addMaterialGrade(materialId: master.id, gradeName: gradeName);
+                      final newGrade = MaterialGrade.fromJson(newGradeData);
                       await _fetchGrades(entry.selectedMaterial!.name);
                       return newGrade;
                     },
@@ -386,13 +427,17 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
               children: [
                  Expanded(
                    child: DropdownButtonFormField<String>(
-                     value: entry.unitController.text.isNotEmpty ? entry.unitController.text : null,
-                     decoration: const InputDecoration(labelText: 'Unit', border: OutlineInputBorder()),
-                     items: ['Bags', 'Kg', 'Ton', 'CFT', 'Liters', 'Units', 'Cum']
+                     value: _unitItems.contains(entry.unitController.text)
+                         ? entry.unitController.text
+                         : null,
+                     decoration: const InputDecoration(
+                         labelText: 'Unit', border: OutlineInputBorder()),
+                     items: _unitItems
                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                          .toList(),
                      onChanged: (val) {
-                       if (val != null) setState(() => entry.unitController.text = val);
+                       if (val != null)
+                         setState(() => entry.unitController.text = val);
                      },
                    ),
                  ),

@@ -81,42 +81,22 @@ class MaterialMasterRepository {
   }
 
   /// Add new grade (idempotent get-or-create)
-  Future<MaterialGrade> addMaterialGrade(String materialId, String gradeName) async {
-    // 1. Try to find existing
-    final existing = await _client
+  Future<Map<String, dynamic>> addMaterialGrade({
+    required String materialId,
+    required String gradeName,
+  }) async {
+    final normalized = gradeName.trim();
+
+    final row = await _client
         .from('material_grades')
+        .upsert(
+          {'material_id': materialId, 'grade_name': normalized},
+          onConflict: 'material_id,grade_key',
+        )
         .select()
-        .eq('material_id', materialId)
-        .ilike('grade_name', gradeName)
         .limit(1)
-        .maybeSingle();
+        .single();
 
-    if (existing != null) {
-      return MaterialGrade.fromJson(existing);
-    }
-
-    // 2. Insert safely
-     try {
-       final response = await _client
-          .from('material_grades')
-          .insert({
-            'material_id': materialId,
-            'grade_name': gradeName,
-          })
-          .select()
-          .single();
-      return MaterialGrade.fromJson(response);
-     } on PostgrestException catch (e) {
-        if (e.code == '23505') { // Unique violation
-          final retry = await _client
-              .from('material_grades')
-              .select()
-              .eq('material_id', materialId)
-              .ilike('grade_name', gradeName)
-              .single();
-          return MaterialGrade.fromJson(retry);
-        }
-        rethrow;
-     }
+    return row;
   }
 }

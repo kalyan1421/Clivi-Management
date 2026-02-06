@@ -61,7 +61,8 @@ class _SearchableDropdownWithCreateState<T>
 
   @override
   void dispose() {
-    _removeOverlay();
+    _overlayEntry?.remove();
+    _overlayEntry = null;
     _searchController.dispose();
     super.dispose();
   }

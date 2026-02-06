@@ -53,10 +53,10 @@ END $$;
 
 -- 2. ADD UNIQUE CONSTRAINT TO STOCK ITEMS (Explicit Name)
 ALTER TABLE public.stock_items 
-DROP CONSTRAINT IF EXISTS uq_stock_item_project_name_grade;
+DROP CONSTRAINT IF EXISTS uq_stock_item_grade_project_name;
 
 ALTER TABLE public.stock_items
-ADD CONSTRAINT uq_stock_item_project_name_grade 
+ADD CONSTRAINT uq_stock_item_grade_project_name 
 UNIQUE NULLS NOT DISTINCT (project_id, name, grade);
 
 
@@ -121,7 +121,7 @@ BEGIN
         p_quantity,
         v_user_id
     )
-    ON CONFLICT ON CONSTRAINT uq_stock_item_project_name_grade
+    ON CONFLICT ON CONSTRAINT uq_stock_item_grade_project_name
     DO UPDATE SET
         quantity = public.stock_items.quantity + EXCLUDED.quantity,
         unit = EXCLUDED.unit;
