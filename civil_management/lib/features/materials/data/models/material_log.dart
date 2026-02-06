@@ -1,3 +1,6 @@
+import 'stock_item.dart';
+import '../../../../features/inventory/data/models/supplier_model.dart';
+
 class MaterialLog {
   final String id;
   final String projectId;
@@ -9,11 +12,14 @@ class MaterialLog {
   final String? loggedBy;
   final DateTime loggedAt;
   
-  // Joined
-  final String? itemName;
-  final String? itemUnit;
+  // Additional fields
+  final String? grade;
   final double? billAmount;
   final String? paymentType;
+
+  // Relations
+  final StockItem? stockItem;
+  final SupplierModel? supplier;
 
   const MaterialLog({
     required this.id,
@@ -25,29 +31,37 @@ class MaterialLog {
     this.notes,
     this.loggedBy,
     required this.loggedAt,
-    this.itemName,
-    this.itemUnit,
+    this.grade,
     this.billAmount,
     this.paymentType,
+    this.stockItem,
+    this.supplier,
   });
 
   factory MaterialLog.fromJson(Map<String, dynamic> json) {
     return MaterialLog(
-      id: json['id'] as String,
-      projectId: json['project_id'] as String,
-      itemId: json['item_id'] as String,
-      logType: json['log_type'] as String,
-      quantity: (json['quantity'] as num).toDouble(),
+      id: json['id']?.toString() ?? '',
+      projectId: json['project_id']?.toString() ?? '',
+      itemId: json['item_id']?.toString() ?? '',
+      logType: json['log_type']?.toString() ?? 'inward',
+      quantity: (json['quantity'] as num?)?.toDouble() ?? 0.0,
       activity: json['activity'] as String?,
       notes: json['notes'] as String?,
       loggedBy: json['logged_by'] as String?,
-      loggedAt: DateTime.parse(json['logged_at'] as String),
+      loggedAt: json['logged_at'] != null 
+          ? DateTime.parse(json['logged_at'] as String) 
+          : DateTime.now(),
       
-      itemName: json['stock_item'] != null ? json['stock_item']['name'] as String? : null,
-      itemUnit: json['stock_item'] != null ? json['stock_item']['unit'] as String? : null,
-      
+      grade: json['grade'] as String?,
       billAmount: (json['bill_amount'] as num?)?.toDouble(),
       paymentType: json['payment_type'] as String?,
+      
+      stockItem: json['stock_item'] != null 
+          ? StockItem.fromJson(json['stock_item'] as Map<String, dynamic>) 
+          : null,
+      supplier: json['supplier'] != null 
+          ? SupplierModel.fromJson(json['supplier'] as Map<String, dynamic>) 
+          : null,
     );
   }
 }

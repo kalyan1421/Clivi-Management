@@ -34,6 +34,7 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
+      print('[MACHINERY CONTROLLER] Creating machinery: $name');
       await _repository.createMachinery(
         name: name,
         type: type,
@@ -41,9 +42,11 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
         ownershipType: ownershipType,
       );
       state = const AsyncValue.data(null);
+      print('[MACHINERY CONTROLLER] Machinery created successfully');
       return true;
     } catch (e, st) {
-      print('Error creating machinery: $e'); // Added log
+      print('[MACHINERY CONTROLLER ERROR] Failed to create machinery: $e');
+      print('[MACHINERY CONTROLLER STACK] $st');
       state = AsyncValue.error(e, st);
       return false;
     }
@@ -61,6 +64,7 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
+      print('[MACHINERY CONTROLLER] Logging time-based usage');
       await _repository.logMachineryUsageTimeBased(
         projectId: projectId,
         machineryId: machineryId,
@@ -72,9 +76,11 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
         notes: notes,
       );
       state = const AsyncValue.data(null);
+      print('[MACHINERY CONTROLLER] Time-based log saved successfully');
       return true;
     } catch (e, st) {
-      print('Error logging usage: $e'); // Added log
+      print('[MACHINERY CONTROLLER ERROR] Failed to log time-based usage: $e');
+      print('[MACHINERY CONTROLLER STACK] $st');
       state = AsyncValue.error(e, st);
       return false;
     }
@@ -90,6 +96,7 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
+      print('[MACHINERY CONTROLLER] Logging reading-based usage');
       await _repository.logMachineryUsage(
         projectId: projectId,
         machineryId: machineryId,
@@ -99,8 +106,11 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
         notes: notes,
       );
       state = const AsyncValue.data(null);
+      print('[MACHINERY CONTROLLER] Reading-based log saved successfully');
       return true;
     } catch (e, st) {
+      print('[MACHINERY CONTROLLER ERROR] Failed to log reading-based usage: $e');
+      print('[MACHINERY CONTROLLER STACK] $st');
       state = AsyncValue.error(e, st);
       return false;
     }

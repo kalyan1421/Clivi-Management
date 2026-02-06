@@ -19,13 +19,15 @@ class StockItem {
 
   factory StockItem.fromJson(Map<String, dynamic> json) {
     return StockItem(
-      id: json['id'] as String,
-      projectId: json['project_id'] as String,
-      name: json['name'] as String,
+      id: json['id']?.toString() ?? '',
+      projectId: json['project_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Unknown Material',
       grade: json['grade'] as String?,
-      unit: json['unit'] as String,
-      quantity: (json['quantity'] as num).toDouble(),
-      createdAt: DateTime.parse(json['created_at'] as String),
+      unit: json['unit']?.toString() ?? 'units',
+      quantity: (json['quantity'] as num?)?.toDouble() ?? 0.0,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at'] as String) 
+          : DateTime.now(),
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -11,6 +12,7 @@ import '../data/models/material_grade_model.dart';
 import '../../inventory/data/models/supplier_model.dart';
 import '../../common/widgets/searchable_dropdown_with_create.dart';
 import '../data/models/material_master_model.dart';
+import '../data/models/material_log.dart';
 
 // Model to hold form state for each entry
 class MaterialEntryForm {
@@ -30,13 +32,14 @@ class MaterialEntryForm {
   // Validation helper
   bool isValid() {
     final qty = double.tryParse(quantityController.text) ?? 0;
+    // Bill amount can be 0 (e.g. sample?) but typically should be >= 0
     final amount = double.tryParse(billAmountController.text) ?? 0;
     
     return selectedMaterial != null &&
            selectedSupplier != null &&
            quantityController.text.isNotEmpty &&
-           qty > 0 && // Prevent 0 quantity
-           amount >= 0 && // Allow 0 bill amount but not negative
+           qty > 0 && 
+           amount >= 0 && 
            unitController.text.isNotEmpty &&
            billAmountController.text.isNotEmpty;
   }
@@ -50,7 +53,13 @@ class MaterialEntryForm {
 
 class MaterialReceiveScreen extends ConsumerStatefulWidget {
   final String projectId;
-  const MaterialReceiveScreen({super.key, required this.projectId});
+  final bool isEmbedded;
+  
+  const MaterialReceiveScreen({
+    super.key, 
+    required this.projectId,
+    this.isEmbedded = false,
+  });
 
   @override
   ConsumerState<MaterialReceiveScreen> createState() => _MaterialReceiveScreenState();
@@ -149,7 +158,14 @@ class _MaterialReceiveScreenState extends ConsumerState<MaterialReceiveScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Materials received successfully')),
         );
-        context.pop();
+        // Reset forms instead of popping
+        setState(() {
+          for (var e in _entries) e.dispose();
+          _entries.clear();
+          _addNewEntry();
+        });
+        // Refresh the logs provider
+        ref.invalidate(materialLogsProvider(pid));
       }
     } catch (e) {
       if (mounted) {
@@ -164,42 +180,225 @@ class _MaterialReceiveScreenState extends ConsumerState<MaterialReceiveScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bodyContent = _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!widget.isEmbedded) ...[
+                     const Text('Add data to the site ledger', style: TextStyle(color: Colors.grey)),
+                     const SizedBox(height: 16),
+                  ],
+                  
+                  // Dynamic Forms
+                  ..._entries.asMap().entries.map((item) {
+                    final index = item.key;
+                    final entry = item.value;
+                    return _EntryCard(
+                      key: entry.key,
+                      entry: entry,
+                      index: index,
+                      projectId: widget.projectId,
+                      onRemove: () => _removeEntry(index),
+                      isRemovable: _entries.length > 1,
+                    );
+                  }),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Action Buttons
+                  AppButton(
+                    text: 'Save Material Entry',
+                    onPressed: _submitAll,
+                    isLoading: _isLoading,
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.primary),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: _addNewEntry,
+                      child: const Text('Add New Material', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+                  
+                  // History Section
+                  const _MaterialsHistoryHeader(),
+                  const SizedBox(height: 12),
+                  _MaterialsHistoryList(projectId: widget.projectId),
+                ],
+              ),
+            );
+
+    if (widget.isEmbedded) {
+      return bodyContent;
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Receive Materials'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _isLoading ? null : _submitAll,
-          ),
-        ],
+        title: const Text('Log Materials'),
+        centerTitle: false,
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
+      body: bodyContent,
+    );
+  }
+}
+
+class _MaterialsHistoryHeader extends StatelessWidget {
+  const _MaterialsHistoryHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text('Materials History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 4),
+            Text('Recent verified logs', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ],
+        ),
+        OutlinedButton(
+          onPressed: () {
+            // Logic to filter or view all? Currently just visual as per design
+          },
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            side: BorderSide(color: Colors.grey.shade300),
+          ),
+          child: const Text('Select', style: TextStyle(color: Colors.black)),
+        )
+      ],
+    );
+  }
+}
+
+class _MaterialsHistoryList extends ConsumerWidget {
+  final String projectId;
+  const _MaterialsHistoryList({required this.projectId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // We reuse the existing FutureProvider associated with logs
+    // Note: Assuming materialLogsProvider is defined in stock_provider.dart
+    // If not, we should have added it. I recall seeing it in the stock_provider.dart view.
+    final logsAsync = ref.watch(materialLogsProvider(projectId));
+    
+    return logsAsync.when(
+      data: (logs) {
+        if (logs.isEmpty) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Text('No recent logs'),
+          ));
+        }
+        // Show top 5 recent logs for summary
+        final displayLogs = logs.take(5).toList();
+        
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: displayLogs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final log = displayLogs[index];
+            return Container(
               padding: const EdgeInsets.all(16),
-              itemCount: _entries.length + 1, // +1 for "Add New" button
-              itemBuilder: (context, index) {
-                if (index == _entries.length) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: OutlinedButton.icon(
-                      onPressed: _addNewEntry,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Another Material'),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          log.stockItem?.name ?? 'Unknown Material',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        if (log.grade != null && log.grade!.isNotEmpty)
+                          Text(
+                            'GRADE ${log.grade}',
+                            style: const TextStyle(
+                                color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              width: 6, height: 6,
+                              decoration: const BoxDecoration(
+                                color: Colors.grey, shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              log.supplier?.name ?? 'Unknown Vendor',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        )
+                      ],
                     ),
-                  );
-                }
-                return _EntryCard(
-                  key: _entries[index].key, // Use UniqueKey
-                  entry: _entries[index],
-                  index: index,
-                  projectId: widget.projectId,
-                  onRemove: () => _removeEntry(index),
-                  isRemovable: _entries.length > 1,
-                );
-              },
-            ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                             TextSpan(
+                               text: '${log.quantity.toStringAsFixed(0)} ', 
+                               style: const TextStyle(
+                                 color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16
+                               )
+                             ),
+                             TextSpan(
+                               text: log.stockItem?.unit ?? '',
+                               style: const TextStyle(
+                                 color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold
+                               )
+                             )
+                          ]
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        DateFormat('MMM dd').format(log.loggedAt),
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      )
+                    ],
+                  )
+                ],
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
 }
@@ -306,28 +505,31 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
     
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Entry #${widget.index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                if (widget.isRemovable)
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: widget.onRemove,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
+            if (widget.isRemovable)
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                  onPressed: widget.onRemove,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+              
             // 1. MATERIAL DROPDOWN
             SearchableDropdownWithCreate<StockItem>(
               label: 'Material Name',
-              hint: 'Select or Add Material',
+              hint: '-- Select Material --',
               value: entry.selectedMaterial,
               items: _projectMaterials,
               isLoading: _loadingMaterials,
@@ -344,83 +546,56 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
                 }
               },
               onAdd: (name) async {
-                // Determine default unit from user or constant? 
-                // Currently user has to type unit in the form. But repository needs it.
-                // We'll pass a default 'Units' or try to capture it. 
-                // For simplified flow, we create the StockItem here with a temporary unit, 
-                // but the user can edit the unit field below which updates the Log, 
-                // but stock_item.unit is set once.
-                // Better approach: Let Repo handle creation or update unit if null.
-                // Here we just create the item wrapper.
                 final newItem = await ref.read(stockRepositoryProvider).getOrCreateStockItem(
                   projectId: widget.projectId,
                   name: name,
-                  unit: 'Units', // Default, user can update logs
-                  // Wait, if we create it here, we should probably prompt for Unit?
-                  // For now, let's assume 'Units' and user sets logs. 
-                  // If we want detailed creation loop, we need a dialog.
-                  // User request: "Auto-select the newly added material".
+                  unit: 'Units', // Default
                 );
-                
-                // Add to master silently for global awareness? 
-                // Trigger `sync_material_master` handles this.
-                
-                await _fetchMaterials(); // Refresh list to include new
-                
-                // Return the specific item from the refreshed list (or just the newItem)
+                await _fetchMaterials(); 
                 return newItem;
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            
+            // 2. GRADE DROPDOWN
+            SearchableDropdownWithCreate<MaterialGrade>(
+              label: 'Grade / Type',
+              hint: 'Cement, Iron, etc.',
+              value: entry.selectedGrade,
+              items: _availableGrades,
+              isLoading: _loadingGrades,
+              itemLabelBuilder: (g) => g.gradeName,
+              onChanged: (g) {
+                setState(() => entry.selectedGrade = g);
+              },
+              onAdd: (gradeName) async {
+                if (entry.selectedMaterial == null) throw 'Select Material first';
+                
+                final masterRepo = ref.read(materialMasterRepositoryProvider);
+                var masterList = await masterRepo.searchMaterials(entry.selectedMaterial!.name);
+                MaterialMaster master;
+                if (masterList.isEmpty) {
+                  master = await masterRepo.addMaterialMaster(entry.selectedMaterial!.name);
+                } else {
+                  try {
+                    master = masterList.firstWhere(
+                      (m) => m.name.toLowerCase() == entry.selectedMaterial!.name.toLowerCase()
+                    );
+                  } catch (e) {
+                    master = await masterRepo.addMaterialMaster(entry.selectedMaterial!.name);
+                  }
+                }
+                
+                final newGradeData = await masterRepo.addMaterialGrade(materialId: master.id, gradeName: gradeName);
+                final newGrade = MaterialGrade.fromJson(newGradeData);
+                await _fetchGrades(entry.selectedMaterial!.name);
+                return newGrade;
+              },
+            ),
+            const SizedBox(height: 16),
 
             Row(
               children: [
-                // 2. GRADE DROPDOWN
-                Expanded(
-                  child: SearchableDropdownWithCreate<MaterialGrade>(
-                    label: 'Grade / Type',
-                    hint: 'Select or Add',
-                    value: entry.selectedGrade,
-                    items: _availableGrades,
-                    isLoading: _loadingGrades,
-                    itemLabelBuilder: (g) => g.gradeName,
-                    onChanged: (g) {
-                      setState(() => entry.selectedGrade = g);
-                    },
-                    validator: (val) => null, // Optional
-                    onAdd: (gradeName) async {
-                      if (entry.selectedMaterial == null) throw 'Select Material first';
-                      
-                      // We need material ID for master grades table
-                      // Helper logic: find master ID by name, then insert.
-                      // First ensure master exists for this name.
-                      final masterRepo = ref.read(materialMasterRepositoryProvider);
-                      
-                      // 1. Get/Create Master
-                      var masterList = await masterRepo.searchMaterials(entry.selectedMaterial!.name);
-                      MaterialMaster master;
-                      if (masterList.isEmpty) {
-                        master = await masterRepo.addMaterialMaster(entry.selectedMaterial!.name);
-                      } else {
-                        // Exact match check
-                        try {
-                          master = masterList.firstWhere(
-                            (m) => m.name.toLowerCase() == entry.selectedMaterial!.name.toLowerCase()
-                          );
-                        } catch (e) {
-                          master = await masterRepo.addMaterialMaster(entry.selectedMaterial!.name);
-                        }
-                      }
-                      
-                      // 2. Add Grade
-                      final newGradeData = await masterRepo.addMaterialGrade(materialId: master.id, gradeName: gradeName);
-                      final newGrade = MaterialGrade.fromJson(newGradeData);
-                      await _fetchGrades(entry.selectedMaterial!.name);
-                      return newGrade;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: CustomTextField(
                     controller: entry.quantityController,
@@ -428,49 +603,37 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
                     keyboardType: TextInputType.number,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                 Expanded(
-                   child: DropdownButtonFormField<String>(
-                     value: _unitItems.contains(entry.unitController.text)
-                         ? entry.unitController.text
-                         : null,
-                     decoration: const InputDecoration(
-                         labelText: 'Unit', border: OutlineInputBorder()),
-                     items: _unitItems
-                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                         .toList(),
-                     onChanged: (val) {
-                       if (val != null)
-                         setState(() => entry.unitController.text = val);
-                     },
-                   ),
-                 ),
-                 const SizedBox(width: 12),
-                 Expanded(
-                   child: DropdownButtonFormField<String>(
-                    value: entry.paymentType,
-                    decoration: const InputDecoration(labelText: 'Payment Mode', border: OutlineInputBorder()),
-                    items: ['Cash', 'Online', 'Cheque', 'Credit']
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _unitItems.contains(entry.unitController.text)
+                        ? entry.unitController.text
+                        : null,
+                    decoration: const InputDecoration(
+                        labelText: 'Unit',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                          borderSide: BorderSide(color: Colors.grey),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    ),
+                    items: _unitItems
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
                     onChanged: (val) {
-                      if (val != null) setState(() => entry.paymentType = val);
+                      if (val != null)
+                        setState(() => entry.unitController.text = val);
                     },
                   ),
-                 ),
+                ),
               ],
             ),
-             const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
              // 3. VENDOR DROPDOWN
              SearchableDropdownWithCreate<SupplierModel>(
                 label: 'Vendor / Supplier', 
-                hint: 'Select or Add Vendor',
+                hint: 'Enter vendor name',
                 value: entry.selectedSupplier,
                 items: _projectSuppliers,
                 isLoading: _loadingSuppliers,
@@ -483,12 +646,32 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
                 },
              ),
 
-             const SizedBox(height: 12),
+             const SizedBox(height: 16),
              
-             CustomTextField(
+             DropdownButtonFormField<String>(
+                value: entry.paymentType,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Type', 
+                  hintText: '-- Select Payment Type --',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                ),
+                items: ['Cash', 'Online', 'Cheque', 'Credit']
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => entry.paymentType = val);
+                },
+              ),
+              
+              const SizedBox(height: 16),
+
+             CurrencyTextField(
                controller: entry.billAmountController,
-               label: 'Bill Amount (₹)',
-               keyboardType: TextInputType.number,
+               label: 'Bill amount',
+               // prefixText is handled internally by CurrencyTextField with prefixIcon
              ),
           ],
         ),

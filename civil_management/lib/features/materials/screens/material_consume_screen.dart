@@ -14,7 +14,13 @@ final stockBalanceProvider = FutureProvider.autoDispose.family<List<Map<String, 
 
 class MaterialConsumeScreen extends ConsumerStatefulWidget {
   final String projectId;
-  const MaterialConsumeScreen({super.key, required this.projectId});
+  final bool isEmbedded;
+
+  const MaterialConsumeScreen({
+    super.key, 
+    required this.projectId,
+    this.isEmbedded = false,
+  });
 
   @override
   ConsumerState<MaterialConsumeScreen> createState() => _MaterialConsumeScreenState();
@@ -78,9 +84,7 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
   Widget build(BuildContext context) {
     final stockAsync = ref.watch(stockBalanceProvider(widget.projectId));
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Log Consumption')),
-      body: stockAsync.when(
+    final bodyContent = stockAsync.when(
         data: (stockItems) {
           // Filter out items with 0 stock
           final availableItems = stockItems.where((i) => (i['current_stock'] as num) > 0).toList();
@@ -90,7 +94,6 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
           }
 
           // Resolve the selected item object from the ID
-          // This ensures we always have the latest data for the selected ID
           _currentStockItem = null;
           if (_selectedStockItemId != null) {
             try {
@@ -99,8 +102,6 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
               );
             } catch (e) {
               // Item might have disappeared or has 0 stock now
-              // We could reset _selectedStockItemId here, but inside build usually bad.
-              // Just leave _currentStockItem null, causing dropdown value to be null
             }
           }
 
@@ -189,7 +190,15 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
+      );
+
+    if (widget.isEmbedded) {
+      return bodyContent;
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Log Consumption')),
+      body: bodyContent,
     );
   }
 }
