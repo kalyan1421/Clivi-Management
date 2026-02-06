@@ -39,6 +39,34 @@ class BillRepository {
     }
   }
 
+  /// Get pending bills with pagination
+  Future<List<BillModel>> getPendingBills({
+    required String projectId,
+    required int offset,
+    required int limit,
+  }) async {
+    try {
+      final response = await _client
+          .from('bills')
+          .select('''
+            *,
+            creator:user_profiles!bills_created_by_fkey(id, full_name, email),
+            approver:user_profiles!bills_approved_by_fkey(id, full_name, email),
+            project:projects!bills_project_id_fkey(id, name)
+          ''')
+          .eq('project_id', projectId)
+          .eq('status', 'pending')
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      return (response as List).map((json) => BillModel.fromJson(json)).toList();
+    } on PostgrestException catch (e) {
+      throw DatabaseException.fromPostgrest(e);
+    } catch (e) {
+      throw Exception('Failed to fetch pending bills: $e');
+    }
+  }
+
   /// Create a new bill
   Future<BillModel> createBill({
     required String projectId,

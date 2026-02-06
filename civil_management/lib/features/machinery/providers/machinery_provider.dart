@@ -26,6 +26,60 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
 
   MachineryController(this._repository) : super(const AsyncValue.data(null));
 
+  Future<bool> createMachinery({
+    required String name,
+    required String type,
+    String? registrationNo,
+    required String ownershipType,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.createMachinery(
+        name: name,
+        type: type,
+        registrationNo: registrationNo,
+        ownershipType: ownershipType,
+      );
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      print('Error creating machinery: $e'); // Added log
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  Future<bool> logTimeBased({
+    required String projectId,
+    required String machineryId,
+    required String workActivity,
+    required DateTime logDate,
+    required String startTime,
+    required String endTime,
+    required double totalHours,
+    String? notes,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.logMachineryUsageTimeBased(
+        projectId: projectId,
+        machineryId: machineryId,
+        workActivity: workActivity,
+        logDate: logDate,
+        startTime: startTime,
+        endTime: endTime,
+        totalHours: totalHours,
+        notes: notes,
+      );
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      print('Error logging usage: $e'); // Added log
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
   Future<bool> logUsage({
     required String projectId,
     required String machineryId,

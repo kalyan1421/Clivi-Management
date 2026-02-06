@@ -106,9 +106,7 @@ class ReceiptsRepository {
         .from('material_receipts')
         .select('*, items:material_receipt_items(*)')
         .eq('project_id', projectId)
-        .is_('deleted_at', null)
-        .order('receipt_date', ascending: false)
-        .range(offset, offset + limit - 1);
+        .filter('deleted_at', 'is', 'null');
 
     if (fromDate != null) {
       query = query.gte(
@@ -120,7 +118,9 @@ class ReceiptsRepository {
       query = query.lte('receipt_date', toDate.toIso8601String().split('T')[0]);
     }
 
-    final response = await query;
+    final response = await query
+        .order('receipt_date', ascending: false)
+        .range(offset, offset + limit - 1);
     return (response as List)
         .map((e) => MaterialReceiptModel.fromJson(e))
         .toList();

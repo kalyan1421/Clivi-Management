@@ -669,14 +669,15 @@ class _MaterialCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
                   children: [
                     _StatChip(
                       label: 'Recv.',
                       value: '$received $unit',
                       color: AppColors.success,
                     ),
-                    const SizedBox(width: 12),
                     _StatChip(
                       label: 'Cons.',
                       value: '$consumed $unit',

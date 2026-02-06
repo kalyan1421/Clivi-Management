@@ -22,6 +22,16 @@ final billsStreamProvider = StreamProvider.family<List<BillModel>, String>((ref,
   return repository.streamBillsByProject(projectId);
 });
 
+/// Fetch pending bills with pagination
+final paginatedPendingBillsProvider = FutureProvider.family<List<BillModel>, ({String projectId, int offset, int limit})>((ref, params) {
+  final repository = ref.watch(billRepositoryProvider);
+  return repository.getPendingBills(
+    projectId: params.projectId,
+    offset: params.offset,
+    limit: params.limit,
+  );
+});
+
 // ============================================================
 // CONTROLLER (WRITE)
 // ============================================================

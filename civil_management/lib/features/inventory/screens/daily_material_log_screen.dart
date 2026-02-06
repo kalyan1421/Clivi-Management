@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../data/models/stock_item_model.dart';
 import '../data/models/material_log_model.dart';
+import '../data/models/supplier_model.dart';
 import '../providers/inventory_provider.dart';
 
 /// Daily Material Log screen with Inward/Outward tabs for Site Managers
@@ -103,6 +104,126 @@ class _DailyMaterialLogScreenState extends ConsumerState<DailyMaterialLogScreen>
         ),
       );
     });
+  }
+
+}
+
+class _SupplierPicker extends ConsumerWidget {
+  final void Function(SupplierModel?) onSelected;
+
+  const _SupplierPicker({required this.onSelected});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final suppliersAsync = ref.watch(suppliersProvider);
+
+    return suppliersAsync.when(
+      loading: () => const SizedBox(
+        height: 56,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      error: (e, _) => Row(
+        children: [
+          const Icon(Icons.warning, color: Colors.orange),
+          const SizedBox(width: 8),
+          Expanded(child: Text('Failed to load vendors: $e')),
+        ],
+      ),
+      data: (suppliers) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DropdownButtonFormField<SupplierModel>(
+              decoration: const InputDecoration(
+                labelText: 'Vendor (optional)',
+                border: OutlineInputBorder(),
+              ),
+              items: suppliers
+                  .map((s) => DropdownMenuItem(
+                        value: s,
+                        child: Text(s.name),
+                      ))
+                  .toList(),
+              onChanged: onSelected,
+            ),
+            TextButton.icon(
+              onPressed: () => _showAddSupplierDialog(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Add new vendor'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAddSupplierDialog(BuildContext context, WidgetRef ref) {
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final emailController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New Vendor'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            TextField(
+              controller: phoneController,
+              decoration: const InputDecoration(labelText: 'Phone'),
+              keyboardType: TextInputType.phone,
+            ),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final name = nameController.text.trim();
+              if (name.isEmpty) return;
+              try {
+                await ref.read(inventoryRepositoryProvider).addSupplier(
+                      SupplierModel(
+                        id: '',
+                        name: name,
+                        phone: phoneController.text.trim().isEmpty
+                            ? null
+                            : phoneController.text.trim(),
+                        email: emailController.text.trim().isEmpty
+                            ? null
+                            : emailController.text.trim(),
+                        contactPerson: null,
+                        address: null,
+                        category: null,
+                        notes: null,
+                        isActive: true,
+                      ),
+                    );
+                ref.invalidate(suppliersProvider);
+                Navigator.pop(ctx);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to add vendor: $e')),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -288,24 +409,28 @@ class _AddLogBottomSheet extends ConsumerStatefulWidget {
 
 class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
   late LogType _selectedLogType;
+  late List<StockItemModel> _items;
   StockItemModel? _selectedItem;
   final _quantityController = TextEditingController();
+  final _amountController = TextEditingController();
   String? _selectedActivity;
   final _notesController = TextEditingController();
+  String? _paymentType;
+  SupplierModel? _selectedSupplier;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
+    _items = List.of(widget.stockItems);
     _selectedLogType = widget.initialLogType;
-    _selectedItem = widget.stockItems.isNotEmpty
-        ? widget.stockItems.first
-        : null;
+    _selectedItem = _items.isNotEmpty ? _items.first : null;
   }
 
   @override
   void dispose() {
     _quantityController.dispose();
+    _amountController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -349,12 +474,23 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
                 labelText: 'Select Material',
                 border: OutlineInputBorder(),
               ),
-              items: widget.stockItems
+              items: _items
+                  .where(
+                    (item) => _selectedLogType == LogType.inward
+                        ? true
+                        : item.quantity > 0,
+                  )
                   .map(
                     (item) => DropdownMenuItem(
                       value: item,
                       child: Text(
-                        '${item.name} (${item.quantity} ${item.unit})',
+                        [
+                          item.name,
+                          if (item.description != null &&
+                              item.description!.isNotEmpty)
+                            '• ${item.description}',
+                          '(${item.quantity} ${item.unit})',
+                        ].join(' '),
                       ),
                     ),
                   )
@@ -362,6 +498,22 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
               onChanged: (v) => setState(() => _selectedItem = v),
             ),
             const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Add new material'),
+                onPressed: _showAddMaterialDialog,
+              ),
+            ),
+
+            // Supplier (for inward)
+            if (_selectedLogType == LogType.inward) ...[
+              _SupplierPicker(
+                onSelected: (s) => setState(() => _selectedSupplier = s),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Quantity
             TextField(
@@ -400,6 +552,39 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
                 border: OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 16),
+
+            if (_selectedLogType == LogType.inward) ...[
+              // Payment type
+              DropdownButtonFormField<String>(
+                value: _paymentType,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Type',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                  DropdownMenuItem(value: 'upi', child: Text('Online/UPI')),
+                  DropdownMenuItem(
+                      value: 'bank_transfer', child: Text('Bank Transfer')),
+                  DropdownMenuItem(value: 'cheque', child: Text('Cheque')),
+                ],
+                onChanged: (v) => setState(() => _paymentType = v),
+              ),
+              const SizedBox(height: 16),
+
+              // Bill amount
+              TextField(
+                controller: _amountController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Bill Amount',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             const SizedBox(height: 24),
 
             // Submit Button
@@ -429,6 +614,21 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
       return;
     }
 
+    // Prevent over-consumption across projects
+    if (_selectedLogType == LogType.outward) {
+      final available = _selectedItem?.quantity ?? 0;
+      if (quantity > available) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Quantity exceeds available stock (${available.toStringAsFixed(2)} ${_selectedItem?.unit ?? ''}).',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -441,9 +641,32 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
         quantity: quantity,
         activity: _selectedActivity,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
+        supplierId: _selectedSupplier?.id,
       );
 
-      await repository.addMaterialLog(log);
+      final billAmount = _amountController.text.trim().isEmpty
+          ? null
+          : double.tryParse(_amountController.text.trim());
+      if (_selectedLogType == LogType.inward &&
+          billAmount != null &&
+          _paymentType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Select payment type for this bill')),
+        );
+        setState(() => _isSubmitting = false);
+        return;
+      }
+      await repository.addMaterialLog(
+        log,
+        paymentType: _paymentType,
+        billAmount: _selectedLogType == LogType.inward ? billAmount : null,
+        billTitle: [
+          _selectedItem?.name,
+          if (_selectedItem?.description != null &&
+              _selectedItem!.description!.isNotEmpty)
+            _selectedItem!.description
+        ].whereType<String>().join(' - '),
+      );
       widget.onAdded();
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -455,5 +678,86 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Future<void> _showAddMaterialDialog() async {
+    final nameController = TextEditingController();
+    final gradeController = TextEditingController();
+    String unit = 'units';
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Material'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            TextField(
+              controller: gradeController,
+              decoration:
+                  const InputDecoration(labelText: 'Grade / Type (optional)'),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: unit,
+              items: const [
+                DropdownMenuItem(value: 'bags', child: Text('Bags')),
+                DropdownMenuItem(value: 'kg', child: Text('Kg')),
+                DropdownMenuItem(value: 'tons', child: Text('Tons')),
+                DropdownMenuItem(
+                    value: 'cubic_meter', child: Text('Cubic Meter')),
+                DropdownMenuItem(value: 'units', child: Text('Units')),
+              ],
+              onChanged: (v) => unit = v ?? unit,
+              decoration: const InputDecoration(
+                labelText: 'Unit',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final name = nameController.text.trim();
+              if (name.isEmpty) return;
+              try {
+                final repo = ref.read(inventoryRepositoryProvider);
+                final created = await repo.addStockItem(
+                  StockItemModel(
+                    id: '',
+                    projectId: widget.projectId,
+                    name: name,
+                    description: gradeController.text.trim().isEmpty
+                        ? null
+                        : gradeController.text.trim(),
+                    quantity: 0,
+                    unit: unit,
+                  ),
+                );
+                ref.invalidate(stockItemsProvider(widget.projectId));
+                setState(() {
+                  _items = [..._items, created];
+                  _selectedItem = created;
+                });
+                Navigator.pop(ctx);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to add material: $e')),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 }

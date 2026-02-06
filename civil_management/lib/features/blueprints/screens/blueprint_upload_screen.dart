@@ -55,6 +55,8 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
     setState(() => _isLoading = true);
 
     final uploaderId = ref.read(currentUserProvider)!.id;
+    final userRole = ref.read(userRoleProvider);
+    final isAdminUser = userRole == UserRole.admin || userRole == UserRole.superAdmin;
 
     try {
       await ref
@@ -65,11 +67,17 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
             isAdminOnly: _isAdminOnly,
             file: _selectedFile!,
             uploaderId: uploaderId,
+            isAdminUser: isAdminUser,
           );
 
       // Invalidate providers to refresh the lists
-      ref.invalidate(blueprintFoldersProvider);
-      ref.invalidate(blueprintFilesProvider);
+      ref.invalidate(blueprintFoldersProvider(widget.projectId));
+      ref.invalidate(
+        blueprintFilesProvider(
+          projectId: widget.projectId,
+          folderName: _folderNameController.text.trim(),
+        ),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -153,18 +161,25 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
               const SizedBox(height: 16),
 
               // Admin Only Switch
-              SwitchListTile(
-                title: const Text('Admin Only'),
-                subtitle: const Text(
-                  'If enabled, only admins can see this file.',
-                ),
-                value: _isAdminOnly,
-                onChanged: (value) {
-                  setState(() {
-                    _isAdminOnly = value;
-                  });
+              Consumer(
+                builder: (context, ref, _) {
+                  final role = ref.watch(userRoleProvider);
+                  final canToggleAdminOnly =
+                      role == UserRole.admin || role == UserRole.superAdmin;
+                  return SwitchListTile(
+                    title: const Text('Admin Only'),
+                    subtitle: Text(
+                      canToggleAdminOnly
+                          ? 'If enabled, only admins can see this file.'
+                          : 'Visible to all (site managers cannot make admin-only)',
+                    ),
+                    value: _isAdminOnly && canToggleAdminOnly,
+                    onChanged: canToggleAdminOnly
+                        ? (value) => setState(() => _isAdminOnly = value)
+                        : null,
+                    secondary: const Icon(Icons.lock_outline),
+                  );
                 },
-                secondary: const Icon(Icons.lock_outline),
               ),
               const SizedBox(height: 32),
 

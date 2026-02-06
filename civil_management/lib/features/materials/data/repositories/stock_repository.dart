@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/stock_item.dart';
 import '../models/material_log.dart';
+import '../../../../features/inventory/data/models/supplier_model.dart';
 
 class StockRepository {
   final SupabaseClient _client;
@@ -13,52 +14,139 @@ class StockRepository {
         .from('stock_items')
         .select('*')
         .eq('project_id', projectId)  // 👈 FILTER BY PROJECT
-        .order('created_at', ascending: false);
+        .order('name', ascending: true);
     
     return (response as List).map((json) => StockItem.fromJson(json)).toList();
   }
 
   /// Get material logs for a specific project
   Future<List<MaterialLog>> getMaterialLogsByProject(String projectId) async {
+    if (projectId.isEmpty) {
+      throw ArgumentError('projectId is required to fetch material logs.');
+    }
+
     final response = await _client
         .from('material_logs')
         .select('''
           *,
-          stock_item:stock_items!material_logs_item_id_fkey(id, name, unit)
+          stock_item:stock_items!material_logs_item_id_fkey(id, name, unit),
+          supplier:suppliers(id, name)
         ''')
-        .eq('project_id', projectId)  // 👈 FILTER BY PROJECT
+        .eq('project_id', projectId) // ensure per-project isolation
         .order('logged_at', ascending: false);
     
     return (response as List).map((json) => MaterialLog.fromJson(json)).toList();
   }
 
-  /// Log material inward (received)
+  /// Get Suppliers for a SPECIFIC project
+  Future<List<SupplierModel>> getProjectSuppliers(String projectId) async {
+    final response = await _client
+        .from('suppliers')
+        .select()
+        .eq('project_id', projectId)
+        .eq('is_active', true)
+        .order('name', ascending: true);
+
+    return (response as List).map((e) => SupplierModel.fromJson(e)).toList();
+  }
+
+  /// Add a new Supplier for a SPECIFIC project
+  Future<SupplierModel> addProjectSupplier(String projectId, String name) async {
+    // 1. Check existing in this project
+    final existing = await _client
+        .from('suppliers')
+        .select()
+        .eq('project_id', projectId)
+        .ilike('name', name)
+        .maybeSingle();
+        
+    if (existing != null) {
+      return SupplierModel.fromJson(existing);
+    }
+
+    // 2. Create new
+    final response = await _client
+        .from('suppliers')
+        .insert({
+          'project_id': projectId,
+          'name': name,
+          'is_active': true,
+          'created_by': _client.auth.currentUser?.id,
+        })
+        .select()
+        .single();
+        
+    return SupplierModel.fromJson(response);
+  }
+
+  /// Ensure a Stock Item exists for this project (Get or Create)
+  Future<StockItem> getOrCreateStockItem({
+    required String projectId,
+    required String name,
+    String? grade,
+    required String unit,
+  }) async {
+    // 1. Check specific match (Name + Grade) for this project
+    var query = _client.from('stock_items')
+        .select()
+        .eq('project_id', projectId)
+        .ilike('name', name);
+    
+    if (grade != null && grade.isNotEmpty) {
+      query = query.eq('grade', grade);
+    } else {
+      query = query.filter('grade', 'is', 'null');
+    }
+
+    final existing = await query.maybeSingle();
+
+    if (existing != null) {
+      return StockItem.fromJson(existing);
+    }
+
+    // 2. Insert new Stock Item
+    final response = await _client
+        .from('stock_items')
+        .insert({
+          'project_id': projectId,
+          'name': name,
+          'grade': (grade != null && grade.isNotEmpty) ? grade : null,
+          'unit': unit,
+          'quantity': 0,
+          'created_by': _client.auth.currentUser?.id,
+        })
+        .select()
+        .single();
+        
+    return StockItem.fromJson(response);
+  }
+
+  /// Log material inward (received) - Uses Transactional RPC
   Future<void> logMaterialInward({
     required String projectId,
-    required String itemId,
+    required String stockItemName,
+    required String stockItemUnit,
+    String? stockItemGrade,
+    required String supplierId,
     required double quantity,
+    required double billAmount,
+    required String paymentType,
     String? activity,
     String? notes,
   }) async {
-    final userId = _client.auth.currentUser?.id;
-
-    // Insert log
-    await _client.from('material_logs').insert({
-      'project_id': projectId,
-      'item_id': itemId,
-      'log_type': 'inward',
-      'quantity': quantity,
-      'activity': activity,
-      'notes': notes,
-      'logged_by': userId,
-      'logged_at': DateTime.now().toIso8601String(),
-    });
-
-    // Update stock quantity
-    await _client.rpc('update_stock_quantity', params: {
-      'p_item_id': itemId,
+    
+    // Call the RPC
+    await _client.rpc('receive_material', params: {
+      'p_project_id': projectId,
+      'p_material_name': stockItemName,
+      'p_grade': stockItemGrade,
+      'p_unit': stockItemUnit,
       'p_quantity': quantity,
-      'p_operation': 'add',
+      'p_supplier_id': supplierId,
+      'p_bill_amount': billAmount,
+      'p_payment_type': paymentType,
+      'p_activity': activity ?? 'Material Received',
+      'p_notes': notes,
     });
   }
 
@@ -72,27 +160,20 @@ class StockRepository {
   }) async {
     final userId = _client.auth.currentUser?.id;
 
-    // Insert log
+    // Insert outward log - Trigger will validate sufficient stock
     await _client.from('material_logs').insert({
       'project_id': projectId,
       'item_id': itemId,
       'log_type': 'outward',
       'quantity': quantity,
-      'activity': activity,
+      'activity': activity ?? 'Material Consumed',
       'notes': notes,
       'logged_by': userId,
       'logged_at': DateTime.now().toIso8601String(),
     });
-
-    // Update stock quantity
-    await _client.rpc('update_stock_quantity', params: {
-      'p_item_id': itemId,
-      'p_quantity': quantity,
-      'p_operation': 'subtract',
-    });
   }
-
-  /// Stream stock items for real-time updates
+  
+  /// Stream stock items (using dynamic view if possible, or table)
   Stream<List<StockItem>> streamStockItemsByProject(String projectId) {
     return _client
         .from('stock_items')
@@ -100,5 +181,15 @@ class StockRepository {
         .eq('project_id', projectId)
         .order('created_at', ascending: false)
         .map((data) => data.map((json) => StockItem.fromJson(json)).toList());
+  }
+
+  /// Fetch Dynamic Balance
+  Future<List<Map<String, dynamic>>> getStockBalance(String projectId) async {
+    final response = await _client
+        .from('v_stock_balance_dynamic')
+        .select()
+        .eq('project_id', projectId)
+        .order('name');
+    return List<Map<String, dynamic>>.from(response);
   }
 }

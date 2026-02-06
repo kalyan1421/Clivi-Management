@@ -31,7 +31,56 @@ class MachineryRepository {
     return (response as List).map((json) => MachineryModel.fromJson(json)).toList();
   }
 
-  /// Log machinery usage
+  /// Create new machinery (Master)
+  Future<void> createMachinery({
+    required String name,
+    required String type,
+    String? registrationNo,
+    required String ownershipType, // 'Own' or 'Rental'
+    String status = 'active',
+  }) async {
+    await _client.from('machinery').insert({
+      'name': name,
+      'type': type,
+      'registration_no': registrationNo,
+      'ownership_type': ownershipType,
+      'created_by': _client.auth.currentUser?.id,
+    });
+  }
+
+  /// Log machinery usage (Time Based)
+  Future<void> logMachineryUsageTimeBased({
+    required String projectId,
+    required String machineryId,
+    required String workActivity,
+    required DateTime logDate,
+    required String startTime, // HH:mm
+    required String endTime, // HH:mm
+    required double totalHours,
+    String? notes,
+  }) async {
+    await _client.from('machinery_logs').insert({
+      'project_id': projectId,
+      'machinery_id': machineryId,
+      'log_type': 'usage',
+      'work_activity': workActivity,
+      'log_date': logDate.toIso8601String().split('T')[0],
+      'start_time': startTime,
+      'end_time': endTime,
+      'hours_used': totalHours,
+      'notes': notes,
+      'logged_by': _client.auth.currentUser?.id,
+      'logged_at': DateTime.now().toIso8601String(),
+    });
+
+    // Update machinery total hours
+    await _client.rpc('increment_machinery_hours', params: {
+      'p_machinery_id': machineryId,
+      'p_hours': totalHours,
+    });
+  }
+
+  /// Log machinery usage (Legacy / Reading Based)
   Future<void> logMachineryUsage({
     required String projectId,
     required String machineryId,
@@ -67,6 +116,7 @@ class MachineryRepository {
         })
         .eq('id', machineryId);
   }
+
   Stream<List<MachineryLog>> streamMachineryLogsByProject(String projectId) {
     return _client
         .from('machinery_logs')

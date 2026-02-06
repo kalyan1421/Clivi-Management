@@ -33,19 +33,30 @@ class StockController extends StateNotifier<AsyncValue<void>> {
 
   Future<bool> logInward({
     required String projectId,
-    required String itemId,
+    // itemId is not needed as repo handles it by name
     required double quantity,
+    required String stockItemName,
+    required String stockItemUnit,
+    String? stockItemGrade,
     String? activity,
     String? notes,
+    required String supplierId,
+    required String paymentType,
+    required double billAmount,
   }) async {
     state = const AsyncValue.loading();
     try {
       await _repository.logMaterialInward(
         projectId: projectId,
-        itemId: itemId,
         quantity: quantity,
+        stockItemName: stockItemName,
+        stockItemUnit: stockItemUnit,
+        stockItemGrade: stockItemGrade,
         activity: activity,
         notes: notes,
+        supplierId: supplierId,
+        paymentType: paymentType,
+        billAmount: billAmount,
       );
       state = const AsyncValue.data(null);
       return true;

@@ -82,6 +82,10 @@ class InventoryRepository {
     LogType? type,
     int limit = 50,
   }) async {
+    if (projectId.isEmpty) {
+      throw ArgumentError('projectId is required to fetch material logs.');
+    }
+
     try {
       var query = _client
           .from('material_logs')
@@ -90,7 +94,7 @@ class InventoryRepository {
             stock_items(name, unit),
             suppliers(name)
           ''')
-          .eq('project_id', projectId);
+          .eq('project_id', projectId); // enforce per-project isolation
 
       if (type != null) {
         query = query.eq('log_type', type.value);
@@ -109,8 +113,14 @@ class InventoryRepository {
     }
   }
 
-  /// Add a material log entry and update stock quantity
-  Future<MaterialLogModel> addMaterialLog(MaterialLogModel log) async {
+  /// Add a material log entry and update stock quantity.
+  /// Optionally creates a bill for inward (received) logs when payment data is provided.
+  Future<MaterialLogModel> addMaterialLog(
+    MaterialLogModel log, {
+    String? paymentType,
+    double? billAmount,
+    String? billTitle,
+  }) async {
     try {
       // 1. Insert the log entry
       final response = await _client
@@ -144,6 +154,22 @@ class InventoryRepository {
           .from('stock_items')
           .update({'quantity': newQty})
           .eq('id', log.itemId);
+
+      // 3. (Optional) Create bill for received materials
+      final shouldCreateBill =
+          log.logType == LogType.inward && billAmount != null && paymentType != null;
+      if (shouldCreateBill) {
+        await _client.from('bills').insert({
+          'project_id': log.projectId,
+          'title': billTitle ?? 'Material Purchase',
+          'bill_type': 'materials',
+          'amount': billAmount,
+          'payment_type': paymentType,
+          'status': 'pending',
+          'created_by': _client.auth.currentUser?.id,
+          'bill_date': DateTime.now().toIso8601String(),
+        });
+      }
 
       logger.i(
         'Material log added: ${log.logType.displayName} ${log.quantity}',

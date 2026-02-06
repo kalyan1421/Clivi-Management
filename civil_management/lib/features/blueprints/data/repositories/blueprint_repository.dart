@@ -62,6 +62,7 @@ class BlueprintRepository {
     required bool isAdminOnly,
     required File file,
     required String uploaderId,
+    required bool isAdminUser,
   }) async {
     final originalFileName = file.path.split('/').last;
     final fileExtension = originalFileName.contains('.')
@@ -88,6 +89,9 @@ class BlueprintRepository {
       filePath = '$projectId/$folderName/$fileName';
     }
 
+    // Site managers are never allowed to create admin-only files (defensive)
+    final effectiveIsAdminOnly = isAdminUser ? isAdminOnly : false;
+
     try {
       // 1. Upload file to storage (use upsert: true to allow overwriting if needed)
       await _client.storage
@@ -110,8 +114,7 @@ class BlueprintRepository {
             'file_name': fileName,
             'file_path': filePath,
             'file_url': fileUrl,
-            'is_admin_only': isAdminOnly,
-            'uploaded_by': uploaderId,
+            'is_admin_only': effectiveIsAdminOnly,
             'uploader_id': uploaderId,
           })
           .select()
