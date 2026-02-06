@@ -388,9 +388,9 @@ class ProjectStats {
 /// Material breakdown item
 class MaterialBreakdown {
   final String name;
-  final int received;
-  final int consumed;
-  final int remaining;
+  final double received;
+  final double consumed;
+  final double remaining;
   final String? unit;
 
   const MaterialBreakdown({
@@ -404,9 +404,9 @@ class MaterialBreakdown {
   factory MaterialBreakdown.fromJson(Map<String, dynamic> json) {
     return MaterialBreakdown(
       name: json['name'] as String,
-      received: json['received'] as int? ?? 0,
-      consumed: json['consumed'] as int? ?? 0,
-      remaining: json['remaining'] as int? ?? 0,
+      received: (json['received'] as num?)?.toDouble() ?? 0.0,
+      consumed: (json['consumed'] as num?)?.toDouble() ?? 0.0,
+      remaining: (json['remaining'] as num?)?.toDouble() ?? 0.0,
       unit: json['unit'] as String?,
     );
   }

@@ -29,3 +29,25 @@ Future<List<Blueprint>> blueprintFiles(
   final repository = ref.watch(blueprintRepositoryProvider);
   return repository.getBlueprintFiles(projectId, folderName);
 }
+
+/// Provider to get all blueprints for a project (not grouped by folder)
+@riverpod
+Future<List<Blueprint>> allBlueprints(
+  AllBlueprintsRef ref,
+  String projectId,
+) async {
+  final repository = ref.watch(blueprintRepositoryProvider);
+  // Get all folders first, then flatten all files
+  final folders = await repository.getBlueprintFolders(projectId);
+  final List<Blueprint> allFiles = [];
+  
+  for (final folder in folders) {
+    final files = await repository.getBlueprintFiles(projectId, folder.name);
+    allFiles.addAll(files);
+  }
+  
+  // Sort by created date (newest first)
+  allFiles.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  
+  return allFiles;
+}

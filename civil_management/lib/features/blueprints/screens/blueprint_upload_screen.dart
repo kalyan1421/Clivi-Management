@@ -12,8 +12,13 @@ import '../providers/blueprints_provider.dart';
 
 class BlueprintUploadScreen extends ConsumerStatefulWidget {
   final String projectId;
+  final String? initialFolderName;
 
-  const BlueprintUploadScreen({super.key, required this.projectId});
+  const BlueprintUploadScreen({
+    super.key,
+    required this.projectId,
+    this.initialFolderName,
+  });
 
   @override
   ConsumerState<BlueprintUploadScreen> createState() =>
@@ -27,6 +32,14 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
   File? _selectedFile;
   bool _isAdminOnly = false;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialFolderName != null) {
+      _folderNameController.text = widget.initialFolderName!;
+    }
+  }
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -112,86 +125,161 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text('Upload Blueprint'),
+    final theme = Theme.of(context);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // File Picker
-              OutlinedButton.icon(
-                onPressed: _pickFile,
-                icon: const Icon(Icons.attach_file),
-                label: const Text('Select File'),
-              ),
-              if (_selectedFile != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    'Selected: ${_selectedFile!.path.split('/').last}',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              const SizedBox(height: 24),
-
-              // Folder Name
-              TextFormField(
-                controller: _folderNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Folder Name',
-                  hintText: 'e.g., Floor Plans, Electrical',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Folder name cannot be empty.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Admin Only Switch
-              Consumer(
-                builder: (context, ref, _) {
-                  final role = ref.watch(userRoleProvider);
-                  final canToggleAdminOnly =
-                      role == UserRole.admin || role == UserRole.superAdmin;
-                  return SwitchListTile(
-                    title: const Text('Admin Only'),
-                    subtitle: Text(
-                      canToggleAdminOnly
-                          ? 'If enabled, only admins can see this file.'
-                          : 'Visible to all (site managers cannot make admin-only)',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.upload_file, size: 24),
                     ),
-                    value: _isAdminOnly && canToggleAdminOnly,
-                    onChanged: canToggleAdminOnly
-                        ? (value) => setState(() => _isAdminOnly = value)
-                        : null,
-                    secondary: const Icon(Icons.lock_outline),
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // Upload Button
-              AppButton(
-                text: 'Upload Blueprint',
-                isLoading: _isLoading,
-                onPressed: _handleUpload,
-              ),
-            ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Upload Blueprint files',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Separate uploads for documents and architecture diagrams',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+          
+          const Divider(height: 1),
+          
+          // Form
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Folder/Category Name
+                    TextFormField(
+                      controller: _folderNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Doc Name',
+                        hintText: 'e.g., Floor Plans, Electrical',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Document name cannot be empty.';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Admin Only Switch
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final role = ref.watch(userRoleProvider);
+                        final canToggleAdminOnly =
+                            role == UserRole.admin || role == UserRole.superAdmin;
+                        return SwitchListTile(
+                          title: const Text('Admin Only'),
+                          subtitle: Text(
+                            canToggleAdminOnly
+                                ? 'If enabled, only admins can see this file.'
+                                : 'Visible to all (site managers cannot make admin-only)',
+                          ),
+                          value: _isAdminOnly && canToggleAdminOnly,
+                          onChanged: canToggleAdminOnly
+                              ? (value) => setState(() => _isAdminOnly = value)
+                              : null,
+                          secondary: const Icon(Icons.lock_outline),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Upload documentation button
+                    OutlinedButton.icon(
+                      onPressed: _pickFile,
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text('Upload documentation'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(color: theme.primaryColor),
+                        foregroundColor: theme.primaryColor,
+                      ),
+                    ),
+                    
+                    if (_selectedFile != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12.0),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green[200]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green[700]),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Selected: ${_selectedFile!.path.split('/').last}',
+                                  style: TextStyle(color: Colors.green[900]),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+
+                    // Save Button
+                    AppButton(
+                      text: 'Save',
+                      isLoading: _isLoading,
+                      onPressed: _handleUpload,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

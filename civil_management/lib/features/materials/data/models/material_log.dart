@@ -12,6 +12,8 @@ class MaterialLog {
   // Joined
   final String? itemName;
   final String? itemUnit;
+  final double? billAmount;
+  final String? paymentType;
 
   const MaterialLog({
     required this.id,
@@ -25,6 +27,8 @@ class MaterialLog {
     required this.loggedAt,
     this.itemName,
     this.itemUnit,
+    this.billAmount,
+    this.paymentType,
   });
 
   factory MaterialLog.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,9 @@ class MaterialLog {
       
       itemName: json['stock_item'] != null ? json['stock_item']['name'] as String? : null,
       itemUnit: json['stock_item'] != null ? json['stock_item']['unit'] as String? : null,
+      
+      billAmount: (json['bill_amount'] as num?)?.toDouble(),
+      paymentType: json['payment_type'] as String?,
     );
   }
 }

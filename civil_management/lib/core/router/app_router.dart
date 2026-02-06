@@ -9,7 +9,6 @@ import '../../features/dashboard/screens/staff_directory_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/dashboard/screens/super_admin_dashboard.dart';
 import '../../features/dashboard/screens/admin_dashboard_shell.dart';
-import '../../features/dashboard/screens/site_manager_dashboard.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/projects/screens/project_list_screen.dart';
 import '../../features/projects/screens/create_project_screen.dart';
@@ -18,7 +17,6 @@ import '../../features/blueprints/screens/blueprints_folders_screen.dart';
 import '../../features/blueprints/screens/blueprint_files_screen.dart';
 import '../../features/blueprints/screens/blueprint_viewer_screen.dart';
 import '../../features/blueprints/data/models/blueprint_model.dart';
-import '../../features/projects/data/models/project_model.dart';
 import '../../features/inventory/screens/stock_list_screen.dart';
 import '../../features/inventory/screens/daily_material_log_screen.dart';
 import '../../features/labour/screens/labour_roster_screen.dart';
@@ -28,6 +26,7 @@ import '../../features/inventory/screens/supplier_list_screen.dart';
 import '../../features/reports/screens/reports_screen.dart';
 import '../../features/bills/screens/bills_screen.dart';
 import '../../features/bills/screens/create_bill_screen.dart';
+import '../../features/materials/screens/materials_tab_screen.dart';
 
 /// Global router provider
 final routerProvider = Provider<GoRouter>((ref) {
@@ -175,23 +174,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'project-blueprints',
             builder: (context, state) {
               final projectId = state.pathParameters['id']!;
-              return BlueprintsFoldersScreen(projectId: projectId);
-            },
-          ),
-          GoRoute(
-            path: 'blueprints/:folderName',
-            name: 'project-blueprint-files',
-            builder: (context, state) {
-              final projectId = state.pathParameters['id']!;
-              final folderName = state.pathParameters['folderName']!;
-              return BlueprintFilesScreen(
-                projectId: projectId,
-                folderName: folderName,
-              );
+              return BlueprintFilesScreen(projectId: projectId);
             },
             routes: [
               GoRoute(
-                path: ':fileId',
+                path: 'view/:fileId',
                 name: 'project-blueprint-viewer',
                 builder: (context, state) {
                   final blueprint = state.extra as Blueprint?;
@@ -271,7 +258,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'materials',
                 name: 'project-materials',
-                builder: (context, state) => const Placeholder(), // MaterialsTabScreen
+                builder: (context, state) {
+                  final projectId = state.pathParameters['id']!;
+                  return MaterialsTabScreen(projectId: projectId);
+                },
               ),
               GoRoute(
                 path: 'machinery',

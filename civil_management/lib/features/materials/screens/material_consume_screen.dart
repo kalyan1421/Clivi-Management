@@ -23,7 +23,8 @@ class MaterialConsumeScreen extends ConsumerStatefulWidget {
 class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
   final _formKey = GlobalKey<FormState>();
   
-  Map<String, dynamic>? _selectedStockItem;
+  String? _selectedStockItemId; // Changed from Map to ID string
+  Map<String, dynamic>? _currentStockItem; // To store the resolved item for logic
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _activityController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
@@ -32,14 +33,14 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedStockItem == null) return;
+    if (_selectedStockItemId == null || _currentStockItem == null) return;
 
-    final currentStock = (_selectedStockItem!['current_stock'] as num).toDouble();
+    final currentStock = (_currentStockItem!['current_stock'] as num).toDouble();
     final consumeQty = double.parse(_quantityController.text);
 
     if (consumeQty > currentStock) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: Only $currentStock ${_selectedStockItem!['unit']} available')),
+        SnackBar(content: Text('Error: Only $currentStock ${_currentStockItem!['unit']} available')),
       );
       return;
     }
@@ -49,7 +50,7 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
     try {
       await ref.read(stockRepositoryProvider).logMaterialOutward(
         projectId: widget.projectId,
-        itemId: _selectedStockItem!['item_id'],
+        itemId: _selectedStockItemId!,
         quantity: consumeQty,
         activity: _activityController.text.isNotEmpty ? _activityController.text : 'Material Consumed',
         notes: _notesController.text,
@@ -88,27 +89,42 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
              return const Center(child: Text('No materials available to consume'));
           }
 
+          // Resolve the selected item object from the ID
+          // This ensures we always have the latest data for the selected ID
+          _currentStockItem = null;
+          if (_selectedStockItemId != null) {
+            try {
+              _currentStockItem = availableItems.firstWhere(
+                (item) => item['item_id'] == _selectedStockItemId
+              );
+            } catch (e) {
+              // Item might have disappeared or has 0 stock now
+              // We could reset _selectedStockItemId here, but inside build usually bad.
+              // Just leave _currentStockItem null, causing dropdown value to be null
+            }
+          }
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Form(
               key: _formKey,
               child: Column(
                 children: [
-                   DropdownButtonFormField<Map<String, dynamic>>(
-                     value: _selectedStockItem,
+                   DropdownButtonFormField<String>(
+                     value: _currentStockItem != null ? _selectedStockItemId : null,
                      decoration: const InputDecoration(
                        labelText: 'Select Material',
                        border: OutlineInputBorder(),
                      ),
                      items: availableItems.map((item) {
                        return DropdownMenuItem(
-                         value: item,
+                         value: item['item_id'] as String,
                          child: Text('${item['name']} ${item['grade'] ?? ''} (${item['current_stock']} ${item['unit']})'),
                        );
                      }).toList(),
                      onChanged: (val) {
                        setState(() {
-                         _selectedStockItem = val;
+                         _selectedStockItemId = val;
                          // Reset quantity if changed
                          _quantityController.clear();
                        });
@@ -117,13 +133,13 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
                    ),
                    const SizedBox(height: 16),
                    
-                   if (_selectedStockItem != null) ...[
+                   if (_currentStockItem != null) ...[
                      Align(
                        alignment: Alignment.centerLeft,
                        child: Padding(
                          padding: const EdgeInsets.only(bottom: 8),
                          child: Text(
-                           'Available: ${_selectedStockItem!['current_stock']} ${_selectedStockItem!['unit']}',
+                           'Available: ${_currentStockItem!['current_stock']} ${_currentStockItem!['unit']}',
                            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                          ),
                        ),

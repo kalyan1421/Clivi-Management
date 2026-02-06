@@ -235,12 +235,12 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
 
   final List<String> _unitItems = const [
     'Bags',
-    'Kg',
-    'Ton',
     'CFT',
+    'Cum',
+    'Kg',
     'Liters',
+    'Ton',
     'Units',
-    'Cum'
   ];
 
   @override
@@ -258,7 +258,16 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
     setState(() => _loadingMaterials = true);
     try {
       final materials = await ref.read(stockRepositoryProvider).getStockItemsByProject(widget.projectId);
-      if (mounted) setState(() => _projectMaterials = materials);
+      
+      // Filter distinct by name to avoid duplicates in dropdown
+      final uniqueMaterials = <String, StockItem>{};
+      for (var item in materials) {
+        if (!uniqueMaterials.containsKey(item.name.toLowerCase())) {
+          uniqueMaterials[item.name.toLowerCase()] = item;
+        }
+      }
+      
+      if (mounted) setState(() => _projectMaterials = uniqueMaterials.values.toList());
     } catch (e) {
       debugPrint('Error fetching materials: $e');
     } finally {

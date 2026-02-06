@@ -576,3 +576,10 @@ final projectStatsProvider = FutureProvider<Map<String, int>>((ref) async {
   final repository = ref.watch(projectRepositoryProvider);
   return repository.getProjectStats();
 });
+
+/// Project material breakdown provider (family for different project IDs)
+final projectMaterialBreakdownProvider =
+    FutureProvider.family<List<MaterialBreakdown>, String>((ref, projectId) async {
+  final repository = ref.watch(projectRepositoryProvider);
+  return repository.getMaterialBreakdown(projectId);
+});

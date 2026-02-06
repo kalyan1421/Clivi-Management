@@ -311,5 +311,137 @@ class _BlueprintFilesProviderElement
   String get folderName => (origin as BlueprintFilesProvider).folderName;
 }
 
+String _$allBlueprintsHash() => r'362fe5a89ed29f97dd790af6ce94ab02f44945c7';
+
+/// Provider to get all blueprints for a project (not grouped by folder)
+///
+/// Copied from [allBlueprints].
+@ProviderFor(allBlueprints)
+const allBlueprintsProvider = AllBlueprintsFamily();
+
+/// Provider to get all blueprints for a project (not grouped by folder)
+///
+/// Copied from [allBlueprints].
+class AllBlueprintsFamily extends Family<AsyncValue<List<Blueprint>>> {
+  /// Provider to get all blueprints for a project (not grouped by folder)
+  ///
+  /// Copied from [allBlueprints].
+  const AllBlueprintsFamily();
+
+  /// Provider to get all blueprints for a project (not grouped by folder)
+  ///
+  /// Copied from [allBlueprints].
+  AllBlueprintsProvider call(String projectId) {
+    return AllBlueprintsProvider(projectId);
+  }
+
+  @override
+  AllBlueprintsProvider getProviderOverride(
+    covariant AllBlueprintsProvider provider,
+  ) {
+    return call(provider.projectId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'allBlueprintsProvider';
+}
+
+/// Provider to get all blueprints for a project (not grouped by folder)
+///
+/// Copied from [allBlueprints].
+class AllBlueprintsProvider extends AutoDisposeFutureProvider<List<Blueprint>> {
+  /// Provider to get all blueprints for a project (not grouped by folder)
+  ///
+  /// Copied from [allBlueprints].
+  AllBlueprintsProvider(String projectId)
+    : this._internal(
+        (ref) => allBlueprints(ref as AllBlueprintsRef, projectId),
+        from: allBlueprintsProvider,
+        name: r'allBlueprintsProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$allBlueprintsHash,
+        dependencies: AllBlueprintsFamily._dependencies,
+        allTransitiveDependencies:
+            AllBlueprintsFamily._allTransitiveDependencies,
+        projectId: projectId,
+      );
+
+  AllBlueprintsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.projectId,
+  }) : super.internal();
+
+  final String projectId;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<Blueprint>> Function(AllBlueprintsRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: AllBlueprintsProvider._internal(
+        (ref) => create(ref as AllBlueprintsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        projectId: projectId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<Blueprint>> createElement() {
+    return _AllBlueprintsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AllBlueprintsProvider && other.projectId == projectId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, projectId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin AllBlueprintsRef on AutoDisposeFutureProviderRef<List<Blueprint>> {
+  /// The parameter `projectId` of this provider.
+  String get projectId;
+}
+
+class _AllBlueprintsProviderElement
+    extends AutoDisposeFutureProviderElement<List<Blueprint>>
+    with AllBlueprintsRef {
+  _AllBlueprintsProviderElement(super.provider);
+
+  @override
+  String get projectId => (origin as AllBlueprintsProvider).projectId;
+}
+
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
