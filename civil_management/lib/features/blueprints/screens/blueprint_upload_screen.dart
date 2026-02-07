@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,6 +32,8 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
   final _folderNameController = TextEditingController();
 
   File? _selectedFile;
+  Uint8List? _selectedFileBytes; // For web
+  String? _selectedFileName; // For web
   bool _isAdminOnly = false;
   bool _isLoading = false;
 
@@ -45,11 +49,24 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      withData: kIsWeb, // Load bytes on web
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result != null) {
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        if (kIsWeb) {
+          // On web: use bytes
+          _selectedFileBytes = result.files.single.bytes;
+          _selectedFileName = result.files.single.name;
+          _selectedFile = null;
+        } else {
+          // On mobile: use file path
+          if (result.files.single.path != null) {
+            _selectedFile = File(result.files.single.path!);
+          }
+          _selectedFileBytes = null;
+          _selectedFileName = null;
+        }
       });
     }
   }
@@ -58,7 +75,13 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    if (_selectedFile == null) {
+    
+    // Check if file is selected (web or mobile)
+    final hasFile = kIsWeb 
+        ? (_selectedFileBytes != null && _selectedFileName != null)
+        : _selectedFile != null;
+    
+    if (!hasFile) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a file to upload.')),
       );
@@ -72,15 +95,27 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
     final isAdminUser = userRole == UserRole.admin || userRole == UserRole.superAdmin;
 
     try {
+      // Create a temporary file for web uploads
+      File fileToUpload;
+      if (kIsWeb) {
+        // On web: create a temporary file from bytes
+        // Note: We'll handle this in the repository instead
+        // For now, create a stub file that will be handled differently
+        fileToUpload = File(_selectedFileName!);
+      } else {
+        fileToUpload = _selectedFile!;
+      }
+      
       await ref
           .read(blueprintRepositoryProvider)
           .uploadBlueprint(
             projectId: widget.projectId,
             folderName: _folderNameController.text.trim(),
             isAdminOnly: _isAdminOnly,
-            file: _selectedFile!,
+            file: fileToUpload,
             uploaderId: uploaderId,
             isAdminUser: isAdminUser,
+            fileBytes: _selectedFileBytes, // Pass bytes for web
           );
 
       // Invalidate providers to refresh the lists
@@ -242,7 +277,7 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
                       ),
                     ),
                     
-                    if (_selectedFile != null)
+                    if (_selectedFile != null || _selectedFileName != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 12.0),
                         child: Container(
@@ -258,7 +293,9 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Selected: ${_selectedFile!.path.split('/').last}',
+                                  kIsWeb
+                                      ? 'Selected: $_selectedFileName'
+                                      : 'Selected: ${_selectedFile!.path.split('/').last}',
                                   style: TextStyle(color: Colors.green[900]),
                                 ),
                               ),

@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_client.dart';
 import '../../../../core/errors/app_exceptions.dart';
@@ -56,6 +58,7 @@ class BlueprintRepository {
 
   /// Uploads a file and creates a blueprint record.
   /// Generates unique filenames to avoid conflicts with existing files.
+  /// For web: pass fileBytes. For mobile: pass file with valid path.
   Future<Blueprint> uploadBlueprint({
     required String projectId,
     required String folderName,
@@ -63,6 +66,7 @@ class BlueprintRepository {
     required File file,
     required String uploaderId,
     required bool isAdminUser,
+    Uint8List? fileBytes, // Optional: for web uploads
   }) async {
     final originalFileName = file.path.split('/').last;
     final fileExtension = originalFileName.contains('.')
@@ -93,14 +97,38 @@ class BlueprintRepository {
     final effectiveIsAdminOnly = isAdminUser ? isAdminOnly : false;
 
     try {
-      // 1. Upload file to storage (use upsert: true to allow overwriting if needed)
-      await _client.storage
-          .from('blueprints')
-          .upload(
-            filePath,
-            file,
-            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
-          );
+      // 1. Upload file to storage
+      // Use uploadBinary for web (dart:io.File not supported on web)
+      // Use upload for mobile/desktop
+      if (kIsWeb && fileBytes != null) {
+        // For web: use bytes directly
+        await _client.storage
+            .from('blueprints')
+            .uploadBinary(
+              filePath,
+              fileBytes,
+              fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+            );
+      } else if (!kIsWeb) {
+        // For mobile/desktop: use regular upload with File
+        await _client.storage
+            .from('blueprints')
+            .upload(
+              filePath,
+              file,
+              fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+            );
+      } else {
+        // Fallback: try reading bytes from file
+        final bytes = await file.readAsBytes();
+        await _client.storage
+            .from('blueprints')
+            .uploadBinary(
+              filePath,
+              bytes,
+              fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+            );
+      }
 
       // 2. Get the public URL for the uploaded file
       final fileUrl = _client.storage.from('blueprints').getPublicUrl(filePath);
