@@ -8,10 +8,10 @@ final machineryRepositoryProvider = Provider<MachineryRepository>((ref) {
   return MachineryRepository(supabase);
 });
 
-// Logs Stream
-final machineryLogsStreamProvider = StreamProvider.family<List<MachineryLog>, String>((ref, projectId) {
+// Logs Future Provider (Stream doesn't support joins properly)
+final machineryLogsProvider = FutureProvider.family.autoDispose<List<MachineryLog>, String>((ref, projectId) async {
   final repo = ref.watch(machineryRepositoryProvider);
-  return repo.streamMachineryLogsByProject(projectId);
+  return repo.getMachineryLogsByProject(projectId);
 });
 
 // Machinery List (for dropdown)

@@ -13,7 +13,7 @@ class MachineryRepository {
         .from('machinery_logs')
         .select('''
           *,
-          machinery:machinery!machinery_logs_machinery_id_fkey(id, name, type, registration_no)
+          machinery (id, name, type, registration_no)
         ''')
         .eq('project_id', projectId)  // 👈 FILTER BY PROJECT
         .order('logged_at', ascending: false);
@@ -100,7 +100,8 @@ class MachineryRepository {
       'work_activity': workActivity,
       'start_reading': startReading,
       'end_reading': endReading,
-      'notes': notes, // execution_hours is generated always stored
+      'hours_used': executionHours, // Calculated hours
+      'notes': notes,
       'logged_by': userId,
       'logged_at': DateTime.now().toIso8601String(),
     });
@@ -124,6 +125,17 @@ class MachineryRepository {
         .stream(primaryKey: ['id'])
         .eq('project_id', projectId)
         .order('logged_at', ascending: false)
-        .map((data) => data.map((json) => MachineryLog.fromJson(json)).toList());
+        .map((dataList) {
+          // For each log, manually fetch the machinery details since stream doesn't support select joins
+          return dataList.map((json) {
+            // Note: Stream API doesn't support joins directly in the same way as select()
+            // We need to either:
+            // 1. Use the regular query with periodic refresh
+            // 2. Manually fetch machinery details for each log
+            // 3. Include machinery_id and fetch separately
+            // For now, we'll rely on the regular query or need to refactor
+            return MachineryLog.fromJson(json);
+          }).toList();
+        });
   }
 }

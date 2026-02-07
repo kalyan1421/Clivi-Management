@@ -35,7 +35,17 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            // Navigate to role-based dashboard instead of pop
+            final userRole = authState.role;
+            if (userRole == UserRole.superAdmin) {
+              context.go('/super-admin/dashboard');
+            } else if (userRole == UserRole.admin) {
+              context.go('/admin/dashboard');
+            } else {
+              context.go('/site-manager/dashboard');
+            }
+          },
         ),
         title: Text(
           projectState.project?.name ?? 'Project Details',

@@ -214,7 +214,7 @@ class _MachineryLogScreenState extends ConsumerState<MachineryLogScreen> {
 
     if (success && mounted) {
       context.pop();
-      ref.invalidate(machineryLogsStreamProvider(widget.projectId));
+      ref.invalidate(machineryLogsProvider(widget.projectId));
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Log Saved')));
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

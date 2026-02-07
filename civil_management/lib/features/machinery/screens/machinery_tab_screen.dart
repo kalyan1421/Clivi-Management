@@ -15,7 +15,7 @@ class MachineryTabScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final logsAsync = ref.watch(machineryLogsStreamProvider(projectId));
+    final logsAsync = ref.watch(machineryLogsProvider(projectId));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
