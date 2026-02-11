@@ -44,3 +44,36 @@ final allProjectsInventorySummaryProvider = FutureProvider<List<ProjectInventory
   final repo = ref.watch(vendorAnalyticsRepositoryProvider);
   return repo.getAllProjectsInventorySummary();
 });
+
+// Top vendors across all projects (admin only)
+final vendorOverviewProvider = FutureProvider<List<VendorOverview>>((ref) async {
+  final repo = ref.watch(vendorAnalyticsRepositoryProvider);
+  return repo.getVendorOverview();
+});
+
+// Vendor material totals with optional material filter
+class VendorTotalsRequest {
+  final String vendorId;
+  final String? materialName;
+  const VendorTotalsRequest(this.vendorId, {this.materialName});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VendorTotalsRequest &&
+          runtimeType == other.runtimeType &&
+          vendorId == other.vendorId &&
+          materialName == other.materialName;
+
+  @override
+  int get hashCode => vendorId.hashCode ^ (materialName?.hashCode ?? 0);
+}
+
+final vendorMaterialTotalsProvider =
+    FutureProvider.family<List<VendorMaterialTotal>, VendorTotalsRequest>((ref, request) async {
+  final repo = ref.watch(vendorAnalyticsRepositoryProvider);
+  return repo.getVendorMaterialTotals(
+    vendorId: request.vendorId,
+    materialName: request.materialName,
+  );
+});

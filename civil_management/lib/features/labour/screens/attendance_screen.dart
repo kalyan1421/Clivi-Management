@@ -94,15 +94,15 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   }
 
   Widget _buildAttendanceList(List<Map<String, dynamic>> data) {
-    // Initialize attendance map from existing data
+    // Re-seed attendance map whenever dataset changes (handles newly added labour)
+    if (_attendanceMap.length != data.length) {
+      _attendanceMap.clear();
+    }
     for (final item in data) {
       final labour = item['labour'] as LabourModel;
       final attendance = item['attendance'] as LabourAttendanceModel?;
-
-      if (!_attendanceMap.containsKey(labour.id)) {
-        _attendanceMap[labour.id] =
-            attendance?.status ?? AttendanceStatus.present;
-      }
+      _attendanceMap[labour.id] =
+          attendance?.status ?? _attendanceMap[labour.id] ?? AttendanceStatus.present;
     }
 
     return Column(
@@ -204,6 +204,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       }).toList();
 
       await repo.bulkMarkAttendance(attendances);
+
+      // Refresh data providers to reflect latest state
+      ref.invalidate(labourWithAttendanceProvider((
+        projectId: widget.projectId,
+        date: _selectedDate,
+      )));
+      ref.invalidate(projectLabourProvider(widget.projectId));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -22,6 +22,39 @@ final billsStreamProvider = StreamProvider.family<List<BillModel>, String>((ref,
   return repository.streamBillsByProject(projectId);
 });
 
+/// Baseline fetch of bills (non-realtime)
+final billsProvider = FutureProvider.family<List<BillModel>, String>((ref, projectId) {
+  final repository = ref.watch(billRepositoryProvider);
+  return repository.fetchBills(projectId);
+});
+
+/// Combined provider: initial fetch + realtime overlay
+final billsCombinedProvider = Provider.family<AsyncValue<List<BillModel>>, String>((ref, projectId) {
+  final fetchAsync = ref.watch(billsProvider(projectId));
+  final streamAsync = ref.watch(billsStreamProvider(projectId));
+
+  return fetchAsync.when(
+    data: (fetched) {
+      return streamAsync.when(
+        data: (streamed) {
+          // Merge by id (upsert) using streamed as latest
+          final byId = {for (var b in fetched) b.id: b};
+          for (final b in streamed) {
+            byId[b.id] = b;
+          }
+          return AsyncValue.data(byId.values.toList()
+            ..sort((a, b) => (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+                .compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))));
+        },
+        loading: () => AsyncValue.data(fetched),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+});
+
 /// Fetch pending bills with pagination
 final paginatedPendingBillsProvider = FutureProvider.family<List<BillModel>, ({String projectId, int offset, int limit})>((ref, params) {
   final repository = ref.watch(billRepositoryProvider);

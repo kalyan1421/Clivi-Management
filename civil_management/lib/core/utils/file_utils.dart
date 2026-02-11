@@ -7,15 +7,31 @@ class FileUtils {
     List<String>? allowedExtensions,
     FileType type = FileType.any,
   }) async {
+    // FilePicker requires FileType.custom when passing allowedExtensions.
+    final hasExtensions =
+        allowedExtensions != null && allowedExtensions.isNotEmpty;
+    final effectiveType =
+        (hasExtensions || type == FileType.custom) ? FileType.custom : type;
+    final sanitizedExtensions =
+        hasExtensions ? allowedExtensions!.map(_stripDot).toList() : null;
+
+    // Avoid crashing if caller asked for custom but forgot extensions.
+    if (effectiveType == FileType.custom && sanitizedExtensions == null) {
+      // Fall back to any without filters.
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        withData: true,
+      );
+      return _firstOrNull(result);
+    }
+
     final result = await FilePicker.platform.pickFiles(
-      type: type,
-      allowedExtensions: allowedExtensions,
+      type: effectiveType,
+      allowedExtensions: sanitizedExtensions,
+      withData: true,
     );
 
-    if (result != null && result.files.isNotEmpty) {
-      return result.files.first;
-    }
-    return null;
+    return _firstOrNull(result);
   }
 
   /// Pick multiple files
@@ -23,10 +39,28 @@ class FileUtils {
     List<String>? allowedExtensions,
     FileType type = FileType.any,
   }) async {
+    final hasExtensions =
+        allowedExtensions != null && allowedExtensions.isNotEmpty;
+    final effectiveType =
+        (hasExtensions || type == FileType.custom) ? FileType.custom : type;
+    final sanitizedExtensions =
+        hasExtensions ? allowedExtensions!.map(_stripDot).toList() : null;
+
+    if (effectiveType == FileType.custom && sanitizedExtensions == null) {
+      final result =
+          await FilePicker.platform.pickFiles(
+            type: FileType.any,
+            allowMultiple: true,
+            withData: true,
+          );
+      return result?.files ?? [];
+    }
+
     final result = await FilePicker.platform.pickFiles(
-      type: type,
-      allowedExtensions: allowedExtensions,
+      type: effectiveType,
+      allowedExtensions: sanitizedExtensions,
       allowMultiple: true,
+      withData: true,
     );
 
     if (result != null) {
@@ -47,4 +81,10 @@ class FileUtils {
     if (bytes < 1073741824) return "${(bytes / 1048576).toStringAsFixed(1)} MB";
     return "${(bytes / 1073741824).toStringAsFixed(1)} GB";
   }
+
+  static String _stripDot(String ext) =>
+      ext.startsWith('.') ? ext.substring(1) : ext;
+
+  static PlatformFile? _firstOrNull(FilePickerResult? result) =>
+      (result != null && result.files.isNotEmpty) ? result.files.first : null;
 }

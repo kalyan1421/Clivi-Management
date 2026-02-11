@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/vendor_payment_model.dart';
 import '../models/material_issue_model.dart';
@@ -81,6 +82,52 @@ class VendorAnalyticsRepository {
     return (response as List)
         .map((json) => ProjectInventorySummary.fromJson(json))
         .toList();
+  }
+
+  // ============================================================
+  // Vendor material aggregations (new RPCs)
+  // ============================================================
+
+  /// Top vendors by total supplied quantity across all projects (admin only)
+  Future<List<VendorOverview>> getVendorOverview() async {
+    dev.log('[VendorAnalytics] Calling get_vendor_overview RPC...', name: 'VendorAnalytics');
+    try {
+      final response = await _client.rpc('get_vendor_overview');
+      dev.log('[VendorAnalytics] get_vendor_overview SUCCESS: ${(response as List).length} vendors returned', name: 'VendorAnalytics');
+      return (response as List)
+          .map((json) => VendorOverview.fromJson(json))
+          .toList();
+    } catch (e, st) {
+      dev.log('[VendorAnalytics] get_vendor_overview FAILED: $e', name: 'VendorAnalytics', error: e, stackTrace: st);
+      rethrow;
+    }
+  }
+
+  /// Per-vendor material totals with optional material filter and project scoping
+  Future<List<VendorMaterialTotal>> getVendorMaterialTotals({
+    required String vendorId,
+    String? materialName,
+  }) async {
+    dev.log('[VendorAnalytics] Calling get_vendor_material_totals RPC for vendor=$vendorId, material=$materialName', name: 'VendorAnalytics');
+    try {
+      final response = await _client.rpc(
+        'get_vendor_material_totals',
+        params: {
+          'p_vendor_id': vendorId,
+          if (materialName != null) 'p_material_name': materialName,
+        },
+      );
+      dev.log('[VendorAnalytics] get_vendor_material_totals SUCCESS: ${(response as List).length} rows returned', name: 'VendorAnalytics');
+      for (final row in response) {
+        dev.log('[VendorAnalytics]   row => $row', name: 'VendorAnalytics');
+      }
+      return (response as List)
+          .map((json) => VendorMaterialTotal.fromJson(json))
+          .toList();
+    } catch (e, st) {
+      dev.log('[VendorAnalytics] get_vendor_material_totals FAILED: $e', name: 'VendorAnalytics', error: e, stackTrace: st);
+      rethrow;
+    }
   }
 
   /// Record a vendor payment

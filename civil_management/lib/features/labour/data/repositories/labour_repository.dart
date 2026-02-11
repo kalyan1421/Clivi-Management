@@ -49,6 +49,20 @@ class LabourRepository {
     return LabourModel.fromJson(response);
   }
 
+  /// Get master labour list (project_id IS NULL, active)
+  Future<List<LabourModel>> getMasterLabour() async {
+    final response = await _client
+        .from('labour')
+        .select('*, projects(name)')
+        .isFilter('project_id', null)
+        .eq('status', 'active')
+        .order('name');
+
+    return (response as List)
+        .map((json) => LabourModel.fromJson(json))
+        .toList();
+  }
+
   /// Update labour
   Future<LabourModel> updateLabour(String id, Map<String, dynamic> data) async {
     final response = await _client
@@ -67,6 +81,19 @@ class LabourRepository {
         .from('labour')
         .update({'status': newStatus.value})
         .eq('id', id);
+  }
+
+  /// Soft delete a labour by marking inactive
+  Future<void> deleteLabour(String id) async {
+    await _client.from('labour').update({'status': 'inactive'}).eq('id', id);
+  }
+
+  /// Soft delete all labour under a project
+  Future<void> deleteAllLabourForProject(String projectId) async {
+    await _client
+        .from('labour')
+        .update({'status': 'inactive'})
+        .eq('project_id', projectId);
   }
 
   // ==================== ATTENDANCE ====================
@@ -179,6 +206,22 @@ class LabourRepository {
 
   Future<void> createDailyLog(DailyLabourLog log) async {
     await _client.from('daily_labour_logs').insert(log.toInsertJson());
+  }
+
+  Future<void> deleteDailyLog({
+    required String logId,
+    required String projectId,
+    String? note,
+  }) async {
+    await _client.from('daily_labour_logs').delete().eq('id', logId);
+    await _client.rpc('log_operation', params: {
+      'p_operation_type': 'delete',
+      'p_entity_type': 'labour',
+      'p_entity_id': logId,
+      'p_title': '[DELETE] Labour log',
+      'p_description': note ?? '',
+      'p_project_id': projectId,
+    });
   }
 
   Stream<List<DailyLabourLog>> streamDailyLogs(String projectId) {

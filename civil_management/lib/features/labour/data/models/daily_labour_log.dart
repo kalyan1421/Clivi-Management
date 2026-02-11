@@ -1,6 +1,7 @@
 class DailyLabourLog {
   final String id;
   final String projectId;
+  final String? labourId;
   final String contractorName;
   final int skilledCount;
   final int unskilledCount;
@@ -11,6 +12,7 @@ class DailyLabourLog {
   DailyLabourLog({
     required this.id,
     required this.projectId,
+    this.labourId,
     required this.contractorName,
     required this.skilledCount,
     required this.unskilledCount,
@@ -23,6 +25,7 @@ class DailyLabourLog {
     return DailyLabourLog(
       id: json['id'],
       projectId: json['project_id'],
+      labourId: json['labour_id'],
       contractorName: json['contractor_name'],
       skilledCount: json['skilled_count'] ?? 0,
       unskilledCount: json['unskilled_count'] ?? 0,
@@ -36,6 +39,7 @@ class DailyLabourLog {
     return {
       'id': id,
       'project_id': projectId,
+      'labour_id': labourId,
       'contractor_name': contractorName,
       'skilled_count': skilledCount,
       'unskilled_count': unskilledCount,
@@ -48,6 +52,7 @@ class DailyLabourLog {
   Map<String, dynamic> toInsertJson() {
     return {
       'project_id': projectId,
+      'labour_id': labourId,
       'contractor_name': contractorName,
       'skilled_count': skilledCount,
       'unskilled_count': unskilledCount,

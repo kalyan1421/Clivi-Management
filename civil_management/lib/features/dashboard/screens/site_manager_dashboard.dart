@@ -19,84 +19,91 @@ class SiteManagerDashboard extends ConsumerWidget {
     final projectsState = ref.watch(activeProjectsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF4F6FA),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => _refreshAll(ref),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with welcome message
-                _buildHeader(context, profile?.fullName ?? 'Project Manager'),
-
-                // Blue stats card
-                _buildStatsCard(context, statsState),
-
-                const SizedBox(height: 24),
-
-                // Operations section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Operations',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildOperationsGrid(context, projectsState),
-                    ],
-                  ),
-                ),
+                      // Header with welcome message
+                      _buildHeader(context, profile?.fullName ?? 'Project Manager'),
 
-                const SizedBox(height: 24),
+                      // Gradient stats card
+                      _buildStatsCard(context, statsState),
 
-                // Active Projects section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Active Projects',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      TextButton(
-                        onPressed: () => context.push('/projects'),
-                        child: Text(
-                          'View All',
-                          style: TextStyle(color: AppColors.primary),
+                      const SizedBox(height: 20),
+
+                      // Operations section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Operations',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildOperationsGrid(context, projectsState),
+                          ],
                         ),
                       ),
+
+                      const SizedBox(height: 20),
+
+                      // Active Projects section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Active Projects',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            TextButton(
+                              onPressed: () => context.push('/projects'),
+                              child: Text(
+                                'View All',
+                                style: TextStyle(color: AppColors.primary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildProjectsList(context, projectsState),
+
+                      const SizedBox(height: 20),
+
+                      // Recent Operations section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          'Recent Operations',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildRecentOperations(context, activityState),
+
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                _buildProjectsList(context, projectsState),
-
-                const SizedBox(height: 24),
-
-                // Recent Operations section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    'Recent Operations',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildRecentOperations(context, activityState),
-
-                const SizedBox(height: 24), // Use standard spacing
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -286,58 +293,68 @@ class SiteManagerDashboard extends ConsumerWidget {
         ? projectsState.projects.first.id
         : null;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildOperationItem(
-          context,
-          icon: Icons.inventory_2_outlined,
-          label: 'Materials',
-          onTap: () {
-            if (projectId != null) {
-              context.push('/projects/$projectId/stock');
-            } else {
-              _showNoProjectMessage(context);
-            }
-          },
-        ),
-        _buildOperationItem(
-          context,
-          icon: Icons.construction,
-          label: 'Machinery',
-          onTap: () {
-              if (projectId != null) {
-              context.push('/projects/$projectId/operations/machinery');
-            } else {
-              _showNoProjectMessage(context);
-            }
-          },
-        ),
-        _buildOperationItem(
-          context,
-          icon: Icons.people_outline,
-          label: 'Labor',
-          onTap: () {
-            if (projectId != null) {
-              context.push('/projects/$projectId/labour');
-            } else {
-              _showNoProjectMessage(context);
-            }
-          },
-        ),
-        _buildOperationItem(
-          context,
-          icon: Icons.receipt_long_outlined,
-          label: 'Reports',
-          onTap: () {
-            if (projectId != null) {
-              context.push('/projects/$projectId/reports');
-            } else {
-              _showNoProjectMessage(context);
-            }
-          },
-        ),
-      ],
+    final tiles = [
+      _OpData(
+        icon: Icons.inventory_2_outlined,
+        label: 'Materials',
+        onTap: () {
+          if (projectId != null) {
+            context.push('/projects/$projectId/stock');
+          } else {
+            _showNoProjectMessage(context);
+          }
+        },
+      ),
+      _OpData(
+        icon: Icons.construction,
+        label: 'Machinery Logs',
+        onTap: () {
+          if (projectId != null) {
+            context.push('/projects/$projectId/operations/machinery');
+          } else {
+            _showNoProjectMessage(context);
+          }
+        },
+      ),
+      _OpData(
+        icon: Icons.add_circle_outline,
+        label: 'Add Machinery',
+        onTap: () {
+          context.push('/machinery');
+        },
+      ),
+      _OpData(
+        icon: Icons.people_outline,
+        label: 'Labor',
+        onTap: () {
+          if (projectId != null) {
+            context.push('/projects/$projectId/operations/labour');
+          } else {
+            _showNoProjectMessage(context);
+          }
+        },
+      ),
+      _OpData(
+        icon: Icons.receipt_long_outlined,
+        label: 'Reports',
+        onTap: () {
+          if (projectId != null) {
+            context.push('/projects/$projectId/reports');
+          } else {
+            _showNoProjectMessage(context);
+          }
+        },
+      ),
+    ];
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      alignment: WrapAlignment.spaceBetween,
+      children: tiles
+          .map((t) => _buildOperationItem(context,
+              icon: t.icon, label: t.label, onTap: t.onTap))
+          .toList(),
     );
   }
 
@@ -353,35 +370,46 @@ class SiteManagerDashboard extends ConsumerWidget {
     required String label,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 150,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+          ],
+        ),
       ),
     );
   }
@@ -755,6 +783,11 @@ class SiteManagerDashboard extends ConsumerWidget {
         return AppColors.secondary;
     }
   }
+}
 
-
+class _OpData {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _OpData({required this.icon, required this.label, required this.onTap});
 }

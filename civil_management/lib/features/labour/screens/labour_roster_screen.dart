@@ -38,6 +38,19 @@ class LabourRosterScreen extends ConsumerWidget {
               extra: projectName,
             ),
           ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'refresh') {
+                ref.invalidate(projectLabourProvider(projectId));
+              } else if (value == 'delete_all') {
+                _confirmDeleteAll(context, ref);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'refresh', child: Text('Refresh')),
+              PopupMenuItem(value: 'delete_all', child: Text('Delete All')),
+            ],
+          ),
         ],
       ),
       body: labourAsync.when(
@@ -113,6 +126,9 @@ class LabourRosterScreen extends ConsumerWidget {
               (labour) => _LabourCard(
                 labour: labour,
                 onToggleStatus: () => _toggleStatus(ref, labour),
+                onEdit: () =>
+                    _showLabourSheet(context, ref, existing: labour),
+                onDelete: () => _confirmDelete(context, ref, labour.id),
               ),
             ),
           ],
@@ -132,6 +148,9 @@ class LabourRosterScreen extends ConsumerWidget {
               (labour) => _LabourCard(
                 labour: labour,
                 onToggleStatus: () => _toggleStatus(ref, labour),
+                onEdit: () =>
+                    _showLabourSheet(context, ref, existing: labour),
+                onDelete: () => _confirmDelete(context, ref, labour.id),
               ),
             ),
           ],
@@ -151,16 +170,108 @@ class LabourRosterScreen extends ConsumerWidget {
   }
 
   void _showAddLabourDialog(BuildContext context, WidgetRef ref) {
+    _showLabourSheet(context, ref);
+  }
+
+  void _showLabourSheet(BuildContext context, WidgetRef ref,
+      {LabourModel? existing}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => _AddLabourSheet(
         projectId: projectId,
+        existing: existing,
         onAdded: () {
           ref.invalidate(projectLabourProvider(projectId));
+          // Also refresh attendance view so new labour appear immediately
+          ref.invalidate(labourWithAttendanceProvider((
+            projectId: projectId,
+            date: DateTime.now(),
+          )));
         },
       ),
     );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete worker'),
+        content: const Text('This will mark the worker inactive. Continue?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      await ref.read(labourRepositoryProvider).deleteLabour(id);
+      ref.invalidate(projectLabourProvider(projectId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Worker removed')),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteAll(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final controller = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete all workers'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('This marks all workers inactive for this project.'),
+            const SizedBox(height: 8),
+            const Text('Type DELETE to confirm.'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              decoration:
+                  const InputDecoration(labelText: 'Confirmation'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(ctx, controller.text.trim() == 'DELETE'),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      await ref
+          .read(labourRepositoryProvider)
+          .deleteAllLabourForProject(projectId);
+      ref.invalidate(projectLabourProvider(projectId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All workers marked inactive')),
+      );
+    }
   }
 }
 
@@ -238,8 +349,15 @@ class _StatItem extends StatelessWidget {
 class _LabourCard extends StatelessWidget {
   final LabourModel labour;
   final VoidCallback onToggleStatus;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
-  const _LabourCard({required this.labour, required this.onToggleStatus});
+  const _LabourCard({
+    required this.labour,
+    required this.onToggleStatus,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -279,6 +397,10 @@ class _LabourCard extends StatelessWidget {
           onSelected: (value) {
             if (value == 'toggle') {
               onToggleStatus();
+            } else if (value == 'edit') {
+              onEdit();
+            } else if (value == 'delete') {
+              onDelete();
             }
           },
           itemBuilder: (context) => [
@@ -290,6 +412,14 @@ class _LabourCard extends StatelessWidget {
                     : 'Mark Active',
               ),
             ),
+            const PopupMenuItem(
+              value: 'edit',
+              child: Text('Edit'),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('Delete'),
+            ),
           ],
         ),
       ),
@@ -300,8 +430,13 @@ class _LabourCard extends StatelessWidget {
 class _AddLabourSheet extends ConsumerStatefulWidget {
   final String projectId;
   final VoidCallback onAdded;
+  final LabourModel? existing;
 
-  const _AddLabourSheet({required this.projectId, required this.onAdded});
+  const _AddLabourSheet({
+    required this.projectId,
+    required this.onAdded,
+    this.existing,
+  });
 
   @override
   ConsumerState<_AddLabourSheet> createState() => _AddLabourSheetState();
@@ -309,11 +444,26 @@ class _AddLabourSheet extends ConsumerStatefulWidget {
 
 class _AddLabourSheetState extends ConsumerState<_AddLabourSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _wageController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _wageController;
   String? _selectedSkill;
   bool _isLoading = false;
+
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController =
+        TextEditingController(text: widget.existing?.name ?? '');
+    _phoneController =
+        TextEditingController(text: widget.existing?.phone ?? '');
+    _wageController = TextEditingController(
+      text: widget.existing?.dailyWage?.toString() ?? '',
+    );
+    _selectedSkill = widget.existing?.skillType;
+  }
 
   @override
   void dispose() {
@@ -334,12 +484,12 @@ class _AddLabourSheetState extends ConsumerState<_AddLabourSheet> {
       ),
       child: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Add New Worker',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+              _isEdit ? 'Edit Worker' : 'Add New Worker',
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -397,7 +547,7 @@ class _AddLabourSheetState extends ConsumerState<_AddLabourSheet> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Add Worker'),
+                  : Text(_isEdit ? 'Update Worker' : 'Add Worker'),
             ),
             const SizedBox(height: 16),
           ],
@@ -413,27 +563,39 @@ class _AddLabourSheetState extends ConsumerState<_AddLabourSheet> {
 
     try {
       final repo = ref.read(labourRepositoryProvider);
+      if (_isEdit) {
+        await repo.updateLabour(widget.existing!.id, {
+          'name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'skill_type': _selectedSkill,
+          'daily_wage': double.tryParse(_wageController.text),
+        });
+      } else {
+        final labour = LabourModel(
+          id: '',
+          name: _nameController.text.trim(),
+          phone: _phoneController.text.trim().isEmpty
+              ? null
+              : _phoneController.text.trim(),
+          skillType: _selectedSkill,
+          dailyWage: double.tryParse(_wageController.text),
+          projectId: widget.projectId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-      final labour = LabourModel(
-        id: '',
-        name: _nameController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty
-            ? null
-            : _phoneController.text.trim(),
-        skillType: _selectedSkill,
-        dailyWage: double.tryParse(_wageController.text),
-        projectId: widget.projectId,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      await repo.addLabour(labour);
+        await repo.addLabour(labour);
+      }
       widget.onAdded();
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Worker added successfully')),
+          SnackBar(
+            content: Text(
+              _isEdit ? 'Worker updated successfully' : 'Worker added successfully',
+            ),
+          ),
         );
       }
     } catch (e) {

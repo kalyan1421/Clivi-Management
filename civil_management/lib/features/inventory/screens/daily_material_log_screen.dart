@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/ui/responsive_scaffold.dart';
+import '../../../core/ui/responsive.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../data/models/stock_item_model.dart';
 import '../data/models/material_log_model.dart';
 import '../data/models/supplier_model.dart';
 import '../providers/inventory_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 
 /// Daily Material Log screen with Inward/Outward tabs for Site Managers
 class DailyMaterialLogScreen extends ConsumerStatefulWidget {
@@ -42,13 +45,14 @@ class _DailyMaterialLogScreenState extends ConsumerState<DailyMaterialLogScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ResponsiveScaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('Material Log - ${widget.projectName}'),
+        title: Text('Material Log - ${widget.projectName}',
+            maxLines: 1, overflow: TextOverflow.ellipsis),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -57,18 +61,26 @@ class _DailyMaterialLogScreenState extends ConsumerState<DailyMaterialLogScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _LogListTab(projectId: widget.projectId, logType: LogType.inward),
-          _LogListTab(projectId: widget.projectId, logType: LogType.outward),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
+      fab: FloatingActionButton.extended(
         onPressed: () => _showAddLogDialog(context),
         icon: const Icon(Icons.add),
         label: const Text('Add Entry'),
       ),
+      builder: (context, r) {
+        return Column(
+          children: [
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _LogListTab(projectId: widget.projectId, logType: LogType.inward),
+                  _LogListTab(projectId: widget.projectId, logType: LogType.outward),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -87,23 +99,30 @@ class _DailyMaterialLogScreenState extends ConsumerState<DailyMaterialLogScreen>
         return;
       }
 
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => _AddLogBottomSheet(
-          projectId: widget.projectId,
-          stockItems: items,
-          initialLogType: _tabController.index == 0
-              ? LogType.inward
-              : LogType.outward,
-          onAdded: () {
-            ref.invalidate(inwardLogsProvider(widget.projectId));
-            ref.invalidate(outwardLogsProvider(widget.projectId));
-            ref.invalidate(stockItemsProvider(widget.projectId));
-          },
-        ),
-      );
     });
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        builder: (context, controller) => SingleChildScrollView(
+          controller: controller,
+          child: _AddLogBottomSheet(
+            projectId: widget.projectId,
+            stockItems: stockItemsAsync.value ?? [],
+            initialLogType:
+                _tabController.index == 0 ? LogType.inward : LogType.outward,
+            onAdded: () {
+              ref.invalidate(inwardLogsProvider(widget.projectId));
+              ref.invalidate(outwardLogsProvider(widget.projectId));
+              ref.invalidate(stockItemsProvider(widget.projectId));
+            },
+          ),
+        ),
+      ),
+    );
   }
 
 }
@@ -290,21 +309,33 @@ class _LogListTab extends ConsumerWidget {
         itemCount: logs.length,
         itemBuilder: (context, index) {
           final log = logs[index];
-          return _MaterialLogCard(log: log);
+          return _MaterialLogCard(
+            log: log,
+            onDeleted: () {
+              if (logType == LogType.inward) {
+                ref.invalidate(inwardLogsProvider(projectId));
+              } else {
+                ref.invalidate(outwardLogsProvider(projectId));
+              }
+              ref.invalidate(stockItemsProvider(projectId));
+            },
+          );
         },
       ),
     );
   }
 }
 
-class _MaterialLogCard extends StatelessWidget {
+class _MaterialLogCard extends ConsumerWidget {
   final MaterialLogModel log;
+  final VoidCallback onDeleted;
 
-  const _MaterialLogCard({required this.log});
+  const _MaterialLogCard({required this.log, required this.onDeleted});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateFormat = DateFormat('dd MMM, hh:mm a');
+    final role = ref.read(userRoleProvider);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -353,6 +384,62 @@ class _MaterialLogCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: () async {
+                    final noteController = TextEditingController();
+                    final requireNote = role == UserRole.siteManager;
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Delete Material Log'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('This will remove the log entry.'),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: noteController,
+                              maxLines: 2,
+                              decoration: InputDecoration(
+                                labelText:
+                                    'Note ${requireNote ? "*" : "(optional)"}',
+                              ),
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              if (requireNote &&
+                                  noteController.text.trim().isEmpty) {
+                                return;
+                              }
+                              Navigator.pop(ctx, true);
+                            },
+                            child: const Text('Delete',
+                                style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true) {
+                      await ref.read(inventoryRepositoryProvider)
+                          .deleteMaterialLog(
+                        logId: log.id,
+                        projectId: log.projectId,
+                        note: noteController.text.trim().isEmpty
+                            ? null
+                            : noteController.text.trim(),
+                      );
+                      onDeleted();
+                    }
+                  },
                 ),
               ],
             ),
@@ -413,7 +500,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
   StockItemModel? _selectedItem;
   final _quantityController = TextEditingController();
   final _amountController = TextEditingController();
-  String? _selectedActivity;
+  final _activityController = TextEditingController();
   final _notesController = TextEditingController();
   String? _paymentType;
   SupplierModel? _selectedSupplier;
@@ -431,6 +518,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
   void dispose() {
     _quantityController.dispose();
     _amountController.dispose();
+    _activityController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -527,21 +615,35 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
             ),
             const SizedBox(height: 16),
 
-            // Activity (for outward only)
-            if (_selectedLogType == LogType.outward) ...[
+            // Activity (always show; dropdown assists for outward)
+            if (_selectedLogType == LogType.outward)
               DropdownButtonFormField<String>(
-                value: _selectedActivity,
+                value: _activityController.text.isEmpty
+                    ? null
+                    : _activityController.text,
                 decoration: const InputDecoration(
-                  labelText: 'Activity',
+                  labelText: 'Activity (choose or type)',
                   border: OutlineInputBorder(),
                 ),
                 items: MaterialActivities.commonActivities
                     .map((a) => DropdownMenuItem(value: a, child: Text(a)))
                     .toList(),
-                onChanged: (v) => setState(() => _selectedActivity = v),
+                onChanged: (v) {
+                  if (v != null) {
+                    setState(() => _activityController.text = v);
+                  }
+                },
               ),
-              const SizedBox(height: 16),
-            ],
+            const SizedBox(height: 8),
+            TextField(
+              controller: _activityController,
+              decoration: const InputDecoration(
+                labelText: 'Activity / Description',
+                hintText: 'e.g., Material Received or Site Pouring',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // Notes
             TextField(
@@ -639,8 +741,12 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
         itemId: _selectedItem!.id,
         logType: _selectedLogType,
         quantity: quantity,
-        activity: _selectedActivity,
-        notes: _notesController.text.isEmpty ? null : _notesController.text,
+        activity: _activityController.text.trim().isEmpty
+            ? (_selectedLogType == LogType.outward
+                ? 'Material Used'
+                : 'Material Received')
+            : _activityController.text.trim(),
+        notes: _notesController.text.isEmpty ? null : _notesController.text.trim(),
         supplierId: _selectedSupplier?.id,
       );
 

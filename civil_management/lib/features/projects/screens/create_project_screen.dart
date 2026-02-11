@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/responsive.dart';
+import '../../../core/ui/responsive_scaffold.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../data/models/project_model.dart';
@@ -27,16 +30,24 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   final _budgetController = TextEditingController();
+  final _startDateController = TextEditingController();
+  final _endDateController = TextEditingController();
 
   ProjectStatus _selectedStatus = ProjectStatus.planning;
-  DateTime? _startDate;
-  DateTime? _endDate;
+  DateTime? _startDate = DateTime.now();
+  DateTime? _endDate = DateTime.now().add(const Duration(days: 90));
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    if (_startDate != null) {
+      _startDateController.text = DateFormat('dd/MM/yyyy').format(_startDate!);
+    }
+    if (_endDate != null) {
+      _endDateController.text = DateFormat('dd/MM/yyyy').format(_endDate!);
+    }
     if (widget.isEditing) {
       _loadProjectData();
     }
@@ -56,6 +67,14 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
           _selectedStatus = project.status;
           _startDate = project.startDate;
           _endDate = project.endDate;
+          if (_startDate != null) {
+            _startDateController.text =
+                DateFormat('dd/MM/yyyy').format(_startDate!);
+          }
+          if (_endDate != null) {
+            _endDateController.text =
+                DateFormat('dd/MM/yyyy').format(_endDate!);
+          }
         });
       }
     });
@@ -67,6 +86,8 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
     _descriptionController.dispose();
     _locationController.dispose();
     _budgetController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
     super.dispose();
   }
 
@@ -150,9 +171,11 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
     if (date != null) {
       setState(() {
         _startDate = date;
+        _startDateController.text = DateFormat('dd/MM/yyyy').format(date);
         // Reset end date if it's before start date
         if (_endDate != null && _endDate!.isBefore(date)) {
           _endDate = null;
+          _endDateController.clear();
         }
       });
     }
@@ -168,6 +191,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
     if (date != null) {
       setState(() {
         _endDate = date;
+        _endDateController.text = DateFormat('dd/MM/yyyy').format(date);
       });
     }
   }
@@ -180,7 +204,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
       _errorMessage = createState.error;
     }
 
-    return Scaffold(
+    return ResponsiveScaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -188,154 +212,167 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
         ),
         title: Text(widget.isEditing ? 'Edit Project' : 'Create Project'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Error Message
-              if (_errorMessage != null) ...[
-                InlineErrorWidget(message: _errorMessage!),
-                const SizedBox(height: 16),
-              ],
-
-              // Project Name
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Project Name *',
-                  hintText: 'Enter project name',
-                  prefixIcon: Icon(Icons.business),
-                ),
-                textCapitalization: TextCapitalization.words,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Project name is required';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Description
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Enter project description',
-                  prefixIcon: Icon(Icons.description),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 3,
-                textCapitalization: TextCapitalization.sentences,
-              ),
-              const SizedBox(height: 16),
-
-              // Location
-              TextFormField(
-                controller: _locationController,
-                decoration: const InputDecoration(
-                  labelText: 'Location',
-                  hintText: 'Enter project location',
-                  prefixIcon: Icon(Icons.location_on),
-                ),
-                textCapitalization: TextCapitalization.words,
-              ),
-              const SizedBox(height: 16),
-
-              // Status Dropdown
-              DropdownButtonFormField<ProjectStatus>(
-                value: _selectedStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  prefixIcon: Icon(Icons.flag),
-                ),
-                items: ProjectStatus.values.map((status) {
-                  return DropdownMenuItem(
-                    value: status,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(status),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        Text(status.displayName),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedStatus = value;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Date Range
-              Row(
-                children: [
-                  Expanded(
-                    child: _DateField(
-                      label: 'Start Date',
-                      date: _startDate,
-                      onTap: _selectStartDate,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _DateField(
-                      label: 'End Date',
-                      date: _endDate,
-                      onTap: _selectEndDate,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Budget
-              TextFormField(
-                controller: _budgetController,
-                decoration: const InputDecoration(
-                  labelText: 'Budget',
-                  hintText: 'Enter project budget',
-                  prefixIcon: Icon(Icons.currency_rupee),
-                  prefixText: '₹ ',
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    if (double.tryParse(value) == null) {
-                      return 'Please enter a valid amount';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // Submit Button
-              AppButton(
-                text: widget.isEditing ? 'Update Project' : 'Create Project',
-                onPressed: _handleSubmit,
-                isLoading: _isLoading,
-                icon: widget.isEditing ? Icons.save : Icons.add,
-              ),
-            ],
+      builder: (context, r) {
+        return Padding(
+          padding: r.pad.copyWith(
+            top: 20,
+            bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
           ),
-        ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_errorMessage != null) ...[
+                      InlineErrorWidget(message: _errorMessage!),
+                      const SizedBox(height: 16),
+                    ],
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Project Name *',
+                        hintText: 'Enter project name',
+                        prefixIcon: Icon(Icons.business),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Project name is required';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        hintText: 'Enter project description',
+                        prefixIcon: Icon(Icons.description),
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 3,
+                      textCapitalization: TextCapitalization.sentences,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _locationController,
+                      decoration: const InputDecoration(
+                        labelText: 'Location',
+                        hintText: 'Enter project location',
+                        prefixIcon: Icon(Icons.location_on),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<ProjectStatus>(
+                      value: _selectedStatus,
+                      decoration: const InputDecoration(
+                        labelText: 'Status',
+                        prefixIcon: Icon(Icons.flag),
+                      ),
+                      items: ProjectStatus.values.map((status) {
+                        return DropdownMenuItem(
+                          value: status,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(status),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              Text(status.displayName, overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedStatus = value;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    LayoutBuilder(
+                      builder: (context, c) {
+                        final isWide = c.maxWidth > 500;
+                        return isWide
+                            ? Row(
+                                children: [
+                                  Expanded(child: _dateField(_startDateController, 'Start Date', _selectStartDate)),
+                                  const SizedBox(width: 16),
+                                  Expanded(child: _dateField(_endDateController, 'End Date', _selectEndDate)),
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  _dateField(_startDateController, 'Start Date', _selectStartDate),
+                                  const SizedBox(height: 12),
+                                  _dateField(_endDateController, 'End Date', _selectEndDate),
+                                ],
+                              );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _budgetController,
+                      decoration: const InputDecoration(
+                        labelText: 'Budget',
+                        hintText: 'Enter project budget',
+                        prefixIcon: Icon(Icons.currency_rupee),
+                        prefixText: '₹ ',
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (double.tryParse(value) == null) {
+                            return 'Please enter a valid amount';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    AppButton(
+                      text: widget.isEditing ? 'Update Project' : 'Create Project',
+                      onPressed: _handleSubmit,
+                      isLoading: _isLoading,
+                      icon: widget.isEditing ? Icons.save : Icons.add,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _dateField(
+    TextEditingController controller,
+    String label,
+    VoidCallback onTap,
+  ) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: 'Select date',
+        prefixIcon: const Icon(Icons.calendar_today),
       ),
+      readOnly: true,
+      onTap: onTap,
     );
   }
 
@@ -355,35 +392,3 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
   }
 }
 
-/// Date field widget
-class _DateField extends StatelessWidget {
-  final String label;
-  final DateTime? date;
-  final VoidCallback onTap;
-
-  const _DateField({required this.label, this.date, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: const Icon(Icons.calendar_today),
-        ),
-        child: Text(
-          date != null
-              ? '${date!.day}/${date!.month}/${date!.year}'
-              : 'Select date',
-          style: TextStyle(
-            color: date != null
-                ? AppColors.textPrimary
-                : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-}

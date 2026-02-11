@@ -49,6 +49,21 @@ class MachineryRepository {
     });
   }
 
+  Future<void> updateMachinery({
+    required String machineryId,
+    required Map<String, dynamic> data,
+  }) async {
+    await _client.from('machinery').update(data).eq('id', machineryId);
+  }
+
+  Future<void> deleteMachinery(String machineryId) async {
+    await _client.from('machinery').delete().eq('id', machineryId);
+  }
+
+  Future<void> deleteAllMachinery() async {
+    await _client.from('machinery').delete();
+  }
+
   /// Log machinery usage (Time Based)
   Future<void> logMachineryUsageTimeBased({
     required String projectId,
@@ -106,17 +121,11 @@ class MachineryRepository {
       'logged_at': DateTime.now().toIso8601String(),
     });
 
-    // Update machinery total hours
-    await _client
-        .from('machinery')
-        .update({
-          'current_reading': endReading,
-          'total_hours': (await _client.rpc('increment_machinery_hours', params: {
-            'p_machinery_id': machineryId,
-            'p_hours': executionHours,
-          }) as num),
-        })
-        .eq('id', machineryId);
+    // Update total hours via RPC; skip direct column updates to avoid schema-cache issues
+    await _client.rpc('increment_machinery_hours', params: {
+      'p_machinery_id': machineryId,
+      'p_hours': executionHours,
+    });
   }
 
   Stream<List<MachineryLog>> streamMachineryLogsByProject(String projectId) {
@@ -137,5 +146,22 @@ class MachineryRepository {
             return MachineryLog.fromJson(json);
           }).toList();
         });
+  }
+
+  /// Delete a machinery log (soft by delete)
+  Future<void> deleteMachineryLog({
+    required String logId,
+    required String projectId,
+    String? note,
+  }) async {
+    await _client.from('machinery_logs').delete().eq('id', logId);
+    await _client.rpc('log_operation', params: {
+      'p_operation_type': 'delete',
+      'p_entity_type': 'machinery',
+      'p_entity_id': logId,
+      'p_title': '[DELETE] Machinery log',
+      'p_description': note ?? '',
+      'p_project_id': projectId,
+    });
   }
 }

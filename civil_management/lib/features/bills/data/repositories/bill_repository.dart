@@ -6,6 +6,8 @@ import '../../../../core/config/supabase_client.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../models/bill_model.dart';
 import 'package:flutter/foundation.dart'; // For debugPrint
+import '../../../../core/config/app_constants.dart';
+import '../../../../core/utils/upload_helper.dart';
 
 class BillRepository {
   final SupabaseClient _client;
@@ -79,6 +81,7 @@ class BillRepository {
     String? paymentStatus,
     List<int>? receiptBytes,
     String? receiptName,
+    DateTime? billDate,
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
@@ -88,18 +91,21 @@ class BillRepository {
 
       // Upload receipt if provided
       if (receiptBytes != null && receiptName != null) {
-        final fileExt = receiptName.split('.').last;
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-        final filePath = 'receipts/$fileName';
+        try {
+          final fileExt = receiptName.contains('.') ? receiptName.split('.').last : 'pdf';
+          final contentType = 'application/$fileExt';
+          final filePath = UploadHelper.generateUniquePath('receipts', receiptName);
 
-        await _client.storage.from('receipts').uploadBinary(
-              filePath,
-              Uint8List.fromList(receiptBytes),
-              fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-            );
-
-        // Get public URL
-        receiptUrl = _client.storage.from('receipts').getPublicUrl(filePath);
+          receiptUrl = await UploadHelper.uploadWithRetry(
+            bucket: AppConstants.bucketBills,
+            path: filePath,
+            bytes: Uint8List.fromList(receiptBytes),
+            contentType: contentType,
+          );
+        } catch (e) {
+          debugPrint('Receipt upload failed, proceeding without attachment: $e');
+          receiptUrl = null;
+        }
       }
 
       final data = {
@@ -113,9 +119,8 @@ class BillRepository {
         'payment_status': paymentStatus ?? 'need_to_pay',
         'status': 'pending',
         'created_by': userId,
-        'raised_by': userId,
         'receipt_url': receiptUrl,
-        'bill_date': DateTime.now().toIso8601String().split('T').first,
+        'bill_date': (billDate ?? DateTime.now()).toIso8601String().split('T').first,
       };
 
       final response = await _client
@@ -127,12 +132,34 @@ class BillRepository {
           ''')
           .single();
 
-      return BillModel.fromJson(response);
+      final bill = BillModel.fromJson(response);
+
+      // Log operation for admin notifications (activity feed)
+      try {
+        await _client.rpc('log_operation', params: {
+          'p_operation_type': 'create',
+          'p_entity_type': 'bill',
+          'p_entity_id': bill.id,
+          'p_title': '[BILL] ${bill.title}',
+          'p_description': 'Amount: ₹${bill.amount.toStringAsFixed(2)}',
+          'p_project_id': bill.projectId,
+        });
+      } catch (e) {
+        debugPrint('log_operation failed for bill: $e');
+      }
+
+      return bill;
     } on PostgrestException catch (e) {
       throw DatabaseException.fromPostgrest(e);
     } catch (e) {
+      debugPrint('Bill insert failed: $e');
       throw Exception('Failed to create bill: $e');
     }
+  }
+
+  /// Fetch bills baseline (non-realtime)
+  Future<List<BillModel>> fetchBills(String projectId, {String? status}) async {
+    return getBillsByProject(projectId, status: status);
   }
 
   /// Update a bill (only pending bills can be updated by site managers)

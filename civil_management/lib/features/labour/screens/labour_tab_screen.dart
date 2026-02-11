@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../common/widgets/searchable_dropdown_with_create.dart';
 import '../providers/labour_provider.dart';
 import '../data/models/daily_labour_log.dart';
 import '../data/models/labour_model.dart';
-import '../../auth/providers/auth_provider.dart';
+import '../../common/widgets/searchable_dropdown_with_create.dart';
 
 class LabourTabScreen extends ConsumerWidget {
   final String projectId;
@@ -35,16 +33,17 @@ class LabourTabScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showLogLaborSheet(context, projectId),
         backgroundColor: const Color(0xFF1E293B),
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: Column(
-        children: [
-          // Header / Actions
-           Padding(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header / Actions
+             Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -94,10 +93,11 @@ class LabourTabScreen extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final log = logs[index];
                     final total = log.skilledCount + log.unskilledCount;
+                    final phone = _extractPhone(log.notes);
                     
                     return _LaborHistoryCard(
                       name: log.contractorName,
-                      role: 'Head Contractor', // We don't have role in Log, assume Head/Contractor
+                      phone: phone,
                       workers: total,
                       skilled: log.skilledCount,
                       unskilled: log.unskilledCount,
@@ -113,7 +113,7 @@ class LabourTabScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ));
   }
   
   void _showLogLaborSheet(BuildContext context, String projectId) {
@@ -131,6 +131,15 @@ class LabourTabScreen extends ConsumerWidget {
     if (parts.length > 1) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     return name[0].toUpperCase();
   }
+
+  String? _extractPhone(String? notes) {
+    if (notes == null) return null;
+    final trimmed = notes.trim();
+    if (trimmed.toLowerCase().startsWith('phone:')) {
+      return trimmed.substring(6).trim();
+    }
+    return trimmed.isNotEmpty ? trimmed : null;
+  }
   
   Color _getColor(int index) {
     final colors = [
@@ -146,7 +155,7 @@ class LabourTabScreen extends ConsumerWidget {
 
 class _LaborHistoryCard extends StatelessWidget {
   final String name;
-  final String role;
+  final String? phone;
   final int workers;
   final int skilled;
   final int unskilled;
@@ -155,7 +164,7 @@ class _LaborHistoryCard extends StatelessWidget {
 
   const _LaborHistoryCard({
     required this.name,
-    required this.role,
+    required this.phone,
     required this.workers,
     required this.skilled,
     required this.unskilled,
@@ -211,10 +220,11 @@ class _LaborHistoryCard extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  role,
-                  style: const TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.w500),
-                ),
+                if (phone != null)
+                  Text(
+                    phone!,
+                    style: const TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.w500),
+                  ),
               ],
             ),
           ),
@@ -252,16 +262,16 @@ class _LogLaborSheet extends ConsumerStatefulWidget {
 
 class _LogLaborSheetState extends ConsumerState<_LogLaborSheet> {
   final _formKey = GlobalKey<FormState>();
-  
-  LabourModel? _selectedContractor;
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _skilledController = TextEditingController(text: '0');
   final _unskilledController = TextEditingController(text: '0');
   bool _isLoading = false;
+  LabourModel? _selectedLabour;
 
   @override
   Widget build(BuildContext context) {
-    final activeLabourAsync = ref.watch(activeLabourListProvider(widget.projectId)); // Need a provider for active labour list!
-
+    final masterLabourAsync = ref.watch(masterLabourProvider);
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -313,42 +323,63 @@ class _LogLaborSheetState extends ConsumerState<_LogLaborSheet> {
                 ],
               ),
               const SizedBox(height: 24),
-    
-              // Contractor Selection
-              const Text('CONTRACTOR / HEAD', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+
+              const Text('HEAD / CONTRACTOR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
               const SizedBox(height: 8),
-              
-              // Helper to get active labour. 
-              // Since we don't have a direct "list provider" in basic CRUD, 
-              // we can use a FutureBuilder or a new provider if one exists.
-              // I will use `labourListStreamProvider` if exists, or `activeLabourByProject`.
-              // I found `streamLabourByProject` in repo. 
-              // I'll assume we can use `ref.watch` on a stream or future provider.
-              // I'll create a local FutureProvider for efficiency or just inline it if simple.
-              // Searchable Dropdown
-              Consumer(
-                builder: (context, ref, _) {
-                  final listAsync = ref.watch(activeLabourListProvider(widget.projectId));
-                  
-                  return listAsync.when(
-                    data: (list) => SearchableDropdownWithCreate<LabourModel>(
-                      label: 'Contractor',
-                      items: list,
-                      itemLabelBuilder: (l) => l.name,
-                      value: _selectedContractor,
-                      onChanged: (val) {
-                        print('[LABOR LOG] Contractor selected: ${val?.name ?? "NULL"}');
-                        setState(() => _selectedContractor = val);
-                      },
-                      hint: 'Select Contractor',
-                      onAdd: (name) async {
-                         throw 'Creation not implemented yet'; 
-                      },
-                    ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, s) => Text('Error: $e'),
-                  );
-                }
+              masterLabourAsync.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text('Error: $e'),
+                data: (list) => SearchableDropdownWithCreate<LabourModel>(
+                  label: 'Select or Add',
+                  items: list,
+                  itemLabelBuilder: (l) => l.name,
+                  value: _selectedLabour,
+                  onChanged: (val) {
+                    setState(() => _selectedLabour = val);
+                    if (val != null) {
+                      _nameController.text = val.name;
+                      _phoneController.text = val.phone ?? '';
+                    }
+                  },
+                  onAdd: (name) async {
+                    final repo = ref.read(labourRepositoryProvider);
+                    final created = await repo.addLabour(
+                      LabourModel(
+                        id: '',
+                        name: name,
+                        phone: null,
+                        skillType: null,
+                        dailyWage: null,
+                        projectId: null,
+                        status: LabourStatus.active,
+                        createdBy: null,
+                        createdAt: DateTime.now(),
+                        updatedAt: DateTime.now(),
+                      ),
+                    );
+                    ref.invalidate(masterLabourProvider);
+                    setState(() => _selectedLabour = created);
+                    return created;
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name *',
+                  prefixIcon: Icon(Icons.engineering),
+                ),
+                validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  prefixIcon: Icon(Icons.phone),
+                ),
+                keyboardType: TextInputType.phone,
               ),
               
               const SizedBox(height: 24),
@@ -431,42 +462,34 @@ class _LogLaborSheetState extends ConsumerState<_LogLaborSheet> {
 
 
   Future<void> _submit() async {
-    print('[LABOR LOG] === SUBMIT FUNCTION CALLED ===');
-    if (_selectedContractor == null) {
-      print('[LABOR LOG] Validation failed: No contractor selected');
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select a contractor')));
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter contractor name')),
+      );
       return;
     }
-    
+
     setState(() => _isLoading = true);
     try {
-      print('[LABOR LOG] Starting submission...');
-      print('[LABOR LOG] Project ID: ${widget.projectId}');
-      print('[LABOR LOG] Contractor: ${_selectedContractor!.name}');
-      print('[LABOR LOG] Skilled: ${_skilledController.text}');
-      print('[LABOR LOG] Unskilled: ${_unskilledController.text}');
-      
       final log = DailyLabourLog(
          id: '',
          projectId: widget.projectId,
-         contractorName: _selectedContractor!.name,
+         contractorName: _nameController.text.trim(),
          skilledCount: int.tryParse(_skilledController.text) ?? 0,
          unskilledCount: int.tryParse(_unskilledController.text) ?? 0,
          logDate: DateTime.now(),
-         createdBy: ref.read(currentUserProvider)?.id,
+         notes: _phoneController.text.trim().isEmpty
+             ? null
+             : 'Phone: ${_phoneController.text.trim()}',
+         labourId: _selectedLabour?.id,
       );
-      
-      print('[LABOR LOG] Log object created: ${log.toInsertJson()}');
       await ref.read(labourRepositoryProvider).createDailyLog(log);
-      print('[LABOR LOG] Save successful!');
-      
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Log saved'), backgroundColor: Colors.green));
       }
     } catch (e, stackTrace) {
-      print('[LABOR LOG ERROR] $e');
-      print('[LABOR LOG STACK] $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error: $e'),
@@ -479,10 +502,3 @@ class _LogLaborSheetState extends ConsumerState<_LogLaborSheet> {
     }
   }
 }
-
-// Need to define temporary provider or assume it exists. 
-// I'll define a local one here reusing the repository.
-final activeLabourListProvider = FutureProvider.family<List<LabourModel>, String>((ref, projectId) async {
-  final repo = ref.watch(labourRepositoryProvider);
-  return repo.getActiveLabourByProject(projectId);
-});

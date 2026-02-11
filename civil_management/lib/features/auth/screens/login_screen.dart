@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/responsive_scaffold.dart';
+import '../../../core/ui/responsive.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../providers/auth_provider.dart';
@@ -79,60 +81,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ResponsiveScaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+      builder: (context, r) {
+        return Padding(
+          padding: r.pad.copyWith(
+            top: 24,
+            bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: const BoxConstraints(maxWidth: 460),
               child: Form(
                 key: _formKey,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // App Logo
+                    const SizedBox(height: 12),
                     Container(
-                      width: 80,
-                      height: 80,
+                      padding: EdgeInsets.all(r.isTablet ? 20 : 16),
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.construction,
-                        size: 40,
+                        size: r.font(40, tablet: 48),
                         color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 24),
-
-                    // Title
                     Text(
                       'Welcome Back',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            fontSize: r.font(30, tablet: 34),
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Sign in to your account',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                            color: AppColors.textSecondary,
+                            fontSize: r.font(14, tablet: 16),
+                          ),
                     ),
-                    const SizedBox(height: 32),
-
-                    // Error Message
+                    const SizedBox(height: 28),
                     if (_errorMessage != null) ...[
                       InlineErrorWidget(message: _errorMessage!),
                       const SizedBox(height: 16),
                     ],
-
-                    // Email Field
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -152,8 +151,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // Password Field
                     TextFormField(
                       controller: _passwordController,
                       obscureText: !_isPasswordVisible,
@@ -167,11 +164,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ? Icons.visibility_off
                                 : Icons.visibility,
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
+                          onPressed: () =>
+                              setState(() => _isPasswordVisible = !_isPasswordVisible),
                         ),
                       ),
                       validator: (value) {
@@ -185,8 +179,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       },
                     ),
                     const SizedBox(height: 24),
-
-                    // Login Button
                     AppButton(
                       text: 'Sign In',
                       onPressed: _handleLogin,
@@ -194,8 +186,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       icon: Icons.login,
                     ),
                     const SizedBox(height: 16),
-
-                    // Forgot Password Link
                     Center(
                       child: TextButton(
                         onPressed: () => context.go('/forgot-password'),
@@ -207,8 +197,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

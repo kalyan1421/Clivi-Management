@@ -7,6 +7,7 @@ import '../providers/machinery_provider.dart';
 import '../data/models/machinery_model.dart';
 import '../data/models/machinery_log_model.dart';
 import '../../common/widgets/searchable_dropdown_with_create.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class MachineryTabScreen extends ConsumerWidget {
   final String projectId;
@@ -77,9 +78,15 @@ class MachineryTabScreen extends ConsumerWidget {
                   itemCount: logs.length,
                   itemBuilder: (context, index) {
                     final log = logs[index];
+                    final requireNote =
+                        ref.read(userRoleProvider) == UserRole.siteManager;
                     return _MachineryCard(
                       log: log,
                       color: _getColor(index),
+                      requireNote: requireNote,
+                      onDeleted: () {
+                        ref.invalidate(machineryLogsProvider(projectId));
+                      },
                     );
                   },
                 );
@@ -114,17 +121,21 @@ class MachineryTabScreen extends ConsumerWidget {
   }
 }
 
-class _MachineryCard extends StatelessWidget {
+class _MachineryCard extends ConsumerWidget {
   final MachineryLog log;
   final Color color;
+  final VoidCallback onDeleted;
+  final bool requireNote;
 
   const _MachineryCard({
     required this.log,
     required this.color,
+    required this.onDeleted,
+    required this.requireNote,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateStr = log.logDate != null 
         ? DateFormat('MMM dd, yyyy').format(log.logDate!)
         : DateFormat('MMM dd, yyyy').format(log.loggedAt);
@@ -185,7 +196,63 @@ class _MachineryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: () async {
+                  final noteController = TextEditingController();
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Delete machinery log'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('This will remove the log entry.'),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: noteController,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              labelText:
+                                  'Note ${requireNote ? "*" : "(optional)"}',
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            if (requireNote &&
+                                noteController.text.trim().isEmpty) {
+                              return;
+                            }
+                            Navigator.pop(ctx, true);
+                          },
+                          child: const Text('Delete',
+                              style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+                    if (confirmed == true) {
+                      await ref
+                          .read(machineryRepositoryProvider)
+                          .deleteMachineryLog(
+                          logId: log.id,
+                          projectId: log.projectId,
+                          note: noteController.text.trim().isEmpty
+                              ? null
+                              : noteController.text.trim(),
+                        );
+                    onDeleted();
+                  }
+                },
+              ),
+
               // Hours Badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

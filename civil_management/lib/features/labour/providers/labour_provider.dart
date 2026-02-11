@@ -27,6 +27,12 @@ final activeLabourProvider = FutureProvider.family<List<LabourModel>, String>((
   return repo.getActiveLabourByProject(projectId);
 });
 
+/// Master labour (project_id null)
+final masterLabourProvider = FutureProvider<List<LabourModel>>((ref) async {
+  final repo = ref.watch(labourRepositoryProvider);
+  return repo.getMasterLabour();
+});
+
 /// Attendance for a specific date
 final attendanceByDateProvider =
     FutureProvider.family<

@@ -431,7 +431,6 @@ final authProvider = StateNotifierProvider<AuthNotifier, AppAuthState>((ref) {
 
   // Properly dispose resources when provider is disposed
   ref.onDispose(() {
-    notifier.dispose();
     SessionManager.instance.stopHealthCheck();
     logger.d('AuthProvider disposed, stream subscription cancelled');
   });

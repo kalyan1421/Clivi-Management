@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../core/ui/responsive.dart';
+import '../../../core/ui/responsive_scaffold.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -27,8 +29,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     final authState = ref.watch(authProvider);
     final isAdmin = authState.isAtLeast(UserRole.admin);
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50], // Light background
+    return ResponsiveScaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -36,7 +38,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            // Navigate to role-based dashboard instead of pop
             final userRole = authState.role;
             if (userRole == UserRole.superAdmin) {
               context.go('/super-admin/dashboard');
@@ -54,6 +55,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           if (isAdmin)
@@ -61,34 +64,41 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
               icon: const Icon(Icons.edit_outlined, color: Colors.black),
               onPressed: () => context.pushNamed('edit-project', pathParameters: {'id': widget.projectId}),
             ),
+          if (isAdmin)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: () => _confirmDelete(context),
+              tooltip: 'Delete project',
+            ),
         ],
       ),
-      body: projectState.isLoading
-          ? const LoadingWidget()
-          : projectState.error != null
-              ? AppErrorWidget(message: projectState.error!)
-              : projectState.project == null
-                  ? const Center(child: Text('Project not found'))
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Hero Section (Manager + Status + Material Snapshot)
-                          _HeroSection(
-                            project: projectState.project!,
-                            isAdmin: isAdmin,
-                            onEditManager: () => _showAssignManagerSheet(context),
-                            onEditProject: () => context.pushNamed('edit-project', pathParameters: {'id': widget.projectId}),
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          // Module Navigation
-                          _ModuleNavigation(projectId: widget.projectId),
-                        ],
-                      ),
-                    ),
+      builder: (context, r) {
+        if (projectState.isLoading) return const LoadingWidget();
+        if (projectState.error != null) return AppErrorWidget(message: projectState.error!);
+        if (projectState.project == null) return const Center(child: Text('Project not found'));
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: Padding(
+              padding: r.pad.copyWith(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _HeroSection(
+                    project: projectState.project!,
+                    isAdmin: isAdmin,
+                    onEditManager: () => _showAssignManagerSheet(context),
+                    onEditProject: () => context.pushNamed('edit-project', pathParameters: {'id': widget.projectId}),
+                  ),
+                  const SizedBox(height: 24),
+                  _ModuleNavigation(projectId: widget.projectId),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -99,6 +109,51 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => AssignManagerSheet(projectId: widget.projectId),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Project'),
+        content: const Text(
+          'This will mark the project as deleted. You can restore it later from the backend if needed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) return;
+
+    final notifier = ref.read(projectDetailProvider(widget.projectId).notifier);
+    final success = await notifier.deleteProject();
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Project deleted')),
+      );
+      context.go('/admin/dashboard');
+    } else {
+      final error = ref.read(projectDetailProvider(widget.projectId)).error ??
+          'Failed to delete project';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    }
   }
 }
 
@@ -119,7 +174,9 @@ class _HeroSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM yyyy');
-    
+    final width = MediaQuery.of(context).size.width;
+    final isWide = width > 720;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -166,58 +223,73 @@ class _HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           // Engineer Name
-          Text(
-            project.managerName,
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1A1C1E),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  project.managerName,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A1C1E),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           
           // Phase/Status & Date & Edit Project
-          Row(
-             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-             children: [
-               _StatusChip(status: project.status),
-               Row(
-                 children: [
-                   if (project.endDate != null)
-                     Row(
-                       children: [
-                         const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey),
-                         const SizedBox(width: 4),
-                         Text(
-                           'Completion by ${dateFormat.format(project.endDate!)}',
-                           style: TextStyle(
-                             fontSize: 13,
-                             color: Colors.grey[600],
-                             fontWeight: FontWeight.w500,
-                           ),
-                         ),
-                       ],
-                     ),
-                   if (isAdmin) ...[
-                     const SizedBox(width: 12),
-                     InkWell(
-                       onTap: onEditProject,
-                       borderRadius: BorderRadius.circular(8),
-                       child: Padding(
-                         padding: const EdgeInsets.all(4),
-                         child: const Icon(Icons.edit_outlined, size: 16, color: Colors.grey),
-                       ),
-                     ),
-                   ],
-                 ],
-               ),
-             ],
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _StatusChip(status: project.status),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (project.endDate != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Completion by ${dateFormat.format(project.endDate!)}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  if (isAdmin) ...[
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: onEditProject,
+                      borderRadius: BorderRadius.circular(8),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.edit_outlined, size: 16, color: Colors.grey),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ),
           
           const SizedBox(height: 24),
           
           // Material Snapshot
-          _MaterialSnapshot(projectId: project.id),
+          _MaterialSnapshot(projectId: project.id, isWide: isWide),
         ],
       ),
     );
@@ -256,7 +328,8 @@ class _StatusChip extends StatelessWidget {
 /// Material Snapshot within Hero Section (Steel & Cement)
 class _MaterialSnapshot extends ConsumerWidget {
   final String projectId;
-  const _MaterialSnapshot({required this.projectId});
+  final bool isWide;
+  const _MaterialSnapshot({required this.projectId, required this.isWide});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -299,12 +372,20 @@ class _MaterialSnapshot extends ConsumerWidget {
              );
           }
 
-          return Column(
-            children: displayItems.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _MaterialRow(item: item),
-            )).toList(),
-          );
+          final rows = displayItems
+              .map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _MaterialRow(item: item, isWide: isWide),
+                  ))
+              .toList();
+
+          return isWide
+              ? Row(
+                  children: rows
+                      .map((w) => Expanded(child: w))
+                      .toList(),
+                )
+              : Column(children: rows);
         },
         loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         error: (err, _) => const Text('Failed to load materials', style: TextStyle(fontSize: 12, color: Colors.red)),
@@ -315,7 +396,8 @@ class _MaterialSnapshot extends ConsumerWidget {
 
 class _MaterialRow extends StatelessWidget {
   final MaterialBreakdown item;
-  const _MaterialRow({required this.item});
+  final bool isWide;
+  const _MaterialRow({required this.item, required this.isWide});
 
   @override
   Widget build(BuildContext context) {
@@ -335,8 +417,9 @@ class _MaterialRow extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
             _StatPill(label: 'Received', value: '${item.received} $unit'),
             _StatPill(label: 'Consumed', value: '${item.consumed} $unit'),
@@ -356,8 +439,7 @@ class _StatPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 90, // Fixed width for alignment like in mockup
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
         color: const Color(0xFFEDF4FF), // Light blue tint
         borderRadius: BorderRadius.circular(10),
@@ -370,11 +452,11 @@ class _StatPill extends StatelessWidget {
             style: const TextStyle(fontSize: 11, color: Color(0xFF555555)),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
               color: Color(0xFF0055FF), // Vibrant blue
             ),
           ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/responsive.dart';
+import '../../../core/ui/responsive_scaffold.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../providers/auth_provider.dart';
@@ -61,7 +63,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ResponsiveScaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Reset Password'),
@@ -70,21 +72,24 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           onPressed: () => context.go('/login'),
         ),
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+      builder: (context, r) {
+        return Padding(
+          padding: r.pad.copyWith(
+            top: 24,
+            bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: _emailSent ? _buildSuccessView() : _buildResetForm(),
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: _emailSent ? _buildSuccessView(r) : _buildResetForm(r),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildSuccessView() {
+  Widget _buildSuccessView(R r) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -105,9 +110,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         Text(
           'Email Sent!',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                fontSize: r.font(26, tablet: 30),
+              ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -166,7 +172,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildResetForm() {
+  Widget _buildResetForm(R r) {
     return Form(
       key: _formKey,
       child: Column(
@@ -175,15 +181,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           // Icon
           Container(
-            width: 80,
-            height: 80,
+            padding: EdgeInsets.all(r.isTablet ? 20 : 16),
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.lock_reset,
-              size: 40,
+              size: r.font(40, tablet: 48),
               color: AppColors.primary,
             ),
           ),
@@ -193,17 +198,19 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           Text(
             'Forgot Password?',
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  fontSize: r.font(28, tablet: 32),
+                ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             'No worries! Enter your email and we\'ll send you a reset link.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: r.font(14, tablet: 16),
+                ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),

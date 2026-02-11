@@ -44,6 +44,14 @@ class SupabaseConfig {
         ),
       );
 
+      // Ensure realtime websocket is up immediately to avoid lazy connect races.
+      try {
+        supabase.realtime.connect();
+        logger.i('Realtime socket connected');
+      } catch (e) {
+        logger.w('Realtime socket connect failed: $e');
+      }
+
       logger.i('Supabase initialized successfully');
     } catch (e, stackTrace) {
       logger.e(
@@ -65,8 +73,6 @@ class SupabaseConfig {
         break;
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
-        // Pause realtime to save battery
-        _pauseRealtime();
         _connectionState = ConnectionState.paused;
         break;
       case AppLifecycleState.detached:
@@ -81,15 +87,15 @@ class SupabaseConfig {
   static Future<void> _refreshConnection() async {
     _connectionState = ConnectionState.connected;
 
-    // Resume realtime if it was paused
-    if (_isRealtimePaused) {
-      try {
-        supabase.realtime.connect();
+    // Ensure realtime socket is connected (idempotent)
+    try {
+      supabase.realtime.connect();
+      if (_isRealtimePaused) {
         _isRealtimePaused = false;
         logger.i('Realtime connection resumed');
-      } catch (e) {
-        logger.w('Failed to resume realtime: $e');
       }
+    } catch (e) {
+      logger.w('Failed to ensure realtime connection: $e');
     }
 
     // Refresh session if expiring soon (within 5 minutes)

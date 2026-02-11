@@ -19,7 +19,24 @@ class AdminDashboard extends ConsumerWidget {
     final projectsState = ref.watch(activeProjectsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF6F7FB),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          backgroundColor: AppColors.primary,
+          onPressed: () => context.push('/projects/create'),
+          child: const Icon(Icons.add, size: 30, color: Colors.white),
+        ),
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => _refreshAll(ref),
@@ -28,79 +45,21 @@ class AdminDashboard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with avatar and notifications
                 _buildHeader(context, profile?.fullName ?? 'Admin'),
-
-                // Blue stats card
-                _buildStatsCard(context, statsState),
-
-                const SizedBox(height: 24),
-
-                // Operations section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Operations',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildOperationsGrid(context),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Active Projects section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Active Projects',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      TextButton(
-                        onPressed: () => context.push('/projects'),
-                        child: Text(
-                          'View All',
-                          style: TextStyle(color: AppColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildProjectsList(context, projectsState),
-
-                const SizedBox(height: 24),
-
-                // Recent Operations section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    'Recent Operations',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildRecentOperations(context, activityState),
-
+                _buildStatsRow(context, statsState),
+                const SizedBox(height: 20),
+                        _buildOperationsSection(context, projectsState),
+                const SizedBox(height: 18),
+                _buildActiveProjectsSection(context, projectsState),
+                const SizedBox(height: 18),
+                _buildRecentOpsSection(context, activityState),
                 const SizedBox(height: 24),
               ],
             ),
           ),
         ),
       ),
-      );
+    );
   }
 
   Future<void> _refreshAll(WidgetRef ref) async {
@@ -113,76 +72,164 @@ class AdminDashboard extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context, String name) {
     return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Text(
-                'Admin',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () {},
+              ),
+              const Spacer(),
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                child: Icon(Icons.person, color: AppColors.primary),
               ),
             ],
           ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+          const SizedBox(height: 8),
+          Text(
+            'Welcome back,',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w400,
+                ),
           ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-            child: Icon(Icons.person, color: AppColors.primary),
+          Text(
+            name.isNotEmpty ? name : 'Admin',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsCard(BuildContext context, DashboardStatsState state) {
+  Widget _buildStatsRow(BuildContext context, DashboardStatsState state) {
     final stats = state.stats;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withValues(alpha: 0.85),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           Expanded(
-            child: _buildStatItem(
-              context,
-              icon: Icons.business,
+            child: _statCard(
+              background: AppColors.primary,
+              shadowColor: AppColors.primary.withValues(alpha: 0.35),
+              icon: Icons.show_chart,
               value: stats.activeProjects.toString().padLeft(2, '0'),
               label: 'Active Projects',
+              badgeText: '+12%',
+              textColor: Colors.white,
+              badgeColor: Colors.white.withValues(alpha: 0.15),
               isLoading: state.isLoading,
             ),
           ),
-          Container(
-            width: 1,
-            height: 60,
-            color: Colors.white.withValues(alpha: 0.3),
-          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: _buildStatItem(
-              context,
-              icon: Icons.people,
+            child: _statCard(
+              background: Colors.white,
+              shadowColor: Colors.black.withValues(alpha: 0.08),
+              icon: Icons.groups_rounded,
               value: stats.totalWorkers.toString(),
               label: 'Total Workers',
+              textColor: AppColors.textPrimary,
+              badgeColor: Colors.transparent,
               isLoading: state.isLoading,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCard({
+    required Color background,
+    required Color shadowColor,
+    required IconData icon,
+    required String value,
+    required String label,
+    Color? textColor,
+    String? badgeText,
+    Color? badgeColor,
+    bool isLoading = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 12,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: (textColor ?? AppColors.textPrimary)
+                      .withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: textColor ?? AppColors.textPrimary),
+              ),
+              if (badgeText != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: badgeColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(
+                      color: textColor ?? AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (isLoading)
+            Container(
+              height: 28,
+              width: 50,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(6),
+              ),
+            )
+          else
+            Text(
+              value,
+              style: TextStyle(
+                color: textColor ?? AppColors.textPrimary,
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: (textColor ?? AppColors.textPrimary)
+                  .withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -238,104 +285,176 @@ class AdminDashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildOperationsGrid(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildOperationItem(
-          context,
-          icon: Icons.inventory_2_outlined,
-          label: 'Materials',
-          onTap: () {},
-        ),
-        _buildOperationItem(
-          context,
-          icon: Icons.construction,
-          label: 'Machinery',
-          onTap: () {},
-        ),
-        _buildOperationItem(
-          context,
-          icon: Icons.people_outline,
-          label: 'Labor',
-          onTap: () {},
-        ),
-        _buildOperationItem(
-          context,
-          icon: Icons.home_work_outlined,
-          label: 'Sites',
-          onTap: () => context.push('/admin/site-managers'),
-        ),
-      ],
-    );
-  }
+  Widget _buildOperationsSection(
+    BuildContext context,
+    ActiveProjectsState projectsState,
+  ) {
+    final projectId = projectsState.projects.isNotEmpty
+        ? projectsState.projects.first.id
+        : null;
 
-  Widget _buildOperationItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
+    final operations = [
+      _OperationTile(
+        label: 'Materials',
+        subtitle: 'Vendors & stock',
+        icon: Icons.inventory_2_outlined,
+        bg: Colors.blue[50],
+        onTap: () => context.push('/master/vendors'),
+      ),
+      _OperationTile(
+        label: 'Machinery',
+        subtitle: '12 Units',
+        icon: Icons.build_outlined,
+        bg: Colors.orange[50],
+        onTap: () => context.push('/master/machinery'),
+      ),
+      _OperationTile(
+        label: 'Labor',
+        subtitle: '142 Workers',
+        icon: Icons.people_alt_outlined,
+        bg: Colors.green[50],
+        onTap: () {
+          context.push('/master/labour');
+        },
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 28),
-          ),
-          const SizedBox(height: 8),
           Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+            'Operations',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: operations.map((op) {
+              final isFirst = operations.indexOf(op) == 0;
+              return Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: op.onTap,
+                  child: Container(
+                    margin: EdgeInsets.only(right: isFirst ? 10 : 0, left: !isFirst ? 10 : 0),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: op.bg,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(op.icon, color: AppColors.primary),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          op.label,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          op.subtitle,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProjectsList(BuildContext context, ActiveProjectsState state) {
-    if (state.isLoading) {
-      return _buildProjectsLoading();
-    }
-
-    if (state.projects.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        child: Center(
-          child: Text(
-            'No active projects',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+  Widget _buildActiveProjectsSection(
+    BuildContext context,
+    ActiveProjectsState state,
+  ) {
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: state.projects.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final project = state.projects[index];
-        return _buildProjectCard(context, project);
-      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Active Projects',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/projects'),
+                child: Text('View All', style: TextStyle(color: AppColors.primary)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (state.isLoading) _buildProjectsLoading()
+          else if (state.projects.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text('No active projects',
+                  style: TextStyle(color: AppColors.textSecondary)),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: state.projects.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) =>
+                  _buildProjectCard(context, state.projects[index]),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentOpsSection(
+    BuildContext context,
+    RecentActivityState state,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recent Operations',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 12),
+          _buildRecentOperations(context, state),
+        ],
+      ),
     );
   }
 
@@ -550,28 +669,27 @@ class AdminDashboard extends ConsumerWidget {
   Widget _buildOperationItem2(BuildContext context, OperationLog activity) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: _getOperationColor(
-                activity.operationType,
-              ).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: _getOperationColor(activity.operationType)
+                  .withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               _getOperationIcon(activity.entityType),
@@ -586,9 +704,10 @@ class AdminDashboard extends ConsumerWidget {
               children: [
                 Text(
                   activity.title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -647,4 +766,20 @@ class AdminDashboard extends ConsumerWidget {
         return AppColors.secondary;
     }
   }
+}
+
+class _OperationTile {
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final Color? bg;
+  final VoidCallback onTap;
+
+  const _OperationTile({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    this.bg,
+    required this.onTap,
+  });
 }

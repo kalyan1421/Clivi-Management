@@ -6,10 +6,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/master_data_provider.dart';
-import '../providers/stock_provider.dart'; 
+import '../providers/stock_provider.dart' show stockRepositoryProvider, materialLogsProvider;
 import '../data/models/stock_item.dart';
 import '../data/models/material_grade_model.dart';
 import '../../inventory/data/models/supplier_model.dart';
+import '../../inventory/providers/inventory_provider.dart' show suppliersProvider, inventoryRepositoryProvider;
 import '../../common/widgets/searchable_dropdown_with_create.dart';
 import '../data/models/material_master_model.dart';
 import '../data/models/material_log.dart';
@@ -427,10 +428,8 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
   // Local state for async fetches in dropdowns
   List<StockItem> _projectMaterials = [];
   List<MaterialGrade> _availableGrades = [];
-  List<SupplierModel> _projectSuppliers = [];
   bool _loadingMaterials = false;
   bool _loadingGrades = false;
-  bool _loadingSuppliers = false;
 
   final List<String> _unitItems = const [
     'Bags',
@@ -450,7 +449,6 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
 
   Future<void> _fetchInitialData() async {
     _fetchMaterials();
-    _fetchSuppliers();
   }
 
   Future<void> _fetchMaterials() async {
@@ -474,18 +472,6 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
     }
   }
 
-  Future<void> _fetchSuppliers() async {
-    setState(() => _loadingSuppliers = true);
-    try {
-      final suppliers = await ref.read(stockRepositoryProvider).getProjectSuppliers(widget.projectId);
-      if (mounted) setState(() => _projectSuppliers = suppliers);
-    } catch (e) {
-      debugPrint('Error fetching suppliers: $e');
-    } finally {
-      if (mounted) setState(() => _loadingSuppliers = false);
-    }
-  }
-
   Future<void> _fetchGrades(String materialName) async {
     setState(() => _loadingGrades = true);
     try {
@@ -497,6 +483,171 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
     } finally {
       if (mounted) setState(() => _loadingGrades = false);
     }
+  }
+
+  Future<SupplierModel?> _openAddSupplierSheet(BuildContext context,
+      {String initialName = ''}) async {
+    final nameCtrl = TextEditingController(text: initialName);
+    final phoneCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final contactCtrl = TextEditingController();
+    final addressCtrl = TextEditingController();
+    final categoryCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool saving = false;
+
+    return showModalBottomSheet<SupplierModel?>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Add Vendor',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: nameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Name *',
+                          prefixIcon: Icon(Icons.store),
+                        ),
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: phoneCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone',
+                          prefixIcon: Icon(Icons.phone),
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: emailCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: contactCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Contact Person',
+                          prefixIcon: Icon(Icons.person_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: categoryCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Category',
+                          prefixIcon: Icon(Icons.category_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: addressCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Address',
+                          prefixIcon: Icon(Icons.location_on_outlined),
+                        ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: notesCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes',
+                          prefixIcon: Icon(Icons.note_outlined),
+                        ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 20),
+                      FilledButton(
+                        onPressed: saving
+                            ? null
+                            : () async {
+                                if (!formKey.currentState!.validate()) return;
+                                setState(() => saving = true);
+                                try {
+                                  final repo =
+                                      ref.read(inventoryRepositoryProvider);
+                                  final supplier = await repo.addSupplier(
+                                    SupplierModel(
+                                      id: '',
+                                      name: nameCtrl.text.trim(),
+                                      phone: phoneCtrl.text.trim().isEmpty
+                                          ? null
+                                          : phoneCtrl.text.trim(),
+                                      email: emailCtrl.text.trim().isEmpty
+                                          ? null
+                                          : emailCtrl.text.trim(),
+                                      contactPerson:
+                                          contactCtrl.text.trim().isEmpty
+                                              ? null
+                                              : contactCtrl.text.trim(),
+                                      address: addressCtrl.text.trim().isEmpty
+                                          ? null
+                                          : addressCtrl.text.trim(),
+                                      category:
+                                          categoryCtrl.text.trim().isEmpty
+                                              ? null
+                                              : categoryCtrl.text.trim(),
+                                      notes: notesCtrl.text.trim().isEmpty
+                                          ? null
+                                          : notesCtrl.text.trim(),
+                                      isActive: true,
+                                      createdAt: null,
+                                    ),
+                                  );
+                                  if (ctx.mounted) Navigator.pop(ctx, supplier);
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content:
+                                          Text('Failed to add vendor: $e'),
+                                    ),
+                                  );
+                                } finally {
+                                  setState(() => saving = false);
+                                }
+                              },
+                        child: Text(saving ? 'Saving...' : 'Save'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -630,21 +781,27 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
             ),
             const SizedBox(height: 16),
 
-             // 3. VENDOR DROPDOWN
-             SearchableDropdownWithCreate<SupplierModel>(
-                label: 'Vendor / Supplier', 
-                hint: 'Enter vendor name',
-                value: entry.selectedSupplier,
-                items: _projectSuppliers,
-                isLoading: _loadingSuppliers,
-                itemLabelBuilder: (s) => s.name,
-                onChanged: (s) => setState(() => entry.selectedSupplier = s),
-                onAdd: (name) async {
-                   final newSupplier = await ref.read(stockRepositoryProvider).addProjectSupplier(widget.projectId, name);
-                   await _fetchSuppliers();
-                   return newSupplier;
-                },
-             ),
+             // 3. VENDOR DROPDOWN (master suppliers)
+             ref.watch(suppliersProvider).when(
+               loading: () => const LinearProgressIndicator(),
+               error: (e, _) => Text('Error loading suppliers: $e'),
+               data: (suppliers) => SearchableDropdownWithCreate<SupplierModel>(
+                  label: 'Vendor / Supplier', 
+                  hint: 'Enter vendor name',
+                  value: entry.selectedSupplier,
+                  items: suppliers,
+                  itemLabelBuilder: (s) => s.name,
+              onChanged: (s) => setState(() => entry.selectedSupplier = s),
+              onAdd: (name) async {
+                     final newSupplier = await _openAddSupplierSheet(context, initialName: name);
+                     if (newSupplier != null) {
+                       ref.invalidate(suppliersProvider);
+                       setState(() => entry.selectedSupplier = newSupplier);
+                     }
+                     return newSupplier ?? entry.selectedSupplier!;
+                 },
+              ),
+            ),
 
              const SizedBox(height: 16),
              

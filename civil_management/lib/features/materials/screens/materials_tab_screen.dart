@@ -15,6 +15,8 @@ class MaterialsTabScreen extends ConsumerStatefulWidget {
 }
 
 class _MaterialsTabScreenState extends ConsumerState<MaterialsTabScreen> {
+  bool _showByVendor = false;
+
   @override
   Widget build(BuildContext context) {
     final stockAsync = ref.watch(stockRepositoryProvider).getStockItemsByProject(widget.projectId);
@@ -71,48 +73,93 @@ class _MaterialsTabScreenState extends ConsumerState<MaterialsTabScreen> {
              groupedMaterials[key]!.add(item);
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: groupedMaterials.keys.length,
-            itemBuilder: (context, index) {
-              final materialName = groupedMaterials.keys.elementAt(index);
-              final items = groupedMaterials[materialName]!;
-              
-              // Calculate Aggregates
-              double totalQuantity = 0;
-              double totalConsumed = 0;
-              double totalCost = 0;
-              
-              // Determine primary unit (first item's unit) - simplistic
-              final unit = items.first.unit;
+          // Vendor totals for this project (inward only)
+          final Map<String, _VendorTotal> vendorTotals = {};
+          for (final log in logs.where((l) => l.logType == 'inward' && l.supplier != null)) {
+            final key = log.supplier!.id;
+            vendorTotals.putIfAbsent(
+              key,
+              () => _VendorTotal(
+                supplierId: key,
+                supplierName: log.supplier!.name,
+              ),
+            );
+            vendorTotals[key]!.totalQuantity += log.quantity;
+          }
 
-              for (var item in items) {
-                totalQuantity += item.quantity; // This is current stock
-                
-                // Calculate consumption and receipts from logs for this item ID
-                final itemLogs = logs.where((l) => l.itemId == item.id);
-                for (var log in itemLogs) {
-                  if (log.logType == 'inward') {
-                    if (log.billAmount != null) totalCost += log.billAmount!;
-                  }
-                  if (log.logType == 'outward') {
-                    // Check if we need to sum consumed quantity from logs or trust stock item? 
-                    // StockItem quantity is current balance.
-                    // For "Total Consumed", we must sum logs.
-                    totalConsumed += log.quantity;
-                  }
-                }
-              }
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('By Material')),
+                    ButtonSegment(value: true, label: Text('By Vendor')),
+                  ],
+                  selected: {_showByVendor},
+                  onSelectionChanged: (v) => setState(() => _showByVendor = v.first),
+                ),
+              ),
+              Expanded(
+                child: _showByVendor
+                    ? ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: vendorTotals.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final vendor = vendorTotals.values.elementAt(index);
+                          return Card(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              title: Text(vendor.supplierName),
+                              subtitle: const Text('Inward quantity'),
+                              trailing: Text(vendor.totalQuantity.toStringAsFixed(2)),
+                            ),
+                          );
+                        },
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: groupedMaterials.keys.length,
+                        itemBuilder: (context, index) {
+                          final materialName = groupedMaterials.keys.elementAt(index);
+                          final items = groupedMaterials[materialName]!;
+                          
+                          // Calculate Aggregates
+                          double totalQuantity = 0;
+                          double totalConsumed = 0;
+                          double totalCost = 0;
+                          
+                          // Determine primary unit (first item's unit) - simplistic
+                          final unit = items.first.unit;
 
-              return _MaterialGroupCard(
-                 name: materialName,
-                 totalCurrentStock: totalQuantity,
-                 totalConsumed: totalConsumed,
-                 totalCost: totalCost,
-                 unit: unit,
-                 variants: items,
-              );
-            },
+                          for (var item in items) {
+                            totalQuantity += item.quantity; // This is current stock
+                            
+                            // Calculate consumption and receipts from logs for this item ID
+                            final itemLogs = logs.where((l) => l.itemId == item.id);
+                            for (var log in itemLogs) {
+                              if (log.logType == 'inward') {
+                                if (log.billAmount != null) totalCost += log.billAmount!;
+                              }
+                              if (log.logType == 'outward') {
+                                totalConsumed += log.quantity;
+                              }
+                            }
+                          }
+
+                          return _MaterialGroupCard(
+                             name: materialName,
+                             totalCurrentStock: totalQuantity,
+                             totalConsumed: totalConsumed,
+                             totalCost: totalCost,
+                             unit: unit,
+                             variants: items,
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
       ),
@@ -139,6 +186,18 @@ class _MaterialGroupCard extends StatefulWidget {
 
   @override
   State<_MaterialGroupCard> createState() => _MaterialGroupCardState();
+}
+
+class _VendorTotal {
+  final String supplierId;
+  final String supplierName;
+  double totalQuantity;
+
+  _VendorTotal({
+    required this.supplierId,
+    required this.supplierName,
+    this.totalQuantity = 0,
+  });
 }
 
 class _MaterialGroupCardState extends State<_MaterialGroupCard> {

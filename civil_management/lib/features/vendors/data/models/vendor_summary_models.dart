@@ -127,3 +127,54 @@ class ProjectInventorySummary {
     );
   }
 }
+
+/// Aggregated quantity per vendor across all projects (from get_vendor_overview RPC)
+class VendorOverview {
+  final String vendorId;
+  final String vendorName;
+  final double totalQuantity;
+
+  const VendorOverview({
+    required this.vendorId,
+    required this.vendorName,
+    required this.totalQuantity,
+  });
+
+  factory VendorOverview.fromJson(Map<String, dynamic> json) {
+    return VendorOverview(
+      vendorId: json['vendor_id'] as String,
+      vendorName: json['vendor_name'] as String? ?? 'Unknown Vendor',
+      totalQuantity: (json['total_qty'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+/// Per-vendor breakdown returned by get_vendor_material_totals RPC
+class VendorMaterialTotal {
+  final String projectId;
+  final String projectName;
+  final String materialName;
+  final double totalInward;
+  final double totalOutward;
+  final double net;
+
+  const VendorMaterialTotal({
+    required this.projectId,
+    required this.projectName,
+    required this.materialName,
+    required this.totalInward,
+    required this.totalOutward,
+    required this.net,
+  });
+
+  factory VendorMaterialTotal.fromJson(Map<String, dynamic> json) {
+    return VendorMaterialTotal(
+      projectId: json['project_id'] as String,
+      projectName: json['project_name'] as String? ?? 'Unknown Project',
+      materialName: json['material_name'] as String? ?? 'Unknown',
+      totalInward: (json['total_inward'] as num?)?.toDouble() ?? 0.0,
+      totalOutward: (json['total_outward'] as num?)?.toDouble() ?? 0.0,
+      net: (json['net'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}

@@ -78,7 +78,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
 
     final AsyncValue<List<BillModel>> billsAsync = _selectedProjectId == null
         ? const AsyncValue.data([])
-        : ref.watch(billsStreamProvider(_selectedProjectId!));
+        : ref.watch(billsCombinedProvider(_selectedProjectId!));
 
     return Scaffold(
       appBar: AppBar(

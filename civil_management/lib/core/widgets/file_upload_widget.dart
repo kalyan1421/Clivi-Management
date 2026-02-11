@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import '../utils/file_utils.dart'; // Import created in previous step
 
 class FileUploadWidget extends StatefulWidget {
@@ -24,6 +25,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
   Future<void> _pickFile() async {
     final file = await FileUtils.pickFile(
       allowedExtensions: widget.allowedExtensions,
+      type: FileType.custom, // ensure custom type when filtering extensions
     );
 
     if (file != null) {

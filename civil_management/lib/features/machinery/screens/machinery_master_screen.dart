@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/machinery_provider.dart';
-import '../../../core/widgets/custom_text_field.dart';
-// import '../../../core/widgets/app_dropdown.dart'; // unused or use standard
+import '../data/models/machinery_model.dart';
 
+/// Machinery master list with add/edit/delete via bottom sheets
 class MachineryMasterScreen extends ConsumerWidget {
   const MachineryMasterScreen({super.key});
 
@@ -15,6 +14,21 @@ class MachineryMasterScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Machinery Master'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'refresh') {
+                ref.invalidate(machineryListProvider);
+              } else if (value == 'delete_all') {
+                _confirmDeleteAll(context, ref);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'refresh', child: Text('Refresh')),
+              PopupMenuItem(value: 'delete_all', child: Text('Delete All')),
+            ],
+          ),
+        ],
       ),
       body: machineryListAsync.when(
         data: (machinery) {
@@ -29,18 +43,34 @@ class MachineryMasterScreen extends ConsumerWidget {
               return Card(
                 child: ListTile(
                   leading: CircleAvatar(
-                    child: Icon(item.ownershipType == 'Own' ? Icons.handyman : Icons.car_rental),
-                  ),
-                  title: Text(item.name),
-                  subtitle: Text('${item.type ?? 'Unknown Type'} • ${item.registrationNo ?? 'No Reg No'}'),
-                  trailing: Chip(
-                    label: Text(item.status),
-                    backgroundColor: item.status == 'active' ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                    labelStyle: TextStyle(
-                      color: item.status == 'active' ? Colors.green : Colors.grey,
-                      fontSize: 12,
+                    child: Icon(
+                      item.ownershipType == 'Own'
+                          ? Icons.handyman
+                          : Icons.car_rental,
                     ),
                   ),
+                  title: Text(item.name),
+                  subtitle: Text(
+                    '${item.type ?? 'Unknown Type'} • '
+                    '${item.registrationNo ?? 'No Reg No'}',
+                  ),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'edit':
+                          _showFormSheet(context, ref, existing: item);
+                          break;
+                        case 'delete':
+                          _confirmDelete(context, ref, item.id);
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                  ),
+                  onTap: () => _showFormSheet(context, ref, existing: item),
                 ),
               );
             },
@@ -50,134 +80,221 @@ class MachineryMasterScreen extends ConsumerWidget {
         error: (err, st) => Center(child: Text('Error: $err')),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddMachinerySheet(context),
+        onPressed: () => _showFormSheet(context, ref),
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  void _showAddMachinerySheet(BuildContext context) {
+  void _showFormSheet(
+    BuildContext context,
+    WidgetRef ref, {
+    MachineryModel? existing,
+  }) {
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    final typeController = TextEditingController(text: existing?.type ?? '');
+    final regController =
+        TextEditingController(text: existing?.registrationNo ?? '');
+    String ownership = existing?.ownershipType ?? 'Rental';
+    final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => const _AddMachineryForm(),
-    );
-  }
-}
-
-class _AddMachineryForm extends ConsumerStatefulWidget {
-  const _AddMachineryForm();
-
-  @override
-  ConsumerState<_AddMachineryForm> createState() => _AddMachineryFormState();
-}
-
-class _AddMachineryFormState extends ConsumerState<_AddMachineryForm> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _typeController = TextEditingController(); // Or dropdown
-  final _regNoController = TextEditingController();
-  
-  String _ownershipType = 'Rental'; // Default
-  final List<String> _ownershipOptions = ['Own', 'Rental'];
-  
-  // Common machinery types for suggestion
-  static const List<String> _machineryTypes = [
-    'Excavator', 'JCB', 'Crane', 'Mixer', 'Tractor', 'Truck', 'Roller', 'Other'
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    // Handle keyboard
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 16),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Add New Machinery', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Machinery Name (e.g. JCB 3DX)'),
-              validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+      useSafeArea: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
             ),
-            const SizedBox(height: 12),
-            
-            // Type (Autocomplete)
-            Autocomplete<String>(
-              optionsBuilder: (textEditingValue) {
-                if (textEditingValue.text.isEmpty) return _machineryTypes;
-                return _machineryTypes.where((element) => 
-                     element.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-              },
-              onSelected: (option) => _typeController.text = option,
-              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                 // Sync
-                 controller.addListener(() {
-                   _typeController.text = controller.text;
-                 });
-                 return TextFormField(
-                   controller: controller,
-                   focusNode: focusNode,
-                   decoration: const InputDecoration(labelText: 'Type (e.g. Excavator)'),
-                   validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                 );
-              },
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    existing == null ? 'Add Machinery' : 'Edit Machinery',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: nameController,
+                    decoration:
+                        const InputDecoration(labelText: 'Name *'),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: typeController,
+                    decoration:
+                        const InputDecoration(labelText: 'Type *'),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: regController,
+                    decoration: const InputDecoration(
+                      labelText: 'Registration No',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: ownership,
+                    decoration:
+                        const InputDecoration(labelText: 'Ownership'),
+                    items: const [
+                      DropdownMenuItem(value: 'Own', child: Text('Own')),
+                      DropdownMenuItem(value: 'Rental', child: Text('Rental')),
+                    ],
+                    onChanged: (v) => setState(() => ownership = v ?? 'Rental'),
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: isSaving
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) return;
+                            setState(() => isSaving = true);
+                            final repo = ref.read(machineryRepositoryProvider);
+                            try {
+                              if (existing == null) {
+                                await repo.createMachinery(
+                                  name: nameController.text.trim(),
+                                  type: typeController.text.trim(),
+                                  registrationNo:
+                                      regController.text.trim().isEmpty
+                                          ? null
+                                          : regController.text.trim(),
+                                  ownershipType: ownership,
+                                );
+                              } else {
+                                await repo.updateMachinery(
+                                  machineryId: existing.id,
+                                  data: {
+                                    'name': nameController.text.trim(),
+                                    'type': typeController.text.trim(),
+                                    'registration_no':
+                                        regController.text.trim(),
+                                    'ownership_type': ownership,
+                                  },
+                                );
+                              }
+                              ref.invalidate(machineryListProvider);
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(existing == null
+                                      ? 'Machinery added'
+                                      : 'Machinery updated'),
+                                ),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Save failed: $e')),
+                              );
+                            } finally {
+                              setState(() => isSaving = false);
+                            }
+                          },
+                    child: Text(existing == null ? 'Save' : 'Update'),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
-
-            TextFormField(
-              controller: _regNoController,
-              decoration: const InputDecoration(labelText: 'Registration No (Optional)'),
-            ),
-            const SizedBox(height: 12),
-            
-            DropdownButtonFormField<String>(
-              value: _ownershipType,
-              decoration: const InputDecoration(labelText: 'Ownership'),
-              items: _ownershipOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _ownershipType = val);
-              },
-            ),
-
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _submit,
-              child: const Text('Add Machinery'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    
-    final success = await ref.read(machineryControllerProvider.notifier).createMachinery(
-      name: _nameController.text.trim(),
-      type: _typeController.text.trim(),
-      registrationNo: _regNoController.text.trim().isEmpty ? null : _regNoController.text.trim(),
-      ownershipType: _ownershipType,
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete machinery'),
+        content: const Text(
+          'Are you sure you want to delete this machinery item?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
 
-    if (success && mounted) {
-      context.pop();
-      // Refresh list
+    if (ok == true) {
+      await ref.read(machineryRepositoryProvider).deleteMachinery(id);
       ref.invalidate(machineryListProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Machinery Added Successfully')),
+        const SnackBar(content: Text('Machinery deleted')),
       );
-    } else if (mounted) {
+    }
+  }
+
+  Future<void> _confirmDeleteAll(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final controller = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete all machinery'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('This will remove every machinery record.'),
+            const SizedBox(height: 8),
+            const Text('Type DELETE to confirm.'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              decoration:
+                  const InputDecoration(labelText: 'Confirmation text'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(ctx, controller.text.trim() == 'DELETE'),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      await ref.read(machineryRepositoryProvider).deleteAllMachinery();
+      ref.invalidate(machineryListProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to add machinery! Check console logs.'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('All machinery deleted')),
       );
     }
   }

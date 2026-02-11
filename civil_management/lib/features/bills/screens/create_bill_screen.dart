@@ -34,6 +34,8 @@ class _CreateBillScreenState extends ConsumerState<CreateBillScreen> {
   String? _receiptName;
 
   bool _isSubmitting = false;
+  String? _selectedFileName;
+  String? _selectedFileSize;
 
   @override
   void initState() {
@@ -88,13 +90,17 @@ class _CreateBillScreenState extends ConsumerState<CreateBillScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('New Bill/Expense')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               // Project Dropdown
               DropdownButtonFormField<String>(
                 value: _selectedProjectId,
@@ -192,18 +198,52 @@ class _CreateBillScreenState extends ConsumerState<CreateBillScreen> {
 
               // Receipt Upload
               const Text(
-                'Receipt / Proof',
+                'Receipt (PDF)',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               FileUploadWidget(
-                label: 'Upload Receipt',
+                label: 'Upload PDF',
+                allowedExtensions: const ['pdf'],
                 onFileSelected: (fileName, bytes) => setState(() {
                   _receiptName = fileName;
                   _receiptBytes = bytes;
+                  _selectedFileName = fileName;
+                  _selectedFileSize = '${(bytes.length / (1024 * 1024)).toStringAsFixed(2)} MB';
                 }),
               ),
-              
+              if (_selectedFileName != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.picture_as_pdf, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _selectedFileName!,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      _selectedFileSize ?? '',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        setState(() {
+                          _receiptBytes = null;
+                          _receiptName = null;
+                          _selectedFileName = null;
+                          _selectedFileSize = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ],
+                            
               const SizedBox(height: 32),
 
               // Submit Button
@@ -218,9 +258,12 @@ class _CreateBillScreenState extends ConsumerState<CreateBillScreen> {
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('CREATE BILL'),
               ),
-            ],
-          ),
-        ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

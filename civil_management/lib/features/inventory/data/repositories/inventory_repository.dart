@@ -257,6 +257,26 @@ class InventoryRepository {
     }
   }
 
+  /// Delete a material log (with optional note for audit)
+  Future<void> deleteMaterialLog({
+    required String logId,
+    required String projectId,
+    String? note,
+    String? actorRole,
+  }) async {
+    await _client.from('material_logs').delete().eq('id', logId);
+
+    // Log operation for admins
+    await _client.rpc('log_operation', params: {
+      'p_operation_type': 'delete',
+      'p_entity_type': 'stock',
+      'p_entity_id': logId,
+      'p_title': '[DELETE] Material log',
+      'p_description': note ?? '',
+      'p_project_id': projectId,
+    });
+  }
+
   /// Delete a supplier (soft delete by setting is_active = false)
   Future<void> deleteSupplier(String supplierId) async {
     try {
@@ -266,6 +286,16 @@ class InventoryRepository {
           .eq('id', supplierId);
     } on PostgrestException catch (e) {
       logger.e('Failed to delete supplier: ${e.message}');
+      throw DatabaseException.fromPostgrest(e);
+    }
+  }
+
+  /// Soft delete ALL suppliers (used for admin bulk cleanup)
+  Future<void> deleteAllSuppliers() async {
+    try {
+      await _client.from('suppliers').update({'is_active': false});
+    } on PostgrestException catch (e) {
+      logger.e('Failed to bulk delete suppliers: ${e.message}');
       throw DatabaseException.fromPostgrest(e);
     }
   }

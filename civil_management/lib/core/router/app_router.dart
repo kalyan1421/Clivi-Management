@@ -18,6 +18,7 @@ import '../../features/blueprints/screens/blueprint_files_screen.dart';
 import '../../features/blueprints/screens/blueprint_viewer_screen.dart';
 import '../../features/blueprints/data/models/blueprint_model.dart';
 import '../../features/inventory/screens/stock_list_screen.dart';
+import '../../features/vendors/screens/vendors_list_screen.dart';
 import '../../features/inventory/screens/daily_material_log_screen.dart';
 import '../../features/labour/screens/labour_roster_screen.dart';
 import '../../features/labour/screens/attendance_screen.dart';
@@ -27,6 +28,11 @@ import '../../features/reports/screens/reports_screen.dart';
 import '../../features/bills/screens/bills_screen.dart';
 import '../../features/bills/screens/create_bill_screen.dart';
 import '../../features/materials/screens/materials_tab_screen.dart';
+import '../../features/machinery/screens/machinery_tab_screen.dart';
+import '../../features/machinery/screens/machinery_log_screen.dart';
+import '../../features/machinery/screens/machinery_master_screen.dart';
+import '../../features/labour/screens/labour_master_screen.dart';
+import '../../features/labour/screens/labour_tab_screen.dart';
 
 /// Global router provider
 final routerProvider = Provider<GoRouter>((ref) {
@@ -109,6 +115,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/suppliers',
         name: 'suppliers',
         builder: (context, state) => const SupplierListScreen(),
+      ),
+      GoRoute(
+        path: '/master/vendors',
+        name: 'master-vendors',
+        builder: (context, state) => const SupplierListScreen(),
+      ),
+      GoRoute(
+        path: '/machinery',
+        name: 'machinery',
+        builder: (context, state) => const MachineryMasterScreen(),
+      ),
+      GoRoute(
+        path: '/master/machinery',
+        name: 'master-machinery',
+        builder: (context, state) => const MachineryMasterScreen(),
+      ),
+      GoRoute(
+        path: '/master/labour',
+        name: 'master-labour',
+        builder: (context, state) => const LabourMasterScreen(),
+      ),
+      GoRoute(
+        path: '/vendors',
+        name: 'vendors',
+        builder: (context, state) => const VendorsListScreen(),
       ),
 
       // Super Admin Routes
@@ -266,12 +297,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'machinery',
                 name: 'project-machinery',
-                builder: (context, state) => const Placeholder(), // MachineryTabScreen
+                builder: (context, state) {
+                  final projectId = state.pathParameters['id']!;
+                  return MachineryTabScreen(projectId: projectId);
+                },
               ),
               GoRoute(
                 path: 'labour',
                 name: 'project-labour-tab',
-                builder: (context, state) => const Placeholder(), // LabourTabScreen
+                builder: (context, state) {
+                  final projectId = state.pathParameters['id']!;
+                  return LabourTabScreen(projectId: projectId);
+                },
               ),
             ],
           ),
@@ -300,7 +337,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
              path: 'machinery/log',
              name: 'machinery-log',
-             builder: (context, state) => const Placeholder(), // MachineryLogScreen
+             builder: (context, state) {
+               final projectId = state.pathParameters['id']!;
+               return MachineryLogScreen(projectId: projectId);
+             },
           ),
           GoRoute(
              path: 'labour/attendance',

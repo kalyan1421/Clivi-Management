@@ -55,7 +55,10 @@ final realtimeProjectsProvider = StreamProvider<RealtimeProjectEvent>((ref) {
 
   // Subscribe to realtime changes
   final channel = supabase
-      .channel('projects_realtime')
+      .channel(
+        'projects_realtime',
+        opts: const RealtimeChannelConfig(ack: true),
+      )
       .onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
@@ -67,8 +70,22 @@ final realtimeProjectsProvider = StreamProvider<RealtimeProjectEvent>((ref) {
             'Realtime: ${event.type.name} on project ${event.projectId}',
           );
         },
-      )
-      .subscribe();
+      );
+
+  channel.subscribe((status, error) {
+    if (status == RealtimeSubscribeStatus.subscribed) {
+      logger.i('Realtime: projects channel subscribed');
+    } else if (status == RealtimeSubscribeStatus.channelError ||
+        status == RealtimeSubscribeStatus.timedOut ||
+        status == RealtimeSubscribeStatus.closed) {
+      logger.w(
+        'Realtime channel issue ($status): ${error?.message ?? 'no details'}',
+      );
+      // Attempt a lightweight reconnect
+      supabase.realtime.connect();
+      // If reconnect still fails, rebuild provider on next listen
+    }
+  });
 
   ref.onDispose(() {
     channel.unsubscribe();
