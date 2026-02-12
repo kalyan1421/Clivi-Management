@@ -26,8 +26,8 @@ declare
   r record;
 begin
   -- Ensure exactly one admin target exists
-  select count(*), max(id)
-  into v_admin_count, v_admin_id
+  select count(*)
+  into v_admin_count
   from auth.users
   where lower(email) = lower('admin@gmail.com');
 
@@ -39,8 +39,16 @@ begin
     raise exception 'Multiple users found for admin@gmail.com (%). Resolve duplicates first. Aborting wipe.', v_admin_count;
   end if;
 
-  -- Wipe all objects from all storage buckets
-  delete from storage.objects;
+  -- Fetch admin ID after count validation
+  select id
+  into v_admin_id
+  from auth.users
+  where lower(email) = lower('admin@gmail.com')
+  limit 1;
+
+  -- Storage cleanup is intentionally skipped.
+  -- You will delete storage objects manually from Supabase Storage UI/API.
+  raise notice 'Skipping storage deletion by request.';
 
   -- Truncate every non-extension table in public schema except user_profiles
   -- Dynamic list keeps script resilient to future table additions.
@@ -118,7 +126,7 @@ from pg_stat_user_tables
 where schemaname = 'public'
 order by relname;
 
--- Expect: 0 rows (or all counts = 0)
+-- Storage verification (manual cleanup): run after deleting storage files yourself
 select bucket_id, count(*) as object_count
 from storage.objects
 group by bucket_id
