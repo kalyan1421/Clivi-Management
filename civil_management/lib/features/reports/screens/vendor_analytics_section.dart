@@ -1,4 +1,9 @@
+import 'package:flutter/material.dart';
+import 'vendor_analytics_dashboard.dart';
+
 class _VendorAnalyticsSection extends StatelessWidget {
+  const _VendorAnalyticsSection({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -12,7 +17,7 @@ class _VendorAnalyticsSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple.withValues(alpha: 0.3),
+            color: Colors.purple.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -37,7 +42,7 @@ class _VendorAnalyticsSection extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(Icons.store, color: Colors.white, size: 32),
@@ -46,8 +51,8 @@ class _VendorAnalyticsSection extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
+                    children: const [
+                      Text(
                         'Vendor Analytics',
                         style: TextStyle(
                           color: Colors.white,
@@ -55,11 +60,11 @@ class _VendorAnalyticsSection extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         'Payment tracking • Stock history • Credit limits',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white,
                           fontSize: 12,
                         ),
                       ),
