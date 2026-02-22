@@ -280,9 +280,11 @@ class _MaterialItemCardState extends ConsumerState<_MaterialItemCard> {
                               );
                             }
                           } catch (e) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(content: Text('Error adding grade: $e')),
-                            );
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(content: Text('Error adding grade: $e')),
+                              );
+                            }
                           } finally {
                             if (ctx.mounted) {
                               setState(() => saving = false);

@@ -28,7 +28,6 @@ class _EditSiteManagerScreenState extends ConsumerState<EditSiteManagerScreen> {
   late TextEditingController _addressController;
 
   bool _isLoading = false;
-  String? _errorMessage;
 
 
   @override
@@ -72,7 +71,6 @@ class _EditSiteManagerScreenState extends ConsumerState<EditSiteManagerScreen> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {

@@ -222,9 +222,11 @@ class LabourRosterScreen extends ConsumerWidget {
     if (ok == true) {
       await ref.read(labourRepositoryProvider).deleteLabour(id);
       ref.invalidate(projectLabourProvider(projectId));
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Worker removed')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Worker removed')));
+      }
     }
   }
 
@@ -267,9 +269,11 @@ class LabourRosterScreen extends ConsumerWidget {
           .read(labourRepositoryProvider)
           .deleteAllLabourForProject(projectId);
       ref.invalidate(projectLabourProvider(projectId));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All workers marked inactive')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All workers marked inactive')),
+        );
+      }
     }
   }
 }

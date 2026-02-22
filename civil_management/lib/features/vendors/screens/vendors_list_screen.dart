@@ -42,7 +42,7 @@ class VendorsListScreen extends ConsumerWidget {
             : ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: vendors.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final v = vendors[index];
                   return _VendorCard(
@@ -178,21 +178,25 @@ class VendorsListScreen extends ConsumerWidget {
                                 }
                                 ref.invalidate(vendorOverviewProvider);
                                 if (sheetCtx.mounted) Navigator.pop(sheetCtx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      existing == null
-                                          ? 'Vendor added'
-                                          : 'Vendor updated',
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        existing == null
+                                            ? 'Vendor added'
+                                            : 'Vendor updated',
+                                      ),
                                     ),
-                                  ),
-                                );
+                                  );
+                                }
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Failed to save vendor: $e'),
-                                  ),
-                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to save vendor: $e'),
+                                    ),
+                                  );
+                                }
                               } finally {
                                 setState(() => isSaving = false);
                               }
@@ -247,13 +251,17 @@ class VendorsListScreen extends ConsumerWidget {
       try {
         await ref.read(inventoryRepositoryProvider).deleteAllSuppliers();
         ref.invalidate(vendorOverviewProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All vendors deactivated')),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('All vendors deactivated')),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Bulk delete failed: $e')));
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Bulk delete failed: $e')));
+        }
       }
     }
   }
@@ -284,13 +292,17 @@ class VendorsListScreen extends ConsumerWidget {
       try {
         await ref.read(inventoryRepositoryProvider).deleteSupplier(vendorId);
         ref.invalidate(vendorOverviewProvider);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Vendor deleted')));
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Vendor deleted')));
+        }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+        }
       }
     }
   }

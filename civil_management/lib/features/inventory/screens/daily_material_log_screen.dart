@@ -796,9 +796,9 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -829,7 +829,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: unit,
+              initialValue: unit,
               items: const [
                 DropdownMenuItem(value: 'bags', child: Text('Bags')),
                 DropdownMenuItem(value: 'kg', child: Text('Kg')),

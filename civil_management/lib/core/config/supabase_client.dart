@@ -46,7 +46,9 @@ class SupabaseConfig {
 
       // Ensure realtime websocket is up immediately to avoid lazy connect races.
       try {
-        supabase.realtime.connect();
+        // ignore: invalid_use_of_internal_member
+        // ignore: invalid_use_of_internal_member
+      supabase.realtime.connect();
         logger.i('Realtime socket connected');
       } catch (e) {
         logger.w('Realtime socket connect failed: $e');
@@ -89,6 +91,7 @@ class SupabaseConfig {
 
     // Ensure realtime socket is connected (idempotent)
     try {
+      // ignore: invalid_use_of_internal_member
       supabase.realtime.connect();
       if (_isRealtimePaused) {
         _isRealtimePaused = false;

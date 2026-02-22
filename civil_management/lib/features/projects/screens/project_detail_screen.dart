@@ -173,25 +173,27 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                     final notifier = ref.read(
                       projectDetailProvider(widget.projectId).notifier,
                     );
-                    final success = await notifier.updateProject({
-                      'status': status.value,
-                    });
-                    if (mounted) {
-                      if (success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Status updated successfully'),
-                          ),
-                        );
-                      } else {
-                        final error =
-                            ref
-                                .read(projectDetailProvider(widget.projectId))
-                                .error ??
-                            'Failed to update status';
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(error)),
-                        );
+                    if (context.mounted) {
+                      final success = await notifier.updateProject({
+                        'status': status.value,
+                      });
+                      if (context.mounted) {
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Status updated successfully'),
+                            ),
+                          );
+                        } else {
+                          final error =
+                              ref
+                                  .read(projectDetailProvider(widget.projectId))
+                                  .error ??
+                              'Failed to update status';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(error)),
+                          );
+                        }
                       }
                     }
                   },
@@ -233,17 +235,21 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
 
     if (!mounted) return;
     if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Project deleted')));
-      context.go('/admin/dashboard');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Project deleted')));
+        context.go('/admin/dashboard');
+      }
     } else {
       final error =
           ref.read(projectDetailProvider(widget.projectId)).error ??
           'Failed to delete project';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error)));
+      }
     }
   }
 }

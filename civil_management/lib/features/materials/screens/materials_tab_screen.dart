@@ -118,7 +118,7 @@ class _MaterialsTabScreenState extends ConsumerState<MaterialsTabScreen> {
                     ? ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: vendorTotals.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final vendor = vendorTotals.values.elementAt(index);
                           return Card(
@@ -220,8 +220,7 @@ class _VendorTotal {
   _VendorTotal({
     required this.supplierId,
     required this.supplierName,
-    this.totalQuantity = 0,
-  });
+  }) : totalQuantity = 0;
 }
 
 class _MaterialGroupCardState extends State<_MaterialGroupCard> {

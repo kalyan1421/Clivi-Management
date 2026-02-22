@@ -46,11 +46,11 @@ class DashboardRepository {
         },
       );
 
-      if (response == null || (response as List).isEmpty) {
+      if (response.isEmpty) {
         return [];
       }
 
-      return (response as List)
+      return (response)
           .map((json) => OperationLog.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
@@ -68,12 +68,12 @@ class DashboardRepository {
         params: {'p_limit': limit},
       );
 
-      if (response == null || (response as List).isEmpty) {
+      if (response.isEmpty) {
         return [];
       }
 
-      return (response as List)
-          .map((json) => ProjectSummary.fromJson(json as Map<String, dynamic>))
+      return (response)
+          .map((json) => ProjectSummary.fromJson(json))
           .toList();
     } catch (e) {
       logger.e('Failed to fetch active projects: $e');
@@ -105,12 +105,12 @@ class DashboardRepository {
           .order('created_at', ascending: false)
           .limit(limit);
 
-      if (response == null || (response as List).isEmpty) {
+      if (response.isEmpty) {
         return [];
       }
 
-      return (response as List)
-          .map((json) => ProjectSummary.fromJson(json as Map<String, dynamic>))
+      return (response)
+          .map((json) => ProjectSummary.fromJson(json))
           .toList();
     } catch (e) {
       logger.e('Failed to fetch assigned projects summary: $e');

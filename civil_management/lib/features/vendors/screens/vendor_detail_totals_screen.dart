@@ -71,7 +71,7 @@ class VendorDetailTotalsScreen extends ConsumerWidget {
                     .toList(),
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemCount: byMaterial.length,
           );
         },

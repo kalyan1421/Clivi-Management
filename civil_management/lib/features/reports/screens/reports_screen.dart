@@ -1,7 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widget.dart';
@@ -46,9 +45,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             icon: const Icon(Icons.download),
             onPressed: () {
               // TODO: Implement PDF Download
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Exporting report...')),
-              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Exporting report...')),
+                );
+              }
             },
           ),
         ],
@@ -75,7 +76,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (error, stack) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 12),
 
@@ -666,7 +667,7 @@ class _VendorFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String?>(
-      value: selectedVendorId,
+      initialValue: selectedVendorId,
       decoration: InputDecoration(
         labelText: 'Vendor',
         isDense: true,

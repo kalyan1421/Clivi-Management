@@ -16,7 +16,7 @@ class VendorAnalyticsRepository {
         .select()
         .order('total_balance', ascending: false);
 
-    return (response as List)
+    return (response)
         .map((json) => VendorPaymentSummary.fromJson(json))
         .toList();
   }
@@ -42,7 +42,7 @@ class VendorAnalyticsRepository {
         .eq('vendor_id', vendorId)
         .order('last_used_at', ascending: false);
 
-    return (response as List)
+    return (response)
         .map((json) => VendorStockSummary.fromJson(json))
         .toList();
   }
@@ -54,7 +54,7 @@ class VendorAnalyticsRepository {
         .select()
         .order('vendor_name');
 
-    return (response as List)
+    return (response)
         .map((json) => VendorStockSummary.fromJson(json))
         .toList();
   }
@@ -70,7 +70,7 @@ class VendorAnalyticsRepository {
         .order('category')
         .order('material_name');
 
-    return (response as List)
+    return (response)
         .map((json) => ProjectInventorySummary.fromJson(json))
         .toList();
   }
@@ -83,7 +83,7 @@ class VendorAnalyticsRepository {
         .order('project_name')
         .order('category');
 
-    return (response as List)
+    return (response)
         .map((json) => ProjectInventorySummary.fromJson(json))
         .toList();
   }
@@ -401,119 +401,6 @@ class VendorAnalyticsRepository {
     return false;
   }
 
-  Future<List<VendorSupplyLine>> _loadReceiptSupplyLines({
-    String? vendorId,
-    String? projectId,
-    MaterialAnalyticsTab? tab,
-    required DateTime fromDate,
-    required DateTime toDate,
-  }) async {
-    try {
-      final from = DateTime(fromDate.year, fromDate.month, fromDate.day);
-      final to = DateTime(toDate.year, toDate.month, toDate.day);
-
-      var query = _client.from('material_receipts').select('''
-            id,
-            project_id,
-            vendor_id,
-            vendor_name_snapshot,
-            receipt_date,
-            suppliers(name, category),
-            projects(name),
-            items:material_receipt_items(
-              material_name,
-              material_category,
-              quantity,
-              unit,
-              total_amount,
-              amount
-            )
-          ''');
-
-      if (vendorId != null) {
-        query = query.eq('vendor_id', vendorId);
-      }
-      if (projectId != null) {
-        query = query.eq('project_id', projectId);
-      }
-
-      final response = await query
-          .gte(
-            'receipt_date',
-            '${from.year.toString().padLeft(4, '0')}-${from.month.toString().padLeft(2, '0')}-${from.day.toString().padLeft(2, '0')}',
-          )
-          .lte(
-            'receipt_date',
-            '${to.year.toString().padLeft(4, '0')}-${to.month.toString().padLeft(2, '0')}-${to.day.toString().padLeft(2, '0')}',
-          )
-          .order('receipt_date', ascending: false);
-      final rows = response as List;
-      final result = <VendorSupplyLine>[];
-
-      for (final receipt in rows) {
-        final supplier = receipt['suppliers'] as Map<String, dynamic>?;
-        final project = receipt['projects'] as Map<String, dynamic>?;
-        final items = (receipt['items'] as List?) ?? const [];
-        final vendorIdValue = receipt['vendor_id'] as String? ?? '';
-        final vendorName =
-            supplier?['name'] as String? ??
-            (receipt['vendor_name_snapshot'] as String? ?? 'Unknown Vendor');
-        final supplierCategory = supplier?['category'] as String?;
-        final projectIdValue = receipt['project_id'] as String? ?? '';
-        final projectName = project?['name'] as String? ?? 'Unknown Project';
-        final receiptDateStr = receipt['receipt_date'] as String?;
-        final loggedAt = receiptDateStr != null && receiptDateStr.isNotEmpty
-            ? DateTime.parse(receiptDateStr)
-            : DateTime.fromMillisecondsSinceEpoch(0);
-
-        for (final item in items) {
-          final map = item as Map<String, dynamic>;
-          final materialName =
-              map['material_name'] as String? ?? 'Unknown Material';
-          final materialCategory = map['material_category'] as String?;
-
-          if (tab != null &&
-              !_isMaterialMatchForTab(
-                tab: tab,
-                supplierCategory: supplierCategory,
-                stockCategory: materialCategory,
-                materialName: materialName,
-              )) {
-            continue;
-          }
-
-          result.add(
-            VendorSupplyLine(
-              vendorId: vendorIdValue,
-              vendorName: vendorName,
-              projectId: projectIdValue,
-              projectName: projectName,
-              materialName: materialName,
-              materialCategory: materialCategory,
-              unit: (map['unit'] as String? ?? 'units'),
-              quantity: (map['quantity'] as num?)?.toDouble() ?? 0,
-              amount:
-                  (map['total_amount'] as num?)?.toDouble() ??
-                  (map['amount'] as num?)?.toDouble() ??
-                  0,
-              loggedAt: loggedAt,
-            ),
-          );
-        }
-      }
-
-      return result;
-    } catch (e, st) {
-      dev.log(
-        '[VendorAnalytics] _loadReceiptSupplyLines FAILED: $e',
-        name: 'VendorAnalytics',
-        error: e,
-        stackTrace: st,
-      );
-      return const [];
-    }
-  }
-
   /// Record a vendor payment
   Future<void> recordPayment({
     required String vendorId,
@@ -554,7 +441,7 @@ class VendorAnalyticsRepository {
         .eq('vendor_id', vendorId)
         .order('payment_date', ascending: false);
 
-    return (response as List)
+    return (response)
         .map((json) => VendorPayment.fromJson(json))
         .toList();
   }
@@ -607,7 +494,7 @@ class VendorAnalyticsRepository {
         .eq('project_id', projectId)
         .order('issue_date', ascending: false);
 
-    return (response as List)
+    return (response)
         .map((json) => MaterialIssue.fromJson(json))
         .toList();
   }

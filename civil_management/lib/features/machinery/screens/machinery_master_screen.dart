@@ -201,9 +201,11 @@ class MachineryMasterScreen extends ConsumerWidget {
                                 );
                               }
                             } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Save failed: $e')),
-                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Save failed: $e')),
+                                );
+                              }
                             } finally {
                               setState(() => isSaving = false);
                             }
@@ -247,9 +249,11 @@ class MachineryMasterScreen extends ConsumerWidget {
     if (ok == true) {
       await ref.read(machineryRepositoryProvider).deleteMachinery(id);
       ref.invalidate(machineryListProvider);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Machinery deleted')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Machinery deleted')));
+      }
     }
   }
 
@@ -290,9 +294,11 @@ class MachineryMasterScreen extends ConsumerWidget {
     if (ok == true) {
       await ref.read(machineryRepositoryProvider).deleteAllMachinery();
       ref.invalidate(machineryListProvider);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('All machinery deleted')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('All machinery deleted')));
+      }
     }
   }
 }
