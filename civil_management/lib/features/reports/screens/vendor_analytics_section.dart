@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'vendor_analytics_dashboard.dart';
+import '../../vendors/screens/vendor_analytics_dashboard.dart';
 
+// ignore: unused_element
 class _VendorAnalyticsSection extends StatelessWidget {
-  const _VendorAnalyticsSection({Key? key}) : super(key: key);
+  const _VendorAnalyticsSection();
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +18,7 @@ class _VendorAnalyticsSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple.withOpacity(0.3),
+            color: Colors.purple.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -42,7 +43,7 @@ class _VendorAnalyticsSection extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(Icons.store, color: Colors.white, size: 32),

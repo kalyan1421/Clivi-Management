@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../projects/data/models/project_model.dart';
+
 import '../providers/blueprints_provider.dart';
 
 class BlueprintUploadScreen extends ConsumerStatefulWidget {

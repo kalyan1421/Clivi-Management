@@ -4,16 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../providers/project_provider.dart';
 import '../../materials/providers/stock_provider.dart';
-import '../../materials/data/models/stock_item.dart';
-import '../../materials/data/models/material_log.dart';
-import '../../machinery/providers/machinery_provider.dart';
-import '../../machinery/data/models/machinery_log_model.dart';
-import '../../labour/data/models/daily_labour_log.dart';
-import '../../labour/providers/labour_provider.dart';
-import '../../labour/data/models/labour_model.dart';
-import '../../auth/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
-import '../../materials/providers/stock_provider.dart';
 import '../../materials/screens/material_receive_screen.dart';
 import '../../materials/screens/material_consume_screen.dart';
 
@@ -206,7 +197,7 @@ class _MaterialsTabState extends ConsumerState<_MaterialsTab> {
                           vertical: 0,
                         ),
                         backgroundColor: isFiltered
-                            ? AppColors.primary.withOpacity(0.05)
+                            ? AppColors.primary.withValues(alpha: 0.05)
                             : Colors.transparent,
                       ),
                       icon: Icon(
@@ -296,7 +287,7 @@ class _MaterialsTabState extends ConsumerState<_MaterialsTab> {
                 leading: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -337,7 +328,7 @@ class _MaterialsTabState extends ConsumerState<_MaterialsTab> {
                 leading: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.upload_rounded, color: Colors.orange),
@@ -410,8 +401,9 @@ class _MaterialSummaryHeader extends ConsumerWidget {
           }
         }
 
-        if (steelReceived == 0 && cementReceived == 0)
+        if (steelReceived == 0 && cementReceived == 0) {
           return const SizedBox.shrink();
+        }
 
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -538,7 +530,7 @@ class _MaterialSummaryHeader extends ConsumerWidget {
           child: CircularProgressIndicator(),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
@@ -656,7 +648,7 @@ class _MaterialsHistoryList extends ConsumerWidget {
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 80), // Padding for FAB
           itemCount: displayLogs.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final log = displayLogs[index];
             final isInward = log.logType == 'inward';
@@ -674,7 +666,7 @@ class _MaterialsHistoryList extends ConsumerWidget {
                   border: Border.all(color: Colors.grey.shade200),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -687,8 +679,8 @@ class _MaterialsHistoryList extends ConsumerWidget {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: isInward
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.orange.withOpacity(0.1),
+                            ? Colors.green.withValues(alpha: 0.1)
+                            : Colors.orange.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -756,8 +748,8 @@ class _MaterialsHistoryList extends ConsumerWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: isPaid
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.red.withOpacity(0.1),
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : Colors.red.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                   color: isPaid

@@ -326,7 +326,7 @@ class ProjectRepository {
         return [];
       }
 
-      return (response as List)
+      return response
           .map(
             (json) => MaterialBreakdown.fromJson(json as Map<String, dynamic>),
           )

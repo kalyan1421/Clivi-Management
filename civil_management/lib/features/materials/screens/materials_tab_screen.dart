@@ -162,8 +162,9 @@ class _MaterialsTabScreenState extends ConsumerState<MaterialsTabScreen> {
                             );
                             for (var log in itemLogs) {
                               if (log.logType == 'inward') {
-                                if (log.billAmount != null)
+                                if (log.billAmount != null) {
                                   totalCost += log.billAmount!;
+                                }
                               }
                               if (log.logType == 'outward') {
                                 totalConsumed += log.quantity;

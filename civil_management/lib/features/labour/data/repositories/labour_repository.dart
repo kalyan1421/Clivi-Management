@@ -122,7 +122,7 @@ class LabourRepository {
     String projectId,
     DateTime date,
   ) async {
-    final dateStr = date.toIso8601String().split('T')[0];
+
 
     // Get all active labour
     final labourList = await getActiveLabourByProject(projectId);

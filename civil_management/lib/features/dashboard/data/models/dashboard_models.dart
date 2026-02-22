@@ -1,5 +1,5 @@
-/// Dashboard data models
-/// Contains models for dashboard statistics, operation logs, and project summaries
+// Dashboard data models
+// Contains models for dashboard statistics, operation logs, and project summaries
 
 /// Dashboard statistics model
 /// Returned by get_dashboard_stats RPC

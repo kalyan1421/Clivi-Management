@@ -34,16 +34,16 @@ void main() {
           try {
             await tester.tap(finder.first);
             await tester.pumpAndSettle();
-            print('✅ Tapped: ${description ?? "widget"}');
+            debugPrint('✅ Tapped: ${description ?? "widget"}');
             return true;
           } catch (e) {
-            print('⚠️  Tap failed, retrying: $e');
+            debugPrint('⚠️  Tap failed, retrying: $e');
             await tester.pumpAndSettle(const Duration(milliseconds: 500));
           }
         }
       }
 
-      print('❌ Could not find/tap: ${description ?? "widget"}');
+      debugPrint('❌ Could not find/tap: ${description ?? "widget"}');
       return false;
     }
 
@@ -64,16 +64,16 @@ void main() {
           try {
             await tester.enterText(finder.first, text);
             await tester.pumpAndSettle(const Duration(milliseconds: 300));
-            print('✅ Entered text in: ${description ?? "field"}');
+            debugPrint('✅ Entered text in: ${description ?? "field"}');
             return true;
           } catch (e) {
-            print('⚠️  Enter text failed, retrying: $e');
+            debugPrint('⚠️  Enter text failed, retrying: $e');
             await tester.pumpAndSettle(const Duration(milliseconds: 500));
           }
         }
       }
 
-      print('❌ Could not enter text in: ${description ?? "field"}');
+      debugPrint('❌ Could not enter text in: ${description ?? "field"}');
       return false;
     }
 
@@ -90,20 +90,20 @@ void main() {
         await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
         if (finder.evaluate().isNotEmpty) {
-          print('✅ Found: ${description ?? "widget"}');
+          debugPrint('✅ Found: ${description ?? "widget"}');
           return true;
         }
       }
 
-      print('❌ Timeout waiting for: ${description ?? "widget"}');
+      debugPrint('❌ Timeout waiting for: ${description ?? "widget"}');
       return false;
     }
 
     testWidgets(
       'Complete flow: Login and create project',
       (tester) async {
-        print('\n🧪 TEST START: Login and create project');
-        print('=' * 60);
+        debugPrint('\n🧪 TEST START: Login and create project');
+        debugPrint('=' * 60);
 
         // Start the app
         app.main();
@@ -113,8 +113,8 @@ void main() {
           // ============================================================
           // STEP 1: LOGIN
           // ============================================================
-          print('\n📝 STEP 1: Login Flow');
-          print('-' * 60);
+          debugPrint('\n📝 STEP 1: Login Flow');
+          debugPrint('-' * 60);
 
           // Wait for login screen
           await tester.pumpAndSettle(const Duration(seconds: 2));
@@ -162,13 +162,13 @@ void main() {
           // Wait for login to complete
           await tester.pumpAndSettle(const Duration(seconds: 5));
 
-          print('✅ Login completed successfully');
+          debugPrint('✅ Login completed successfully');
 
           // ============================================================
           // STEP 2: NAVIGATE TO PROJECTS
           // ============================================================
-          print('\n📝 STEP 2: Navigate to Projects');
-          print('-' * 60);
+          debugPrint('\n📝 STEP 2: Navigate to Projects');
+          debugPrint('-' * 60);
 
           await tester.pumpAndSettle(const Duration(seconds: 2));
 
@@ -182,14 +182,14 @@ void main() {
             );
             await tester.pumpAndSettle(const Duration(seconds: 2));
           } else {
-            print('ℹ️  Already on Projects screen');
+            debugPrint('ℹ️  Already on Projects screen');
           }
 
           // ============================================================
           // STEP 3: CREATE PROJECT
           // ============================================================
-          print('\n📝 STEP 3: Create New Project');
-          print('-' * 60);
+          debugPrint('\n📝 STEP 3: Create New Project');
+          debugPrint('-' * 60);
 
           // Find and tap create button
           final addButton = find.byIcon(Icons.add);
@@ -201,7 +201,7 @@ void main() {
           );
 
           if (!createTapped) {
-            print(
+            debugPrint(
               '⚠️  Could not find create button, test may be on wrong screen',
             );
             return;
@@ -219,7 +219,7 @@ void main() {
           );
 
           if (!onCreateScreen) {
-            print('⚠️  Not on Create Project screen, skipping form fill');
+            debugPrint('⚠️  Not on Create Project screen, skipping form fill');
             return;
           }
 
@@ -227,7 +227,7 @@ void main() {
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final testProjectName = 'Android Test $timestamp';
 
-          print('📝 Filling project form...');
+          debugPrint('📝 Filling project form...');
 
           // Wait for form to be ready
           await tester.pumpAndSettle(const Duration(seconds: 1));
@@ -241,7 +241,7 @@ void main() {
           );
 
           final fieldCount = createFormFields.evaluate().length;
-          print('ℹ️  Found $fieldCount form fields');
+          debugPrint('ℹ️  Found $fieldCount form fields');
 
           // Enter project name (first field)
           if (fieldCount > 0) {
@@ -274,7 +274,7 @@ void main() {
           }
 
           // Select Start Date
-          print('📝 Selecting Start Date...');
+          debugPrint('📝 Selecting Start Date...');
           final startDateField = find.text('Start Date');
           if (startDateField.evaluate().isNotEmpty) {
             await safeTap(
@@ -295,7 +295,7 @@ void main() {
           }
 
           // Select End Date
-          print('📝 Selecting End Date...');
+          debugPrint('📝 Selecting End Date...');
           final endDateField = find.text('End Date');
           if (endDateField.evaluate().isNotEmpty) {
             await safeTap(tester, endDateField, description: 'End Date field');
@@ -312,7 +312,7 @@ void main() {
           }
 
           // Scroll to bottom
-          print('📜 Scrolling to submit button...');
+          debugPrint('📜 Scrolling to submit button...');
           try {
             final scrollable = find.byType(SingleChildScrollView);
             if (scrollable.evaluate().isNotEmpty) {
@@ -320,7 +320,7 @@ void main() {
               await tester.pumpAndSettle(const Duration(milliseconds: 500));
             }
           } catch (e) {
-            print('⚠️  Scroll failed: $e');
+            debugPrint('⚠️  Scroll failed: $e');
           }
 
           // Find and tap submit button
@@ -334,20 +334,20 @@ void main() {
 
           if (submitted) {
             await tester.pumpAndSettle(const Duration(seconds: 4));
-            print('✅ Project creation submitted');
+            debugPrint('✅ Project creation submitted');
 
             // Verify we're back on list or see success message
             await tester.pumpAndSettle(const Duration(seconds: 2));
-            print('✅ Returned to projects list');
+            debugPrint('✅ Returned to projects list');
           }
 
-          print('\n🎉 TEST COMPLETED SUCCESSFULLY');
-          print('=' * 60);
+          debugPrint('\n🎉 TEST COMPLETED SUCCESSFULLY');
+          debugPrint('=' * 60);
         } catch (e, stackTrace) {
-          print('\n❌ TEST FAILED WITH ERROR');
-          print('=' * 60);
-          print('Error: $e');
-          print('Stack trace: $stackTrace');
+          debugPrint('\n❌ TEST FAILED WITH ERROR');
+          debugPrint('=' * 60);
+          debugPrint('Error: $e');
+          debugPrint('Stack trace: $stackTrace');
           rethrow;
         }
       },
@@ -357,8 +357,8 @@ void main() {
     testWidgets(
       'Form validation: Empty name shows error',
       (tester) async {
-        print('\n🧪 TEST START: Form validation');
-        print('=' * 60);
+        debugPrint('\n🧪 TEST START: Form validation');
+        debugPrint('=' * 60);
 
         // Start fresh app instance
         app.main();
@@ -366,7 +366,7 @@ void main() {
 
         try {
           // Login first
-          print('📝 Logging in...');
+          debugPrint('📝 Logging in...');
           final formFields = find.byType(TextFormField);
           await waitForWidget(tester, formFields);
 
@@ -378,7 +378,7 @@ void main() {
           await tester.pumpAndSettle(const Duration(seconds: 5));
 
           // Navigate to projects
-          print('📝 Navigating to projects...');
+          debugPrint('📝 Navigating to projects...');
           await tester.pumpAndSettle(const Duration(seconds: 2));
           final projectsNav = find.text('Projects');
           if (projectsNav.evaluate().isNotEmpty) {
@@ -387,7 +387,7 @@ void main() {
           }
 
           // Tap create button
-          print('📝 Opening create form...');
+          debugPrint('📝 Opening create form...');
           final addButton = find.byIcon(Icons.add);
           final opened = await safeTap(
             tester,
@@ -396,7 +396,7 @@ void main() {
           );
 
           if (!opened) {
-            print('⚠️  Could not open create form, skipping validation test');
+            debugPrint('⚠️  Could not open create form, skipping validation test');
             return;
           }
 
@@ -407,12 +407,12 @@ void main() {
           final onScreen = await waitForWidget(tester, createTitle);
 
           if (!onScreen) {
-            print('⚠️  Not on create screen, skipping validation test');
+            debugPrint('⚠️  Not on create screen, skipping validation test');
             return;
           }
 
           // Try to submit without filling name
-          print('📝 Testing validation...');
+          debugPrint('📝 Testing validation...');
 
           // Scroll to submit button
           try {
@@ -422,7 +422,7 @@ void main() {
               await tester.pumpAndSettle();
             }
           } catch (e) {
-            print('⚠️  Scroll failed: $e');
+            debugPrint('⚠️  Scroll failed: $e');
           }
 
           // Tap submit without filling form
@@ -433,18 +433,18 @@ void main() {
           // Look for validation error
           final errorText = find.textContaining('required');
           if (errorText.evaluate().isNotEmpty) {
-            print('✅ Validation error displayed correctly');
+            debugPrint('✅ Validation error displayed correctly');
           } else {
-            print('ℹ️  Validation error not found (may use different wording)');
+            debugPrint('ℹ️  Validation error not found (may use different wording)');
           }
 
-          print('\n🎉 VALIDATION TEST COMPLETED');
-          print('=' * 60);
+          debugPrint('\n🎉 VALIDATION TEST COMPLETED');
+          debugPrint('=' * 60);
         } catch (e, stackTrace) {
-          print('\n❌ VALIDATION TEST FAILED');
-          print('=' * 60);
-          print('Error: $e');
-          print('Stack trace: $stackTrace');
+          debugPrint('\n❌ VALIDATION TEST FAILED');
+          debugPrint('=' * 60);
+          debugPrint('Error: $e');
+          debugPrint('Stack trace: $stackTrace');
           // Don't rethrow - validation test is optional
         }
       },

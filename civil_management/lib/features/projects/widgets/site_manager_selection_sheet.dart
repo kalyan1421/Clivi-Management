@@ -142,7 +142,7 @@ class _SiteManagerSelectionSheetState
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.05)
+              ? AppColors.primary.withValues(alpha: 0.05)
               : Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -154,7 +154,7 @@ class _SiteManagerSelectionSheetState
           children: [
             CircleAvatar(
               backgroundColor: isSelected
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : Colors.grey[200],
               child: Text(
                 manager.displayName[0].toUpperCase(),

@@ -115,15 +115,15 @@ class SupabaseConfig {
     }
   }
 
-  static void _pauseRealtime() {
-    try {
-      supabase.realtime.disconnect();
-      _isRealtimePaused = true;
-      logger.i('Realtime connection paused');
-    } catch (e) {
-      logger.w('Failed to pause realtime: $e');
-    }
-  }
+  // static void _pauseRealtime() {
+  //   try {
+  //     supabase.realtime.disconnect();
+  //     _isRealtimePaused = true;
+  //     logger.i('Realtime connection paused');
+  //   } catch (e) {
+  //     logger.w('Failed to pause realtime: $e');
+  //   }
+  // }
 
   static Future<void> _flushPendingOperations() async {
     // TODO: Implement logic to save any pending data before the app is detached.

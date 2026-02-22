@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
 import 'package:intl/intl.dart';
 import '../providers/machinery_provider.dart';
-import '../data/models/machinery_model.dart';
+
 
 class MachineryLogScreen extends ConsumerStatefulWidget {
   final String projectId;
@@ -57,7 +57,7 @@ class _MachineryLogScreenState extends ConsumerState<MachineryLogScreen> {
                 ),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: _pickDate,
-                tileColor: Colors.grey.withOpacity(0.05),
+                tileColor: Colors.grey.withValues(alpha: 0.05),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -70,7 +70,7 @@ class _MachineryLogScreenState extends ConsumerState<MachineryLogScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Select Machinery',
                   ),
-                  value: _selectedMachineryId,
+                  initialValue: _selectedMachineryId,
                   items: list
                       .map(
                         (m) => DropdownMenuItem(
@@ -135,7 +135,7 @@ class _MachineryLogScreenState extends ConsumerState<MachineryLogScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -239,7 +239,7 @@ class _MachineryLogScreenState extends ConsumerState<MachineryLogScreen> {
         );
 
     if (success && mounted) {
-      context.pop();
+      if (context.mounted) Navigator.pop(context);
       ref.invalidate(machineryLogsProvider(widget.projectId));
       ScaffoldMessenger.of(
         context,

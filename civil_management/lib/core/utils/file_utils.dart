@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 
 class FileUtils {
@@ -13,9 +12,8 @@ class FileUtils {
     final effectiveType = (hasExtensions || type == FileType.custom)
         ? FileType.custom
         : type;
-    final sanitizedExtensions = hasExtensions
-        ? allowedExtensions!.map(_stripDot).toList()
-        : null;
+    final sanitizedExtensions =
+        allowedExtensions?.map(_stripDot).toList();
 
     // Avoid crashing if caller asked for custom but forgot extensions.
     if (effectiveType == FileType.custom && sanitizedExtensions == null) {
@@ -46,9 +44,8 @@ class FileUtils {
     final effectiveType = (hasExtensions || type == FileType.custom)
         ? FileType.custom
         : type;
-    final sanitizedExtensions = hasExtensions
-        ? allowedExtensions!.map(_stripDot).toList()
-        : null;
+    final sanitizedExtensions =
+        allowedExtensions?.map(_stripDot).toList();
 
     if (effectiveType == FileType.custom && sanitizedExtensions == null) {
       final result = await FilePicker.platform.pickFiles(
@@ -75,8 +72,7 @@ class FileUtils {
   /// Get file size string (e.g., "1.5 MB")
   static String formatFileSize(int bytes) {
     if (bytes <= 0) return "0 B";
-    const suffixes = ["B", "KB", "MB", "GB", "TB"];
-    var i = (bytes.bitLength - 1) ~/ 10; // Log2 approx
+    // var i = (bytes.bitLength - 1) ~/ 10; // Log2 approx
     // i would be roughly index. But simpler approach:
 
     if (bytes < 1024) return "$bytes B";

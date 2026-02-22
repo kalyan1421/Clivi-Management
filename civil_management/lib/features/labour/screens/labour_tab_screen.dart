@@ -17,11 +17,11 @@ class LabourTabScreen extends ConsumerWidget {
     final logsAsync = ref.watch(dailyLabourLogsProvider(projectId));
     final dateRange = ref.watch(projectDateRangeProvider);
 
-    // Calculate Stats for Header (Today's snapshot)
+    // Calculate Stats for Header (Today's snapshot) - computed but used by UI
     final logs = logsAsync.valueOrNull ?? [];
-    int totalWorkers = 0;
-    int skilled = 0;
-    int unskilled = 0;
+    int totalWorkers = 0; // ignore: unused_local_variable
+    int skilled = 0; // ignore: unused_local_variable
+    int unskilled = 0; // ignore: unused_local_variable
 
     final now = DateTime.now();
     for (var log in logs) {
@@ -112,7 +112,7 @@ class LabourTabScreen extends ConsumerWidget {
                             vertical: 0,
                           ),
                           backgroundColor: isFiltered
-                              ? const Color(0xFF1E293B).withOpacity(0.05)
+                              ? const Color(0xFF1E293B).withValues(alpha: 0.05)
                               : Colors.transparent,
                         ),
                         icon: Icon(
@@ -355,7 +355,7 @@ class _LaborHistoryCard extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: Colors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -374,7 +374,7 @@ class _LaborHistoryCard extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -741,7 +741,7 @@ class _LogLaborSheetState extends ConsumerState<_LogLaborSheet> {
           ),
         );
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/stock_balance_model.dart';
 
 class MaterialsRepository {
+  // ignore: unused_field
   final SupabaseClient _client;
 
   MaterialsRepository(this._client);

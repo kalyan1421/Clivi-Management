@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/projects/data/models/project_model.dart';
+
 import '../../shared/providers/current_project_provider.dart';
 // Note: You'll likely need a provider that lists all projects too.
 // For now, I'll assume we pass the list in or fetch it here.
@@ -26,7 +26,7 @@ class ProjectSelector extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceVariant,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(

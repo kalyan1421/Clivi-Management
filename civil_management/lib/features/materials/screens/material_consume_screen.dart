@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/stock_provider.dart';
-import '../providers/repository_providers.dart';
+
 
 // Provider imported from stock_provider.dart
 
@@ -140,7 +140,7 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
               children: [
                 DropdownButtonFormField<String>(
                   isExpanded: true,
-                  value: _currentStockItem != null
+                  initialValue: _currentStockItem != null
                       ? _selectedStockItemId
                       : null,
                   decoration: const InputDecoration(
@@ -237,7 +237,7 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.upload_rounded, color: Colors.orange),

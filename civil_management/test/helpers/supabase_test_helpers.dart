@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:civil_management/core/config/supabase_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'test_helpers.dart';
 
@@ -22,7 +23,7 @@ class SupabaseTestHelper {
       );
     } catch (e) {
       // Already initialized
-      print('Supabase already initialized: $e');
+      debugPrint('Supabase already initialized: $e');
     }
   }
 
@@ -35,7 +36,7 @@ class SupabaseTestHelper {
       );
       return response.user;
     } catch (e) {
-      print('Failed to sign in test user: $e');
+      debugPrint('Failed to sign in test user: $e');
       rethrow;
     }
   }
@@ -45,7 +46,7 @@ class SupabaseTestHelper {
     try {
       await supabase.auth.signOut();
     } catch (e) {
-      print('Failed to sign out: $e');
+      debugPrint('Failed to sign out: $e');
     }
   }
 
@@ -61,13 +62,13 @@ class SupabaseTestHelper {
             'soft_delete_project',
             params: {'p_project_id': projectId},
           );
-          print('Cleaned up test project: $projectId');
+          debugPrint('Cleaned up test project: $projectId');
         } catch (e) {
-          print('Failed to cleanup project $projectId: $e');
+          debugPrint('Failed to cleanup project $projectId: $e');
         }
       }
     } catch (e) {
-      print('Error during cleanup: $e');
+      debugPrint('Error during cleanup: $e');
     }
   }
 

@@ -264,7 +264,7 @@ class ProjectDetailNotifier extends StateNotifier<ProjectDetailState> {
     loadProject();
   }
 
-  String? get _currentUserId => _ref.read(currentUserProvider)?.id;
+
 
   /// Load project details
   Future<void> loadProject() async {

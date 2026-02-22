@@ -1,4 +1,4 @@
-/// Reports and Analytics Models
+// Reports and Analytics Models
 
 /// Financial Statistics Model
 /// Matches the JSON returned by get_financial_metrics RPC

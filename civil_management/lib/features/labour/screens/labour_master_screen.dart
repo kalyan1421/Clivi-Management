@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/labour_provider.dart';
 import '../data/models/labour_model.dart';
-import '../data/repositories/labour_repository.dart';
+
 
 /// Master Labour list (project_id is null)
 class LabourMasterScreen extends ConsumerWidget {
@@ -32,7 +32,7 @@ class LabourMasterScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: list.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, i) {
               final labour = list[i];
               return ListTile(

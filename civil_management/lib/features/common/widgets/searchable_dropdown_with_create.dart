@@ -225,7 +225,7 @@ class _DropdownList<T> extends StatelessWidget {
       padding: EdgeInsets.zero,
       shrinkWrap: true,
       itemCount: filteredItems.length + (showAddOption ? 1 : 0),
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         if (index < filteredItems.length) {
           final item = filteredItems[index];

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/ui/responsive_scaffold.dart';
-import '../../../core/ui/responsive.dart';
+
 import '../../../core/widgets/loading_widget.dart';
 import '../data/models/stock_item_model.dart';
 import '../data/models/material_log_model.dart';
@@ -238,11 +238,15 @@ class _SupplierPicker extends ConsumerWidget {
                       ),
                     );
                 ref.invalidate(suppliersProvider);
-                Navigator.pop(ctx);
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to add vendor: $e')),
-                );
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('Failed to add vendor: $e')),
+                  );
+                }
               }
             },
             child: const Text('Save'),
@@ -360,8 +364,8 @@ class _MaterialLogCard extends ConsumerWidget {
                   ),
                   decoration: BoxDecoration(
                     color: log.logType == LogType.inward
-                        ? Colors.green.withOpacity(0.2)
-                        : Colors.orange.withOpacity(0.2),
+                        ? Colors.green.withValues(alpha: 0.2)
+                        : Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -567,7 +571,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
 
             // Material Selection
             DropdownButtonFormField<StockItemModel>(
-              value: _selectedItem,
+              initialValue: _selectedItem,
               decoration: const InputDecoration(
                 labelText: 'Select Material',
                 border: OutlineInputBorder(),
@@ -628,7 +632,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
             // Activity (always show; dropdown assists for outward)
             if (_selectedLogType == LogType.outward)
               DropdownButtonFormField<String>(
-                value: _activityController.text.isEmpty
+                initialValue: _activityController.text.isEmpty
                     ? null
                     : _activityController.text,
                 decoration: const InputDecoration(
@@ -669,7 +673,7 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
             if (_selectedLogType == LogType.inward) ...[
               // Payment type
               DropdownButtonFormField<String>(
-                value: _paymentType,
+                initialValue: _paymentType,
                 decoration: const InputDecoration(
                   labelText: 'Payment Type',
                   border: OutlineInputBorder(),
@@ -869,11 +873,15 @@ class _AddLogBottomSheetState extends ConsumerState<_AddLogBottomSheet> {
                   _items = [..._items, created];
                   _selectedItem = created;
                 });
-                Navigator.pop(ctx);
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to add material: $e')),
-                );
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('Failed to add material: $e')),
+                  );
+                }
               }
             },
             child: const Text('Save'),

@@ -44,7 +44,7 @@ class BulkEntryTable<T> extends StatelessWidget {
             // Data Rows
             ...items.asMap().entries.map((entry) {
               return rowBuilder(context, entry.value, entry.key);
-            }).toList(),
+            }),
           ],
         ),
         if (onAddRow != null)

@@ -5,7 +5,7 @@ import '../../auth/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/ui/responsive.dart';
+
 import '../../../core/ui/responsive_scaffold.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_widget.dart';
@@ -279,20 +279,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
     }
   }
 
-  Future<void> _selectEndDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _endDate ?? _startDate ?? DateTime.now(),
-      firstDate: _startDate ?? DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-    if (date != null) {
-      setState(() {
-        _endDate = date;
-        _endDateController.text = DateFormat('dd-MM-yyyy').format(date);
-      });
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {

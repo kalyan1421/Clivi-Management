@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/master_data_provider.dart';
 import '../providers/stock_provider.dart';
-import '../data/models/stock_item.dart';
 import '../data/models/material_grade_model.dart';
 import '../../inventory/data/models/supplier_model.dart';
 import '../../inventory/providers/inventory_provider.dart'
     show suppliersProvider, inventoryRepositoryProvider;
-import '../../common/widgets/searchable_dropdown_with_create.dart';
 import '../data/models/material_master_model.dart';
-import '../data/models/material_log.dart';
 
 // Model to hold form state for each entry
 class MaterialEntryForm {
@@ -174,7 +169,9 @@ class _MaterialReceiveScreenState extends ConsumerState<MaterialReceiveScreen> {
         } else {
           // Reset forms instead of popping if standing alone
           setState(() {
-            for (var e in _entries) e.dispose();
+            for (var e in _entries) {
+              e.dispose();
+            }
             _entries.clear();
             _addNewEntry();
           });
@@ -268,7 +265,7 @@ class _MaterialReceiveScreenState extends ConsumerState<MaterialReceiveScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -320,7 +317,9 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
   // Local state for async fetches in dropdowns
   List<MaterialMaster> _masterMaterials = [];
   List<MaterialGrade> _availableGrades = [];
+  // ignore: unused_field
   bool _loadingMaterials = false;
+  // ignore: unused_field
   bool _loadingGrades = false;
 
   final List<String> _unitItems = const [
@@ -516,11 +515,13 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
                                   );
                                   if (ctx.mounted) Navigator.pop(ctx, supplier);
                                 } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Failed to add vendor: $e'),
-                                    ),
-                                  );
+                                  if (ctx.mounted) {
+                                    ScaffoldMessenger.of(ctx).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to add vendor: $e'),
+                                      ),
+                                    );
+                                  }
                                 } finally {
                                   setState(() => saving = false);
                                 }
@@ -568,7 +569,7 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
             // 1. MATERIAL DROPDOWN
             DropdownButtonFormField<MaterialMaster>(
               isExpanded: true,
-              value: entry.selectedMaterial,
+              initialValue: entry.selectedMaterial,
               decoration: const InputDecoration(
                 labelText: 'Material Name',
                 hintText: '-- Select Material from Master List --',
@@ -607,7 +608,7 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
             // 2. GRADE DROPDOWN
             DropdownButtonFormField<MaterialGrade>(
               isExpanded: true,
-              value: entry.selectedGrade,
+              initialValue: entry.selectedGrade,
               decoration: const InputDecoration(
                 labelText: 'Grade / Type',
                 hintText: 'Select predefined grade',
@@ -646,7 +647,7 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     isExpanded: true,
-                    value: _unitItems.contains(entry.unitController.text)
+                    initialValue: _unitItems.contains(entry.unitController.text)
                         ? entry.unitController.text
                         : null,
                     decoration: const InputDecoration(
@@ -664,8 +665,9 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
                     onChanged: (val) {
-                      if (val != null)
+                      if (val != null) {
                         setState(() => entry.unitController.text = val);
+                      }
                     },
                   ),
                 ),
@@ -685,7 +687,7 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
                       Expanded(
                         child: DropdownButtonFormField<SupplierModel>(
                           isExpanded: true,
-                          value: entry.selectedSupplier,
+                          initialValue: entry.selectedSupplier,
                           decoration: const InputDecoration(
                             labelText: 'Vendor / Supplier',
                             hintText: 'Select vendor',
@@ -737,7 +739,7 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
-              value: entry.paymentType,
+              initialValue: entry.paymentType,
               decoration: const InputDecoration(
                 labelText: 'Payment Type',
                 hintText: '-- Select Payment Type --',

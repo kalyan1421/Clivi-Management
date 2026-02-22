@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+
 import '../providers/machinery_provider.dart';
 import '../data/models/machinery_model.dart';
 import '../data/models/machinery_log_model.dart';
@@ -96,7 +95,7 @@ class MachineryTabScreen extends ConsumerWidget {
                           vertical: 0,
                         ),
                         backgroundColor: isFiltered
-                            ? const Color(0xFF1E293B).withOpacity(0.05)
+                            ? const Color(0xFF1E293B).withValues(alpha: 0.05)
                             : Colors.transparent,
                       ),
                       icon: Icon(
@@ -370,7 +369,7 @@ class _MachineryCard extends ConsumerWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -868,7 +867,7 @@ class _LogMachinerySheetState extends ConsumerState<_LogMachinerySheet> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                     ),
                   ]
@@ -990,12 +989,12 @@ class _LogMachinerySheetState extends ConsumerState<_LogMachinerySheet> {
           return;
         }
 
-        print('[MACHINERY LOG] Logging time-based...');
-        print('[MACHINERY LOG] Machine: ${_selectedMachine!.name}');
-        print(
+        debugPrint('[MACHINERY LOG] Logging time-based...');
+        debugPrint('[MACHINERY LOG] Machine: ${_selectedMachine!.name}');
+        debugPrint(
           '[MACHINERY LOG] Start: ${_startTime!.format(context)}, End: ${_endTime!.format(context)}',
         );
-        print('[MACHINERY LOG] Duration: $_calculatedDuration hrs');
+        debugPrint('[MACHINERY LOG] Duration: $_calculatedDuration hrs');
 
         success = await controller.logTimeBased(
           projectId: widget.projectId,
@@ -1018,9 +1017,9 @@ class _LogMachinerySheetState extends ConsumerState<_LogMachinerySheet> {
           return;
         }
 
-        print('[MACHINERY LOG] Logging reading-based...');
-        print('[MACHINERY LOG] Machine: ${_selectedMachine!.name}');
-        print('[MACHINERY LOG] Start: $start, End: $end');
+        debugPrint('[MACHINERY LOG] Logging reading-based...');
+        debugPrint('[MACHINERY LOG] Machine: ${_selectedMachine!.name}');
+        debugPrint('[MACHINERY LOG] Start: $start, End: $end');
 
         success = await controller.logUsage(
           projectId: widget.projectId,
@@ -1032,7 +1031,7 @@ class _LogMachinerySheetState extends ConsumerState<_LogMachinerySheet> {
         );
       }
 
-      print('[MACHINERY LOG] Success: $success');
+      debugPrint('[MACHINERY LOG] Success: $success');
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -1056,8 +1055,8 @@ class _LogMachinerySheetState extends ConsumerState<_LogMachinerySheet> {
         }
       }
     } catch (e, stackTrace) {
-      print('[MACHINERY LOG ERROR] $e');
-      print('[MACHINERY LOG STACK] $stackTrace');
+      debugPrint('[MACHINERY LOG ERROR] $e');
+      debugPrint('[MACHINERY LOG STACK] $stackTrace');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(

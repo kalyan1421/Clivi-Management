@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
+
 import '../../../../core/widgets/custom_text_field.dart';
 import '../providers/master_data_provider.dart';
 import '../data/models/material_master_model.dart';
@@ -111,7 +111,9 @@ class MaterialMasterListScreen extends ConsumerWidget {
                               );
                             }
                           } finally {
-                            if (ctx.mounted) setState(() => saving = false);
+                            if (ctx.mounted) {
+                              setState(() => saving = false);
+                            }
                           }
                         },
                   child: saving
@@ -282,7 +284,9 @@ class _MaterialItemCardState extends ConsumerState<_MaterialItemCard> {
                               SnackBar(content: Text('Error adding grade: $e')),
                             );
                           } finally {
-                            if (mounted) setState(() => saving = false);
+                            if (ctx.mounted) {
+                              setState(() => saving = false);
+                            }
                           }
                         },
                   child: saving

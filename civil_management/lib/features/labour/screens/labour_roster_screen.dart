@@ -283,7 +283,7 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.primary.withOpacity(0.1),
+      color: AppColors.primary.withValues(alpha: 0.1),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -364,7 +364,7 @@ class _LabourCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: labour.status.color.withOpacity(0.2),
+          backgroundColor: labour.status.color.withValues(alpha: 0.2),
           child: Text(
             labour.name[0].toUpperCase(),
             style: TextStyle(
@@ -510,7 +510,7 @@ class _AddLabourSheetState extends ConsumerState<_AddLabourSheet> {
             const SizedBox(height: 12),
 
             DropdownButtonFormField<String>(
-              value: _selectedSkill,
+              initialValue: _selectedSkill,
               decoration: const InputDecoration(
                 labelText: 'Skill Type',
                 prefixIcon: Icon(Icons.work),

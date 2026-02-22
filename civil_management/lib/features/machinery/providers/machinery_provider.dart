@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/machinery_model.dart';
 import '../data/models/machinery_log_model.dart';
@@ -35,7 +36,7 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      print('[MACHINERY CONTROLLER] Creating machinery: $name');
+      debugPrint('[MACHINERY CONTROLLER] Creating machinery: $name');
       await _repository.createMachinery(
         name: name,
         type: type,
@@ -43,11 +44,11 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
         ownershipType: ownershipType,
       );
       state = const AsyncValue.data(null);
-      print('[MACHINERY CONTROLLER] Machinery created successfully');
+      debugPrint('[MACHINERY CONTROLLER] Machinery created successfully');
       return true;
     } catch (e, st) {
-      print('[MACHINERY CONTROLLER ERROR] Failed to create machinery: $e');
-      print('[MACHINERY CONTROLLER STACK] $st');
+      debugPrint('[MACHINERY CONTROLLER ERROR] Failed to create machinery: $e');
+      debugPrint('[MACHINERY CONTROLLER STACK] $st');
       state = AsyncValue.error(e, st);
       return false;
     }
@@ -65,7 +66,7 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      print('[MACHINERY CONTROLLER] Logging time-based usage');
+      debugPrint('[MACHINERY CONTROLLER] Logging time-based usage');
       await _repository.logMachineryUsageTimeBased(
         projectId: projectId,
         machineryId: machineryId,
@@ -77,11 +78,11 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
         notes: notes,
       );
       state = const AsyncValue.data(null);
-      print('[MACHINERY CONTROLLER] Time-based log saved successfully');
+      debugPrint('[MACHINERY CONTROLLER] Time-based log saved successfully');
       return true;
     } catch (e, st) {
-      print('[MACHINERY CONTROLLER ERROR] Failed to log time-based usage: $e');
-      print('[MACHINERY CONTROLLER STACK] $st');
+      debugPrint('[MACHINERY CONTROLLER ERROR] Failed to log time-based usage: $e');
+      debugPrint('[MACHINERY CONTROLLER STACK] $st');
       state = AsyncValue.error(e, st);
       return false;
     }
@@ -98,7 +99,7 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      print('[MACHINERY CONTROLLER] Logging reading-based usage');
+      debugPrint('[MACHINERY CONTROLLER] Logging reading-based usage');
       await _repository.logMachineryUsage(
         projectId: projectId,
         machineryId: machineryId,
@@ -109,13 +110,13 @@ class MachineryController extends StateNotifier<AsyncValue<void>> {
         notes: notes,
       );
       state = const AsyncValue.data(null);
-      print('[MACHINERY CONTROLLER] Reading-based log saved successfully');
+      debugPrint('[MACHINERY CONTROLLER] Reading-based log saved successfully');
       return true;
     } catch (e, st) {
-      print(
+      debugPrint(
         '[MACHINERY CONTROLLER ERROR] Failed to log reading-based usage: $e',
       );
-      print('[MACHINERY CONTROLLER STACK] $st');
+      debugPrint('[MACHINERY CONTROLLER STACK] $st');
       state = AsyncValue.error(e, st);
       return false;
     }

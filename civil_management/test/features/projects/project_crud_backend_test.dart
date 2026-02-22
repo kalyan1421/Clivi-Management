@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:civil_management/features/projects/data/models/project_model.dart';
 import 'package:civil_management/features/projects/data/repositories/project_repository.dart';
-import 'package:civil_management/core/config/supabase_client.dart';
+
 import '../../helpers/test_helpers.dart';
 import '../../helpers/supabase_test_helpers.dart';
 
@@ -435,7 +436,7 @@ void main() {
 
     test('Assign site manager to project', () async {
       if (siteManagerIds.isEmpty) {
-        print('Skipping: No site managers available');
+        debugPrint('Skipping: No site managers available');
         return;
       }
 
@@ -456,7 +457,7 @@ void main() {
 
     test('Remove site manager from project', () async {
       if (siteManagerIds.isEmpty) {
-        print('Skipping: No site managers available');
+        debugPrint('Skipping: No site managers available');
         return;
       }
 

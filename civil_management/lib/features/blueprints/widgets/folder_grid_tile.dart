@@ -27,7 +27,7 @@ class FolderGridTile extends StatelessWidget {
             // Folder Icon
             Expanded(
               child: Container(
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
                 child: Center(
                   child: Stack(
                     alignment: Alignment.center,
@@ -35,7 +35,7 @@ class FolderGridTile extends StatelessWidget {
                       Icon(
                         Icons.folder_open_outlined,
                         size: 60,
-                        color: AppColors.primary.withOpacity(0.5),
+                        color: AppColors.primary.withValues(alpha: 0.5),
                       ),
                       if (folder.isAdminOnly)
                         Positioned(
@@ -44,7 +44,7 @@ class FolderGridTile extends StatelessWidget {
                           child: Icon(
                             Icons.lock,
                             size: 16,
-                            color: AppColors.warning.withOpacity(0.8),
+                            color: AppColors.warning.withValues(alpha: 0.8),
                           ),
                         ),
                     ],

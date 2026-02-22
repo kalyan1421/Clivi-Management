@@ -290,8 +290,9 @@ class _FinancialHealthCard extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        if (stats.chartData.isEmpty)
+                        if (stats.chartData.isEmpty) {
                           return const SizedBox.shrink();
+                        }
                         final index = value.toInt();
                         if (index < 0 || index >= stats.chartData.length) {
                           return const SizedBox.shrink();

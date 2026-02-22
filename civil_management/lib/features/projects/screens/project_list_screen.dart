@@ -395,32 +395,7 @@ class _ProjectCard extends StatelessWidget {
 }
 
 /// Status chip widget
-class _StatusChip extends StatelessWidget {
-  final ProjectStatus status;
 
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = status.color;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: statusColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withValues(alpha: 0.5)),
-      ),
-      child: Text(
-        status.displayName,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: statusColor,
-        ),
-      ),
-    );
-  }
-}
 
 /// Filter bottom sheet
 class _FilterSheet extends StatelessWidget {

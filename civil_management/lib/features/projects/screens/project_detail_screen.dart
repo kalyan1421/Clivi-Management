@@ -29,8 +29,21 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     final projectState = ref.watch(projectDetailProvider(widget.projectId));
     final authState = ref.watch(authProvider);
     final isAdmin = authState.isAtLeast(UserRole.admin);
+    final userRole = authState.role;
 
-    return ResponsiveScaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (userRole == UserRole.superAdmin) {
+          context.go('/super-admin/dashboard');
+        } else if (userRole == UserRole.admin) {
+          context.go('/admin/dashboard');
+        } else {
+          context.go('/site-manager/dashboard');
+        }
+      },
+      child: ResponsiveScaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -39,7 +52,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            final userRole = authState.role;
             if (userRole == UserRole.superAdmin) {
               context.go('/super-admin/dashboard');
             } else if (userRole == UserRole.admin) {
@@ -77,11 +89,15 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         ],
       ),
       builder: (context, r) {
-        if (projectState.isLoading) return const LoadingWidget();
-        if (projectState.error != null)
+        if (projectState.isLoading) {
+          return const LoadingWidget();
+        }
+        if (projectState.error != null) {
           return AppErrorWidget(message: projectState.error!);
-        if (projectState.project == null)
+        }
+        if (projectState.project == null) {
           return const Center(child: Text('Project not found'));
+        }
 
         return Center(
           child: ConstrainedBox(
@@ -109,8 +125,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 
   void _showAssignManagerSheet(BuildContext context) {
     showModalBottomSheet(
@@ -418,8 +435,9 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     // Custom labels for the design
     String label = status.displayName;
-    if (status == ProjectStatus.inProgress)
+    if (status == ProjectStatus.inProgress) {
       label = 'PHASE 2 WORK'; // Matching mockup vibe
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

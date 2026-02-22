@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
 
 import '../../../core/widgets/loading_widget.dart';
 import '../data/models/stock_item_model.dart';
@@ -124,7 +124,7 @@ class StockListScreen extends ConsumerWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: selectedUnit,
+                      initialValue: selectedUnit,
                       decoration: const InputDecoration(labelText: 'Unit'),
                       items:
                           [
@@ -199,7 +199,7 @@ class _StockItemCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: item.stockStatusColor.withOpacity(0.2),
+          backgroundColor: item.stockStatusColor.withValues(alpha: 0.2),
           child: Icon(Icons.inventory, color: item.stockStatusColor),
         ),
         title: Text(

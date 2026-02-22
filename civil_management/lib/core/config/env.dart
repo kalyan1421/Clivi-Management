@@ -12,12 +12,12 @@ class Env {
     try {
       await dotenv.load(fileName: 'assets/env');
       if (kDebugMode) {
-        print('ENV: Loaded ${dotenv.env.length} environment variables');
-        print('ENV: Keys found: ${dotenv.env.keys.toList()}');
+        debugPrint('ENV: Loaded ${dotenv.env.length} environment variables');
+        debugPrint('ENV: Keys found: ${dotenv.env.keys.toList()}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('ENV: Failed to load .env file: $e');
+        debugPrint('ENV: Failed to load .env file: $e');
       }
       rethrow;
     }
@@ -65,29 +65,31 @@ class Env {
       final key = dotenv.env['SUPABASE_ANON_KEY'];
 
       if (kDebugMode) {
-        print(
+        debugPrint(
           'ENV Validate: SUPABASE_URL = ${url != null ? "present (${url.length} chars)" : "MISSING"}',
         );
-        print(
+        debugPrint(
           'ENV Validate: SUPABASE_ANON_KEY = ${key != null ? "present (${key.length} chars)" : "MISSING"}',
         );
       }
 
       if (url == null || url.isEmpty) {
-        if (kDebugMode)
-          print('ENV Validate: FAILED - SUPABASE_URL missing or empty');
+        if (kDebugMode) {
+          debugPrint('ENV Validate: FAILED - SUPABASE_URL missing or empty');
+        }
         return false;
       }
       if (key == null || key.isEmpty) {
-        if (kDebugMode)
-          print('ENV Validate: FAILED - SUPABASE_ANON_KEY missing or empty');
+        if (kDebugMode) {
+          debugPrint('ENV Validate: FAILED - SUPABASE_ANON_KEY missing or empty');
+        }
         return false;
       }
 
-      if (kDebugMode) print('ENV Validate: SUCCESS');
+      if (kDebugMode) debugPrint('ENV Validate: SUCCESS');
       return true;
     } catch (e) {
-      if (kDebugMode) print('ENV Validate: EXCEPTION - $e');
+      if (kDebugMode) debugPrint('ENV Validate: EXCEPTION - $e');
       return false;
     }
   }

@@ -41,8 +41,7 @@ class DateFormatter {
   /// Full date format: EEEE, MMMM dd, yyyy
   static final DateFormat _fullDateFormat = DateFormat('EEEE, MMMM dd, yyyy');
 
-  /// Time with seconds: HH:mm:ss
-  static final DateFormat _timeWithSecondsFormat = DateFormat('HH:mm:ss');
+
 
   /// 12-hour time format: hh:mm a
   static final DateFormat _time12HourFormat = DateFormat('hh:mm a');

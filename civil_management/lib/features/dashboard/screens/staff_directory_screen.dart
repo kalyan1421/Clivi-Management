@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/loading_widget.dart';
-import '../../auth/providers/auth_provider.dart';
+
 import '../../auth/providers/auth_repository_provider.dart';
 import '../../auth/data/models/user_profile_model.dart';
 
@@ -114,7 +114,7 @@ class _StaffCard extends StatelessWidget {
         contentPadding: const EdgeInsets.all(12),
         leading: CircleAvatar(
           radius: 28,
-          backgroundColor: AppColors.siteManager.withOpacity(0.2),
+          backgroundColor: AppColors.siteManager.withValues(alpha: 0.2),
           child: Text(
             (manager.fullName ?? 'U')[0].toUpperCase(),
             style: const TextStyle(
@@ -147,7 +147,7 @@ class _StaffCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.siteManager.withOpacity(0.1),
+                color: AppColors.siteManager.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(

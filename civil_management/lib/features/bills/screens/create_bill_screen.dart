@@ -166,8 +166,9 @@ class _CreateBillScreenState extends ConsumerState<CreateBillScreen> {
                       ),
                       validator: (val) {
                         if (val == null || val.isEmpty) return 'Required';
-                        if (double.tryParse(val) == null)
+                        if (double.tryParse(val) == null) {
                           return 'Invalid number';
+                        }
                         return null;
                       },
                       onSaved: (val) => _amount = double.parse(val!),

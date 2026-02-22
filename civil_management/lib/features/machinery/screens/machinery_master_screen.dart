@@ -148,7 +148,7 @@ class MachineryMasterScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: ownership,
+                    initialValue: ownership,
                     decoration: const InputDecoration(labelText: 'Ownership'),
                     items: const [
                       DropdownMenuItem(value: 'Own', child: Text('Own')),
@@ -188,16 +188,18 @@ class MachineryMasterScreen extends ConsumerWidget {
                                 );
                               }
                               ref.invalidate(machineryListProvider);
-                              if (ctx.mounted) Navigator.pop(ctx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    existing == null
-                                        ? 'Machinery added'
-                                        : 'Machinery updated',
+                              if (ctx.mounted) {
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      existing == null
+                                          ? 'Machinery added'
+                                          : 'Machinery updated',
+                                    ),
                                   ),
-                                ),
-                              );
+                                );
+                              }
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Save failed: $e')),
