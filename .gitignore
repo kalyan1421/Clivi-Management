@@ -5,20 +5,29 @@
 *.swp
 .DS_Store
 .atom/
+.build/
 .buildlog/
 .history
 .svn/
+.swiftpm/
+migrate_working_dir/
+
+# Environment Variables
+.env
+**/.env
+# Allow .env.example to be committed as a template
+!.env.example
+**/.env.example
+
+# IDE and Editor files
+.claude/
+.vscode/
+.idea/
 
 # IntelliJ related
 *.iml
 *.ipr
 *.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -29,6 +38,8 @@
 .pub-cache/
 .pub/
 /build/
+**/build/
+/coverage/
 
 # Symbolication related
 app.*.symbols
@@ -42,5 +53,4 @@ app.*.map.json
 /android/app/release
 
 # Supabase and Firebase
-.env
 .firebase/
