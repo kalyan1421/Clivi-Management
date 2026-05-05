@@ -53,9 +53,9 @@ class AdminDashboard extends ConsumerWidget {
                 const SizedBox(height: 20),
                 _buildOperationsSection(context, operationsCounts),
                 const SizedBox(height: 18),
-                _buildActiveProjectsSection(context, projectsState),
+                _buildActiveProjectsSection(context, ref, projectsState),
                 const SizedBox(height: 18),
-                _buildRecentOpsSection(context, activityState),
+                _buildRecentOpsSection(context, ref, activityState),
                 const SizedBox(height: 24),
               ],
             ),
@@ -453,6 +453,7 @@ class AdminDashboard extends ConsumerWidget {
 
   Widget _buildActiveProjectsSection(
     BuildContext context,
+    WidgetRef ref,
     ActiveProjectsState state,
   ) {
     return Padding(
@@ -481,12 +482,29 @@ class AdminDashboard extends ConsumerWidget {
           const SizedBox(height: 8),
           if (state.isLoading)
             _buildProjectsLoading()
+          else if (state.error != null)
+            _buildSectionError(
+              context,
+              message: 'Could not load projects',
+              onRetry: () =>
+                  ref.read(activeProjectsProvider.notifier).refresh(),
+            )
           else if (state.projects.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Text(
-                'No active projects',
-                style: TextStyle(color: AppColors.textSecondary),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.folder_open_outlined,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'No active projects',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ],
               ),
             )
           else
@@ -505,6 +523,7 @@ class AdminDashboard extends ConsumerWidget {
 
   Widget _buildRecentOpsSection(
     BuildContext context,
+    WidgetRef ref,
     RecentActivityState state,
   ) {
     return Padding(
@@ -519,7 +538,7 @@ class AdminDashboard extends ConsumerWidget {
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          _buildRecentOperations(context, state),
+          _buildRecentOperations(context, ref, state),
         ],
       ),
     );
@@ -683,12 +702,61 @@ class AdminDashboard extends ConsumerWidget {
     }
   }
 
+  Widget _buildSectionError(
+    BuildContext context, {
+    required String message,
+    required VoidCallback onRetry,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.error.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.18)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, size: 16, color: AppColors.error),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: AppColors.error, fontSize: 13),
+              ),
+            ),
+            TextButton(
+              onPressed: onRetry,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('Retry', style: TextStyle(fontSize: 13)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildRecentOperations(
     BuildContext context,
+    WidgetRef ref,
     RecentActivityState state,
   ) {
     if (state.isLoading && state.activities.isEmpty) {
       return _buildOperationsLoading();
+    }
+
+    if (state.error != null && state.activities.isEmpty) {
+      return _buildSectionError(
+        context,
+        message: 'Could not load recent operations',
+        onRetry: () => ref.read(recentActivityProvider.notifier).refresh(),
+      );
     }
 
     if (state.activities.isEmpty) {

@@ -1,12 +1,38 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Restrict CORS to the app's own Supabase project URL.
+// Supabase Edge Functions are only called from the mobile app (native HTTP),
+// not from a browser, so wildcard origin is not needed. The Authorization
+// header is already verified server-side for every request.
+const ALLOWED_ORIGIN = Deno.env.get("SUPABASE_URL") ?? "";
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+/** Poll until the user_profiles row exists (created by DB trigger after signup). */
+async function waitForProfile(
+  adminClient: ReturnType<typeof createClient>,
+  userId: string,
+  maxWaitMs = 5000,
+  intervalMs = 200
+): Promise<boolean> {
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    const { data } = await adminClient
+      .from("user_profiles")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (data) return true;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  return false;
+}
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
@@ -99,8 +125,19 @@ Deno.serve(async (req: Request) => {
 
   const newUserId = newUserData.user.id;
 
-  // Wait for DB trigger to create user_profiles row
-  await new Promise((resolve) => setTimeout(resolve, 1200));
+  // Poll until the DB trigger creates the user_profiles row (max 5 s).
+  const profileReady = await waitForProfile(adminClient, newUserId);
+  if (!profileReady) {
+    // Trigger did not fire in time; return partial success so the caller can
+    // still display the new user — the profile will appear on next page load.
+    return new Response(
+      JSON.stringify({ user: { id: newUserId, email }, warning: "Profile not yet ready" }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
 
   const updates: Record<string, unknown> = {
     role: role ?? "site_manager",

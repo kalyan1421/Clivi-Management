@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../core/errors/app_exceptions.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/ui/responsive_scaffold.dart';
+import '../../../core/ui/responsive.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../providers/auth_provider.dart';
 
-/// Login screen
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,53 +17,15 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordFocusNode = FocusNode();
+
   bool _isPasswordVisible = false;
   bool _isLoading = false;
   String? _errorMessage;
   String? _passwordError;
-
-  String _mapLoginError(dynamic e) {
-    final message = ExceptionHandler.getMessage(e);
-    final normalized = '${e.toString()} $message'.toLowerCase();
-
-    if (normalized.contains('socket') ||
-        normalized.contains('network') ||
-        normalized.contains('internet') ||
-        normalized.contains('connection') ||
-        normalized.contains('timeout')) {
-      return 'Unable to connect. Please check your internet and try again.';
-    }
-
-    if (normalized.contains('incorrect password') ||
-        normalized.contains('invalid login') ||
-        normalized.contains('invalid login credentials') ||
-        normalized.contains('invalid_credentials') ||
-        normalized.contains('credential') ||
-        normalized.contains('no account registered') ||
-        normalized.contains('user not found') ||
-        normalized.contains('invalid email')) {
-      return 'Incorrect password';
-    }
-
-    return 'Login failed. Please try again.';
-  }
-
-  bool _isCredentialError(dynamic e) {
-    final message = ExceptionHandler.getMessage(e);
-    final normalized = '${e.toString()} $message'.toLowerCase();
-    return normalized.contains('incorrect password') ||
-        normalized.contains('invalid login') ||
-        normalized.contains('invalid login credentials') ||
-        normalized.contains('invalid_credentials') ||
-        normalized.contains('credential') ||
-        normalized.contains('no account registered') ||
-        normalized.contains('user not found') ||
-        normalized.contains('invalid email');
-  }
 
   @override
   void dispose() {
@@ -73,11 +35,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  // Returns a user-friendly message and whether it is a credential error.
+  ({String message, bool isCredential}) _parseError(dynamic e) {
+    final raw =
+        '${e.toString()} ${ExceptionHandler.getMessage(e)}'.toLowerCase();
+
+    if (raw.contains('socket') ||
+        raw.contains('network') ||
+        raw.contains('internet') ||
+        raw.contains('connection') ||
+        raw.contains('timeout')) {
+      return (
+        message: 'No internet. Check your connection and try again.',
+        isCredential: false,
+      );
+    }
+
+    if (raw.contains('invalid_credentials') ||
+        raw.contains('credential') ||
+        raw.contains('invalid login') ||
+        raw.contains('incorrect password') ||
+        raw.contains('user not found') ||
+        raw.contains('no account registered') ||
+        raw.contains('invalid email')) {
+      return (message: 'Incorrect email or password.', isCredential: true);
+    }
+
+    return (message: 'Login failed. Please try again.', isCredential: false);
+  }
+
   Future<void> _handleLogin() async {
     if (_isLoading) return;
+    FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-
-    final startedAt = DateTime.now();
 
     setState(() {
       _isLoading = true;
@@ -85,300 +75,291 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _passwordError = null;
     });
 
+    // Yield to the event loop so Flutter renders the loading state
+    // before the network call starts. Without this, a fast-completing
+    // Future can cause both setState(true) and setState(false) to land
+    // in the same frame, making the loading bar never appear.
+    await Future.delayed(Duration.zero);
+
     try {
-      await ref
-          .read(authProvider.notifier)
-          .signIn(
+      await ref.read(authProvider.notifier).signIn(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
 
       if (!mounted) return;
 
-      final authState = ref.read(authProvider);
-      if (authState.role != null) {
-        switch (authState.role!) {
-          case UserRole.superAdmin:
-            context.go('/super-admin/dashboard');
-            break;
-          case UserRole.admin:
-            context.go('/admin/dashboard');
-            break;
-          case UserRole.siteManager:
-            context.go('/site-manager/dashboard');
-            break;
-        }
+      final role = ref.read(authProvider).role;
+      switch (role) {
+        case UserRole.superAdmin:
+          context.go('/super-admin/dashboard');
+        case UserRole.admin:
+          context.go('/admin/dashboard');
+        case UserRole.siteManager:
+          context.go('/site-manager/dashboard');
+        case null:
+          break;
       }
     } catch (e) {
-      if (mounted) {
-        final errorText = _mapLoginError(e);
-        final isCredential = _isCredentialError(e);
-
-        setState(() {
-          if (isCredential) {
-            _passwordError = 'Incorrect password';
-          } else {
-            _errorMessage = errorText;
-          }
-        });
-
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(
-                    isCredential ? Icons.error_outline : Icons.wifi_off,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      errorText,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              margin: const EdgeInsets.all(12),
-            ),
-          );
-      }
-    } finally {
-      if (mounted) {
-        final elapsed = DateTime.now().difference(startedAt);
-        const minLoadingDuration = Duration(milliseconds: 2000);
-        if (elapsed < minLoadingDuration) {
-          await Future.delayed(minLoadingDuration - elapsed);
+      if (!mounted) return;
+      final (:message, :isCredential) = _parseError(e);
+      setState(() {
+        if (isCredential) {
+          _passwordError = message;
+        } else {
+          _errorMessage = message;
         }
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      });
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveScaffold(
+    return Scaffold(
       backgroundColor: AppColors.background,
-      builder: (context, r) {
-        return Stack(
-          children: [
-            // Top progress bar while loading
-            if (_isLoading)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SizedBox(
-                  height: 3,
-                  child: LinearProgressIndicator(
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
-                    ),
-                  ),
-                ),
-              ),
+      // resizeToAvoidBottomInset keeps the form above the keyboard
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final r = R(Size(constraints.maxWidth, constraints.maxHeight));
 
-            // Main form — no nested ScrollView; ResponsiveScaffold handles it
-            Padding(
-              padding: r.pad.copyWith(top: 24, bottom: 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 460),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: EdgeInsets.all(r.isTablet ? 20 : 16),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Icon(
-                            Icons.construction,
-                            size: r.font(40, tablet: 48),
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Welcome Back',
-                          style: Theme.of(context).textTheme.displaySmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                                fontSize: r.font(30, tablet: 34),
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Sign in to your account',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontSize: r.font(14, tablet: 16),
-                              ),
-                        ),
-                        const SizedBox(height: 28),
-                        if (_errorMessage != null) ...[
-                          InlineErrorWidget(message: _errorMessage!),
-                          const SizedBox(height: 16),
-                        ],
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          onChanged: (_) {
-                            if (_errorMessage != null) {
-                              setState(() => _errorMessage = null);
-                            }
-                          },
-                          onFieldSubmitted: (_) =>
-                              _passwordFocusNode.requestFocus(),
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            hintText: 'Enter your email',
-                            prefixIcon: Icon(Icons.email_outlined),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          focusNode: _passwordFocusNode,
-                          obscureText: !_isPasswordVisible,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _handleLogin(),
-                          onChanged: (_) {
-                            if (_passwordError != null) {
-                              setState(() => _passwordError = null);
-                            }
-                            if (_errorMessage != null) {
-                              setState(() => _errorMessage = null);
-                            }
-                          },
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            hintText: 'Enter your password',
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            errorText: _passwordError,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isPasswordVisible
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                              ),
-                              onPressed: () => setState(
-                                () => _isPasswordVisible = !_isPasswordVisible,
+            return Column(
+              children: [
+                // ── Loading bar ───────────────────────────────────────────────
+                // First child of the Column so it is always painted above the
+                // scroll view.  It cannot scroll away and no overlay can cover it.
+                if (_isLoading)
+                  LinearProgressIndicator(
+                    minHeight: 4,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+
+                // ── Scrollable form ───────────────────────────────────────────
+                Expanded(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: ConstrainedBox(
+                      // Keeps the form vertically centred on tall screens.
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Padding(
+                        padding: r.pad.copyWith(top: 32, bottom: 32),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 460),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // App icon
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Container(
+                                      padding: EdgeInsets.all(
+                                        r.isTablet ? 20 : 16,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary,
+                                        borderRadius:
+                                            BorderRadius.circular(16),
+                                      ),
+                                      child: Icon(
+                                        Icons.construction,
+                                        size: r.font(40, tablet: 48),
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 28),
+
+                                  // Heading
+                                  Text(
+                                    'Welcome Back',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .displaySmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                          fontSize: r.font(28, tablet: 34),
+                                        ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Sign in to your account',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: AppColors.textSecondary,
+                                          fontSize: r.font(14, tablet: 16),
+                                        ),
+                                  ),
+                                  const SizedBox(height: 32),
+
+                                  // Network / generic error banner
+                                  if (_errorMessage != null) ...[
+                                    InlineErrorWidget(
+                                      message: _errorMessage!,
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+
+                                  // Email field
+                                  TextFormField(
+                                    controller: _emailController,
+                                    keyboardType: TextInputType.emailAddress,
+                                    textInputAction: TextInputAction.next,
+                                    enabled: !_isLoading,
+                                    onChanged: (_) {
+                                      if (_errorMessage != null) {
+                                        setState(() => _errorMessage = null);
+                                      }
+                                    },
+                                    onFieldSubmitted: (_) =>
+                                        _passwordFocusNode.requestFocus(),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Email',
+                                      hintText: 'you@example.com',
+                                      prefixIcon: Icon(Icons.email_outlined),
+                                    ),
+                                    validator: (v) {
+                                      if (v == null || v.trim().isEmpty) {
+                                        return 'Email is required';
+                                      }
+                                      if (!v.contains('@')) {
+                                        return 'Enter a valid email';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  // Password field
+                                  TextFormField(
+                                    controller: _passwordController,
+                                    focusNode: _passwordFocusNode,
+                                    obscureText: !_isPasswordVisible,
+                                    textInputAction: TextInputAction.done,
+                                    enabled: !_isLoading,
+                                    onFieldSubmitted: (_) => _handleLogin(),
+                                    onChanged: (_) {
+                                      if (_passwordError != null) {
+                                        setState(() => _passwordError = null);
+                                      }
+                                      if (_errorMessage != null) {
+                                        setState(() => _errorMessage = null);
+                                      }
+                                    },
+                                    decoration: InputDecoration(
+                                      labelText: 'Password',
+                                      hintText: 'Enter your password',
+                                      prefixIcon:
+                                          const Icon(Icons.lock_outline),
+                                      errorText: _passwordError,
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _isPasswordVisible
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                        ),
+                                        onPressed: () => setState(
+                                          () => _isPasswordVisible =
+                                              !_isPasswordVisible,
+                                        ),
+                                      ),
+                                    ),
+                                    validator: (v) {
+                                      if (v == null || v.isEmpty) {
+                                        return 'Password is required';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+
+                                  // Forgot password link
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton(
+                                      onPressed: _isLoading
+                                          ? null
+                                          : () =>
+                                              context.go('/forgot-password'),
+                                      child: const Text('Forgot Password?'),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // Sign In button
+                                  AppButton(
+                                    text: _isLoading
+                                        ? 'Signing in…'
+                                        : 'Sign In',
+                                    onPressed:
+                                        _isLoading ? null : _handleLogin,
+                                    isLoading: _isLoading,
+                                    icon: _isLoading ? null : Icons.login,
+                                  ),
+                                  const SizedBox(height: 12),
+
+                                  // Progress bar — shown below the button
+                                  // where the user's eyes are after tapping.
+                                  AnimatedCrossFade(
+                                    duration:
+                                        const Duration(milliseconds: 200),
+                                    crossFadeState: _isLoading
+                                        ? CrossFadeState.showFirst
+                                        : CrossFadeState.showSecond,
+                                    firstChild: Column(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                          child: LinearProgressIndicator(
+                                            minHeight: 6,
+                                            backgroundColor: AppColors.primary
+                                                .withValues(alpha: 0.15),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Signing in, please wait…',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    secondChild: const SizedBox.shrink(),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
-                            }
-                            return null;
-                          },
                         ),
-                        const SizedBox(height: 24),
-                        AppButton(
-                          text: _isLoading ? 'Signing in...' : 'Sign In',
-                          onPressed: _handleLogin,
-                          isLoading: _isLoading,
-                          icon: _isLoading ? null : Icons.login,
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: TextButton(
-                            onPressed: () => context.go('/forgot-password'),
-                            child: const Text('Forgot Password?'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Full-screen loading overlay
-            IgnorePointer(
-              ignoring: !_isLoading,
-              child: AnimatedOpacity(
-                opacity: _isLoading ? 1 : 0,
-                duration: const Duration(milliseconds: 220),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.16),
-                  alignment: Alignment.center,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.95, end: 1),
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutBack,
-                    builder: (context, value, child) {
-                      return Transform.scale(scale: value, child: child);
-                    },
-                    child: Container(
-                      width: 220,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 18,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x22000000),
-                            blurRadius: 16,
-                            offset: Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: const Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: CircularProgressIndicator(strokeWidth: 3),
-                          ),
-                          SizedBox(height: 14),
-                          Text(
-                            'Signing in...',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-        );
-      },
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }

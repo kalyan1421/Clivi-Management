@@ -29,6 +29,10 @@ import '../../features/bills/screens/create_bill_screen.dart';
 import '../../features/bills/screens/admin_approval_queue_screen.dart';
 import '../../features/materials/screens/materials_tab_screen.dart';
 import '../../features/materials/screens/material_master_list_screen.dart';
+import '../../features/materials/screens/material_receive_screen.dart';
+import '../../features/materials/screens/material_consume_screen.dart';
+import '../../features/materials/screens/stock_ledger_screen.dart';
+import '../../features/materials/screens/receipt_detail_screen.dart';
 import '../../features/machinery/screens/machinery_tab_screen.dart';
 import '../../features/machinery/screens/machinery_log_screen.dart';
 import '../../features/machinery/screens/machinery_master_screen.dart';
@@ -327,26 +331,31 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'materials/receive',
             name: 'material-receive',
-            builder: (context, state) =>
-                const Placeholder(), // MaterialReceiveScreen
+            builder: (context, state) {
+              final projectId = state.pathParameters['id']!;
+              return MaterialReceiveScreen(projectId: projectId);
+            },
           ),
           GoRoute(
             path: 'materials/consume',
             name: 'material-consume',
-            builder: (context, state) =>
-                const Placeholder(), // MaterialConsumeScreen
+            builder: (context, state) {
+              final projectId = state.pathParameters['id']!;
+              return MaterialConsumeScreen(projectId: projectId);
+            },
           ),
           GoRoute(
             path: 'materials/stock',
             name: 'material-stock',
-            builder: (context, state) =>
-                const Placeholder(), // StockLedgerScreen
+            builder: (context, state) => const StockLedgerScreen(),
           ),
           GoRoute(
             path: 'materials/receipt/:receiptId',
             name: 'receipt-detail',
-            builder: (context, state) =>
-                const Placeholder(), // ReceiptDetailScreen
+            builder: (context, state) {
+              final receiptId = state.pathParameters['receiptId']!;
+              return ReceiptDetailScreen(receiptId: receiptId);
+            },
           ),
           // Machinery & Labour Specifics (Logs)
           GoRoute(
@@ -358,10 +367,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
-            path: 'labour/attendance',
-            name: 'labour-attendance', // Duplicate check with existing?
-            builder: (context, state) =>
-                const Placeholder(), // AttendanceLogScreen
+            path: 'labour/daily-attendance',
+            name: 'labour-daily-attendance',
+            builder: (context, state) {
+              final projectId = state.pathParameters['id']!;
+              final projectName = (state.extra as String?) ?? 'Project';
+              return AttendanceScreen(
+                projectId: projectId,
+                projectName: projectName,
+              );
+            },
           ),
           // Reports Route
           GoRoute(
@@ -375,17 +390,26 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'stock',
                 name: 'report-stock',
-                builder: (context, state) => const Placeholder(),
+                builder: (context, state) => const _ComingSoonScreen(
+                  title: 'Stock Report',
+                  icon: Icons.inventory_2_outlined,
+                ),
               ),
               GoRoute(
                 path: 'machinery',
                 name: 'report-machinery',
-                builder: (context, state) => const Placeholder(),
+                builder: (context, state) => const _ComingSoonScreen(
+                  title: 'Machinery Report',
+                  icon: Icons.construction_outlined,
+                ),
               ),
               GoRoute(
                 path: 'labour',
                 name: 'report-labour',
-                builder: (context, state) => const Placeholder(),
+                builder: (context, state) => const _ComingSoonScreen(
+                  title: 'Labour Report',
+                  icon: Icons.people_outline,
+                ),
               ),
             ],
           ),
@@ -446,7 +470,6 @@ String _getRoleBasedRoute(UserRole role) {
 class _AuthStateNotifier extends ChangeNotifier {
   _AuthStateNotifier(this._ref) {
     _ref.listen(authProvider, (previous, next) {
-      // Only notify GoRouter if authentication state, role, or initialization state changes
       if (previous?.isAuthenticated != next.isAuthenticated ||
           previous?.role != next.role ||
           previous?.isInitialized != next.isInitialized) {
@@ -458,5 +481,41 @@ class _AuthStateNotifier extends ChangeNotifier {
   final Ref _ref;
 }
 
-/// Router key for navigation without context
-final rootNavigatorKey = GlobalKey<NavigatorState>();
+/// Generic "coming soon" screen for routes not yet fully implemented.
+/// Provides a back button so users are never stranded on a dead-end screen.
+class _ComingSoonScreen extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const _ComingSoonScreen({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 72, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This report is coming soon.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 32),
+            FilledButton.tonal(
+              onPressed: () => context.pop(),
+              child: const Text('Go Back'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

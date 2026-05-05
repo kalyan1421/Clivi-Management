@@ -70,11 +70,38 @@ final siteManagersProvider = FutureProvider<List<SiteManagerWithProjects>>((
 });
 
 /// Site Manager Management Screen for Admins
-class SiteManagerManagementScreen extends ConsumerWidget {
+class SiteManagerManagementScreen extends ConsumerStatefulWidget {
   const SiteManagerManagementScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SiteManagerManagementScreen> createState() =>
+      _SiteManagerManagementScreenState();
+}
+
+class _SiteManagerManagementScreenState
+    extends ConsumerState<SiteManagerManagementScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<SiteManagerWithProjects> _filtered(List<SiteManagerWithProjects> all) {
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return all;
+    return all.where((item) {
+      final name = (item.manager.fullName ?? '').toLowerCase();
+      final email = (item.manager.email ?? '').toLowerCase();
+      final phone = (item.manager.phone ?? '').toLowerCase();
+      return name.contains(q) || email.contains(q) || phone.contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final siteManagersAsync = ref.watch(siteManagersProvider);
 
     return Scaffold(
@@ -98,69 +125,54 @@ class SiteManagerManagementScreen extends ConsumerWidget {
       ),
       body: siteManagersAsync.when(
         data: (siteManagers) {
+          final filtered = _filtered(siteManagers);
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(siteManagersProvider);
             },
             child: Column(
               children: [
-                // Search Bar and Filter
+                // Search Bar
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24.0,
                     vertical: 16.0,
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF6F7FB),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: TextField(
-                            decoration: const InputDecoration(
-                              hintText: 'Search Manager...',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF9CA3AF),
-                                fontSize: 14,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: Color(0xFF9CA3AF),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 14,
-                              ),
-                            ),
-                            onChanged: (value) {
-                              // TODO: Implement local search filtering
-                            },
-                          ),
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF6F7FB),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search by name, email or phone…',
+                        hintStyle: const TextStyle(
+                          color: Color(0xFF9CA3AF),
+                          fontSize: 14,
                         ),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear,
+                                    color: Color(0xFF9CA3AF), size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      const SizedBox(width: 12),
-                      Container(
-                        height: 48,
-                        width: 48,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF6F7FB),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.filter_list,
-                            color: Color(0xFF4B5563),
-                          ),
-                          onPressed: () {
-                            // TODO: Show filter options
-                          },
-                        ),
-                      ),
-                    ],
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                    ),
                   ),
                 ),
 
@@ -171,7 +183,9 @@ class SiteManagerManagementScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Total Staff ${siteManagers.length}',
+                        _searchQuery.isEmpty
+                            ? 'Total Staff ${siteManagers.length}'
+                            : '${filtered.length} of ${siteManagers.length} staff',
                         style: const TextStyle(
                           color: Color(0xFF1A1C1E),
                           fontWeight: FontWeight.w700,
@@ -219,16 +233,40 @@ class SiteManagerManagementScreen extends ConsumerWidget {
 
                 const SizedBox(height: 16),
 
+                // Empty state when search has no results
+                if (filtered.isEmpty && _searchQuery.isNotEmpty)
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search_off,
+                              size: 56,
+                              color: Colors.grey[300]),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No staff match "$_searchQuery"',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                 // Staff List
-                Expanded(
+                if (filtered.isNotEmpty)
+                  Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24.0,
                       vertical: 8.0,
                     ),
-                    itemCount: siteManagers.length,
+                    itemCount: filtered.length,
                     itemBuilder: (context, index) {
-                      final item = siteManagers[index];
+                      final item = filtered[index];
                       return _StaffCard(
                         data: item,
                         onEditTap: () {
@@ -308,7 +346,7 @@ class SiteManagerManagementScreen extends ConsumerWidget {
               ],
             ),
           );
-        },
+        }, // end data
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
       ),

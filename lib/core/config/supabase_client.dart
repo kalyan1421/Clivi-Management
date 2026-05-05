@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logger/logger.dart';
+import '../services/offline_queue_service.dart';
 import 'env.dart';
 
 /// Global Supabase client instance
@@ -129,7 +130,14 @@ class SupabaseConfig {
   // }
 
   static Future<void> _flushPendingOperations() async {
-    // TODO: Implement logic to save any pending data before the app is detached.
+    try {
+      if (OfflineQueueService.instance.hasPending) {
+        logger.i('Flushing ${OfflineQueueService.instance.pendingCount} pending offline operations before detach');
+        await OfflineQueueService.instance.processQueue();
+      }
+    } catch (e) {
+      logger.w('Failed to flush offline queue on detach: $e');
+    }
   }
 
   /// Check if user is authenticated

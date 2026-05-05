@@ -167,26 +167,20 @@ class AuthRepository {
     }
   }
 
-  /// Delete a user (admin only)
+  /// Delete a user (admin only).
+  /// Calls the admin_delete_user RPC which removes the user from auth.users
+  /// (cascading to user_profiles). Requires the caller to be admin/super_admin,
+  /// enforced server-side in the SECURITY DEFINER function.
   Future<void> deleteUser(String userId) async {
     try {
-      // Typically, deleting a user from 'user_profiles' might be enough to
-      // soft-delete them from queries, or you can call a custom RPC
-      // if you need to delete them from auth.users.
-      // The previous implementation tried to set role to 'deleted', which violates
-      // the 'profiles_role_check' constraint. To fully delete a user profile, we
-      // issue a delete command.
-      await _client.from('user_profiles').delete().eq('id', userId);
-
-      logger.i('User marked as deleted: $userId');
+      await _client.rpc('admin_delete_user', params: {'target_user_id': userId});
+      logger.i('User deleted from auth.users and user_profiles: $userId');
     } on PostgrestException catch (e) {
-      logger.e('Failed to delete user profile: ${e.message}');
+      logger.e('Failed to delete user: ${e.message}');
       throw AppAuthException('Failed to delete user: ${e.message}');
     } catch (e) {
       logger.e('Delete user error: $e');
-      throw AppAuthException(
-        'An unexpected error occurred while deleting user',
-      );
+      throw AppAuthException('An unexpected error occurred while deleting user');
     }
   }
 

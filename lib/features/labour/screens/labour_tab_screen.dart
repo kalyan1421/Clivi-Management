@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/widgets/error_widget.dart';
 import '../providers/labour_provider.dart';
 import '../data/models/daily_labour_log.dart';
 import '../data/models/labour_model.dart';
@@ -177,7 +178,10 @@ backgroundColor: const Color(0xFFF4F6FA),
                   }
 
                   if (displayLogs.isEmpty) {
-                    return const Center(child: Text('No labor logs recorded'));
+                    return const EmptyStateWidget(
+                      message: 'No labor logs recorded yet',
+                      icon: Icons.people_outline,
+                    );
                   }
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
@@ -201,7 +205,11 @@ backgroundColor: const Color(0xFFF4F6FA),
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, _) => Center(child: Text('Error: $err')),
+                error: (err, _) => AppErrorWidget(
+                  message: 'Failed to load labor logs. Please try again.',
+                  onRetry: () =>
+                      ref.invalidate(dailyLabourLogsProvider(projectId)),
+                ),
               ),
             ),
           ],

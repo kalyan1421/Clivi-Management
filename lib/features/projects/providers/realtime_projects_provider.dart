@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/config/supabase_client.dart';
 import '../data/models/project_model.dart';
 import 'project_provider.dart';
 
@@ -48,48 +48,16 @@ class RealtimeProjectEvent {
   }
 }
 
-/// Provider for realtime project updates
-/// Listens to INSERT, UPDATE, DELETE events on projects table
+/// Provider for realtime project events.
+///
+/// The globalRealtimeSyncProvider (core/providers/) already subscribes to the
+/// 'projects' and 'project_assignments' tables and debounce-invalidates all
+/// project providers. Opening a second channel for the same table causes
+/// duplicate invalidation cascades. This provider therefore emits an empty
+/// stream and exists only so that liveProjectsNotifierProvider can compile;
+/// the actual refresh is driven by the global sync.
 final realtimeProjectsProvider = StreamProvider<RealtimeProjectEvent>((ref) {
-  final controller = StreamController<RealtimeProjectEvent>();
-
-  // Subscribe to realtime changes
-  final channel = supabase
-      .channel(
-        'projects_realtime',
-        opts: const RealtimeChannelConfig(ack: true),
-      )
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'projects',
-        callback: (payload) {
-          final event = RealtimeProjectEvent.fromPayload(payload);
-          controller.add(event);
-          logger.i(
-            'Realtime: ${event.type.name} on project ${event.projectId}',
-          );
-        },
-      );
-
-  channel.subscribe((status, error) {
-    if (status == RealtimeSubscribeStatus.subscribed) {
-      logger.i('Realtime: projects channel subscribed');
-    } else if (status == RealtimeSubscribeStatus.channelError ||
-        status == RealtimeSubscribeStatus.timedOut ||
-        status == RealtimeSubscribeStatus.closed) {
-      logger.w(
-        'Realtime channel issue ($status): ${error?.toString() ?? 'no details'}',
-      );
-    }
-  });
-
-  ref.onDispose(() {
-    channel.unsubscribe();
-    controller.close();
-  });
-
-  return controller.stream;
+  return const Stream.empty();
 });
 
 /// Notifier that handles realtime project updates
@@ -134,7 +102,7 @@ class RealtimeProjectsNotifier
           final refreshed = await repository.getProjects(forceRefresh: true);
           state = AsyncValue.data(refreshed);
         } catch (e, st) {
-          logger.e('Failed to refresh after realtime event: $e');
+          debugPrint('Failed to refresh after realtime event: $e');
           state = AsyncValue.error(e, st);
         }
         break;

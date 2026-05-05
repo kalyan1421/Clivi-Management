@@ -135,45 +135,35 @@ class SuperAdminDashboard extends ConsumerWidget {
                   title: 'Stock',
                   description: 'Inventory management',
                   color: AppColors.secondary,
-                  onTap: () {
-                    // TODO: Navigate to stock
-                  },
+                  onTap: () => context.push('/projects'),
                 ),
                 _ModuleCard(
                   icon: Icons.architecture,
                   title: 'Blueprints',
                   description: 'Design documents',
                   color: AppColors.accent,
-                  onTap: () {
-                    // TODO: Navigate to blueprints
-                  },
+                  onTap: () => context.push('/projects'),
                 ),
                 _ModuleCard(
                   icon: Icons.receipt_long,
                   title: 'Bills',
                   description: 'Financial records',
                   color: AppColors.error,
-                  onTap: () {
-                    // TODO: Navigate to bills
-                  },
+                  onTap: () => context.push('/bills'),
                 ),
                 _ModuleCard(
                   icon: Icons.people,
                   title: 'Labour',
                   description: 'Workforce management',
                   color: AppColors.info,
-                  onTap: () {
-                    // TODO: Navigate to labour
-                  },
+                  onTap: () => context.push('/master/labour'),
                 ),
                 _ModuleCard(
                   icon: Icons.engineering,
                   title: 'Machinery',
                   description: 'Equipment tracking',
                   color: AppColors.warning,
-                  onTap: () {
-                    // TODO: Navigate to machinery
-                  },
+                  onTap: () => context.push('/master/machinery'),
                 ),
               ],
             ),

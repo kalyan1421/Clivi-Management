@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/widgets/error_widget.dart';
 import '../../inventory/providers/inventory_provider.dart';
 import '../../inventory/data/models/supplier_model.dart';
 import '../providers/vendor_analytics_provider.dart';
@@ -38,7 +39,10 @@ class VendorsListScreen extends ConsumerWidget {
       ),
       body: overviewAsync.when(
         data: (vendors) => vendors.isEmpty
-            ? const Center(child: Text('No vendor data yet'))
+            ? const EmptyStateWidget(
+                message: 'No vendors added yet.\nTap + to add your first vendor.',
+                icon: Icons.store_outlined,
+              )
             : ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: vendors.length,
@@ -78,7 +82,10 @@ class VendorsListScreen extends ConsumerWidget {
                 },
               ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => AppErrorWidget(
+          message: 'Failed to load vendors. Please try again.',
+          onRetry: () => ref.invalidate(vendorOverviewProvider),
+        ),
       ),
     );
   }
@@ -201,7 +208,16 @@ class VendorsListScreen extends ConsumerWidget {
                                 setState(() => isSaving = false);
                               }
                             },
-                      child: Text(existing == null ? 'Save' : 'Update'),
+                      child: isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(existing == null ? 'Save' : 'Update'),
                     ),
                   ],
                 ),

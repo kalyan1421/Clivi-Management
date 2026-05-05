@@ -82,6 +82,13 @@ class _CreateBillScreenState extends ConsumerState<CreateBillScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bill created successfully')),
         );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to create bill. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -220,16 +227,40 @@ class _CreateBillScreenState extends ConsumerState<CreateBillScreen> {
                           ],
                           onChanged: (val) {
                             if (val != null) {
-                              setState(() => _vendorName = val.isEmpty ? null : val);
+                              setState(
+                                () => _vendorName = val.isEmpty ? null : val,
+                              );
                             }
                           },
-                          onSaved: (val) => _vendorName = (val == null || val.isEmpty) ? null : val,
+                          onSaved: (val) =>
+                              _vendorName =
+                                  (val == null || val.isEmpty) ? null : val,
                         );
                       },
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(),
+                      loading: () => InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Vendor Name (Optional)',
+                          prefixIcon: Icon(Icons.store),
+                        ),
+                        child: const SizedBox(
+                          height: 20,
+                          child: LinearProgressIndicator(),
+                        ),
                       ),
-                      error: (err, stack) => Text('Failed to load vendors: $err'),
+                      error: (err, stack) => InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Vendor Name (Optional)',
+                          prefixIcon: const Icon(Icons.store),
+                          errorText: 'Could not load vendors',
+                          errorStyle: TextStyle(
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                        child: Text(
+                          'Tap to retry',
+                          style: TextStyle(color: Colors.orange.shade700),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
 

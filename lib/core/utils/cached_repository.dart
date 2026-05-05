@@ -42,8 +42,13 @@ class CachedRepository<T> {
     return value;
   }
 
-  /// Refresh data in background without blocking
-  void _refreshInBackground(String key, Future<T> Function() fetcher) async {
+  /// Refresh data in background without blocking the caller.
+  // ignore: discarded_futures
+  void _refreshInBackground(String key, Future<T> Function() fetcher) {
+    _doRefresh(key, fetcher);
+  }
+
+  Future<void> _doRefresh(String key, Future<T> Function() fetcher) async {
     try {
       final fresh = await fetcher();
       _put(key, fresh);
