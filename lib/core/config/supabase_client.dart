@@ -77,6 +77,9 @@ class SupabaseConfig {
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
         _connectionState = ConnectionState.paused;
+        // Close the realtime websocket while backgrounded to save
+        // battery + data. It's reopened on AppLifecycleState.resumed.
+        _pauseRealtime();
         break;
       case AppLifecycleState.detached:
         // Save any pending data
@@ -119,15 +122,16 @@ class SupabaseConfig {
     }
   }
 
-  // static void _pauseRealtime() {
-  //   try {
-  //     supabase.realtime.disconnect();
-  //     _isRealtimePaused = true;
-  //     logger.i('Realtime connection paused');
-  //   } catch (e) {
-  //     logger.w('Failed to pause realtime: $e');
-  //   }
-  // }
+  static void _pauseRealtime() {
+    if (_isRealtimePaused) return;
+    try {
+      supabase.realtime.disconnect();
+      _isRealtimePaused = true;
+      logger.i('Realtime connection paused (app backgrounded)');
+    } catch (e) {
+      logger.w('Failed to pause realtime: $e');
+    }
+  }
 
   static Future<void> _flushPendingOperations() async {
     try {

@@ -1,13 +1,14 @@
 {
-    "name": "Clivi Management",
+    "name": "Clivi · Civil Management",
     "short_name": "Clivi",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Clivi Management App with role-based access control",
+    "background_color": "#FAF8F3",
+    "theme_color": "#1E3A8A",
+    "description": "Construction project management for founders and site managers — projects, bills, materials, crew and machinery in one place.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "categories": ["business", "productivity"],
     "icons": [
         {
             "src": "icons/Icon-192.png",

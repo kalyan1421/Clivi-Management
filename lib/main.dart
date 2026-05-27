@@ -7,6 +7,7 @@ import 'core/config/supabase_client.dart';
 import 'core/providers/global_realtime_sync_provider.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/services/local_database_service.dart';
+import 'core/services/notification_service.dart';
 import 'core/services/offline_queue_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
@@ -32,6 +33,9 @@ void main() async {
     // Initialize offline write queue (must run after Hive is ready)
     await OfflineQueueService.init();
     logger.i('Offline queue initialized');
+
+    // Initialize in-app notification meta storage.
+    await NotificationService.init();
 
     // Initialize Supabase
     await SupabaseConfig.initialize();

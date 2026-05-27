@@ -154,10 +154,14 @@ class AdminDashboard extends ConsumerWidget {
               ),
             ),
             const Spacer(),
-            _HeaderIconButton(
-              icon: Icons.notifications_none_rounded,
-              tooltip: 'Notifications',
-              onTap: () => _showNotificationsPanel(context, ref),
+            Consumer(
+              builder: (context, ref, _) {
+                final unread = ref.watch(unreadNotificationCountProvider);
+                return _NotificationBell(
+                  unread: unread,
+                  onTap: () => _showNotificationsPanel(context, ref),
+                );
+              },
             ),
             const SizedBox(width: 10),
             _HeaderIconButton(
@@ -801,6 +805,9 @@ class AdminDashboard extends ConsumerWidget {
   }
 
   void _showNotificationsPanel(BuildContext context, WidgetRef ref) {
+    // Reading the panel = marking the visible activities as seen.
+    markNotificationsRead(ref);
+
     final activityState = ref.read(recentActivityProvider);
     showModalBottomSheet(
       context: context,
@@ -1484,6 +1491,81 @@ class _AttentionRow extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  Notification bell with unread badge
+// ─────────────────────────────────────────────────────────────────────
+
+class _NotificationBell extends StatelessWidget {
+  final int unread;
+  final VoidCallback onTap;
+
+  const _NotificationBell({required this.unread, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Notifications',
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Material(
+            color: AppColors.surface,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onTap,
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Icon(
+                  Icons.notifications_none_rounded,
+                  size: 19,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+          if (unread > 0)
+            Positioned(
+              top: -2,
+              right: -2,
+              child: Container(
+                constraints: const BoxConstraints(
+                  minWidth: 18,
+                  minHeight: 18,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.error,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: AppColors.scaffoldBackground,
+                    width: 2,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  unread > 99 ? '99+' : '$unread',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textOnPrimary,
+                    height: 1,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

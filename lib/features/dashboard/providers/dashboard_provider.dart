@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/supabase_client.dart';
 import '../../../core/services/local_database_service.dart';
+import '../../../core/services/notification_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../data/models/dashboard_models.dart';
 import '../data/repositories/dashboard_repository.dart';
@@ -280,6 +281,38 @@ final recentActivityProvider =
       final repository = ref.watch(dashboardRepositoryProvider);
       return RecentActivityNotifier(repository);
     });
+
+/// Bumps when notifications are marked read, so any badge provider that
+/// watches it recomputes.
+final notificationsReadTickProvider = StateProvider<int>((_) => 0);
+
+/// Unread count derived from [recentActivityProvider] + the per-user
+/// `last_seen_at` stored in [NotificationService].
+///
+/// Watching this provider gives a number for the bell badge. Caller is
+/// responsible for calling [markNotificationsRead] when the panel opens.
+final unreadNotificationCountProvider = Provider<int>((ref) {
+  // Re-evaluate whenever read state changes.
+  ref.watch(notificationsReadTickProvider);
+
+  final activity = ref.watch(recentActivityProvider);
+  final userId = ref.watch(authProvider).user?.id;
+  if (userId == null) return 0;
+
+  return NotificationService.instance.unreadCount(
+    userId,
+    activity.activities.map((a) => a.createdAt),
+  );
+});
+
+/// Mark every currently-visible activity as "seen" for the active user.
+/// Bumps [notificationsReadTickProvider] so badge consumers recompute.
+Future<void> markNotificationsRead(WidgetRef ref) async {
+  final userId = ref.read(authProvider).user?.id;
+  if (userId == null) return;
+  await NotificationService.instance.markAllRead(userId);
+  ref.read(notificationsReadTickProvider.notifier).state++;
+}
 
 
 /// Active projects state
