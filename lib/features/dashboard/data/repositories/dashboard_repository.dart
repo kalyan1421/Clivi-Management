@@ -60,8 +60,9 @@ class DashboardRepository {
     }
   }
 
-  /// Fetch active projects summary for dashboard cards
-  /// [limit] - Number of projects to fetch (default: 10)
+  /// Fetch active projects summary for dashboard cards.
+  /// Tries the RPC function first; falls back to a direct query if the RPC
+  /// is unavailable (e.g. function not yet deployed or returns empty).
   Future<List<ProjectSummary>> getActiveProjectsSummary({int limit = 10}) async {
     try {
       final response = await _client.rpc(
@@ -70,17 +71,40 @@ class DashboardRepository {
       );
 
       final list = response as List<dynamic>? ?? [];
-      if (list.isEmpty) {
-        return [];
+      if (list.isNotEmpty) {
+        return list
+            .map<ProjectSummary>((json) => ProjectSummary.fromJson(json as Map<String, dynamic>))
+            .toList();
       }
 
-      return list
-          .map<ProjectSummary>((json) => ProjectSummary.fromJson(json as Map<String, dynamic>))
-          .toList();
+      // RPC returned empty — fall back to direct query so the dashboard list
+      // stays in sync with the stats counter.
+      return _getActiveProjectsDirect(limit: limit);
     } catch (e) {
-      logger.e('Failed to fetch active projects: $e');
-      throw DatabaseException('Failed to load projects');
+      logger.w('get_active_projects_summary RPC failed ($e), trying direct query');
+      try {
+        return _getActiveProjectsDirect(limit: limit);
+      } catch (e2) {
+        logger.e('Direct active-projects query also failed: $e2');
+        throw DatabaseException('Failed to load projects');
+      }
     }
+  }
+
+  /// Direct query fallback for active projects.
+  Future<List<ProjectSummary>> _getActiveProjectsDirect({int limit = 10}) async {
+    final response = await _client
+        .from('projects')
+        .select('id, name, project_type, status, progress, start_date, end_date, location')
+        .neq('status', 'completed')
+        .neq('status', 'cancelled')
+        .order('created_at', ascending: false)
+        .limit(limit);
+
+    final list = response as List<dynamic>? ?? [];
+    return list
+        .map<ProjectSummary>((json) => ProjectSummary.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   /// Fetch active assigned projects summary for a specific user

@@ -30,7 +30,7 @@ class _MaterialsTabScreenState extends ConsumerState<MaterialsTabScreen> {
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: const Text('Material Details'),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),

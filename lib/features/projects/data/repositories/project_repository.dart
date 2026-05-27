@@ -2,6 +2,7 @@ import 'package:clivi_management/core/utils/cached_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_client.dart';
 import '../../../../core/errors/app_exceptions.dart';
+import '../../../../core/services/cache_registry.dart';
 import '../../../../core/services/local_database_service.dart';
 import '../models/project_model.dart';
 
@@ -12,7 +13,10 @@ class ProjectRepository {
   final CachedRepository<List<ProjectModel>> _memoryCache = CachedRepository();
   final LocalDatabaseService _localDb = LocalDatabaseService.instance;
 
-  ProjectRepository({SupabaseClient? client}) : _client = client ?? supabase;
+  ProjectRepository({SupabaseClient? client}) : _client = client ?? supabase {
+    // Wipe per-user cache on sign-out.
+    CacheRegistry.instance.register(_memoryCache.invalidateAll);
+  }
 
   // ============================================================
   // PROJECT CRUD OPERATIONS

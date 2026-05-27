@@ -42,6 +42,8 @@ import '../../features/machinery/screens/machinery_master_screen.dart';
 import '../../features/labour/screens/labour_master_screen.dart';
 import '../../features/labour/screens/labour_tab_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/projects/screens/project_site_photos_screen.dart';
+import 'route_param_guard.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -238,10 +240,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/projects/:id',
             name: 'project-detail',
-            builder: (context, state) {
-              final projectId = state.pathParameters['id']!;
-              return ProjectDetailScreen(projectId: projectId);
-            },
+            builder: (context, state) => RouteParamGuard.uuid(
+              state.pathParameters['id'],
+              (id) => ProjectDetailScreen(projectId: id),
+              label: 'project',
+            ),
             routes: [
               GoRoute(
                 path: 'blueprints',
@@ -436,6 +439,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) {
                   final projectId = state.pathParameters['id'];
                   return ReportsScreen(projectId: projectId);
+                },
+              ),
+              GoRoute(
+                path: 'photos',
+                name: 'project-photos',
+                builder: (context, state) {
+                  final projectId = state.pathParameters['id']!;
+                  return ProjectSitePhotosScreen(projectId: projectId);
                 },
               ),
             ],

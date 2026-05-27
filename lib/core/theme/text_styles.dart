@@ -2,243 +2,222 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Application text styles
-/// Uses Google Fonts (Poppins for headings, Inter for body text)
+/// Editorial type system.
+///
+/// - **Display / Headlines** use Fraunces — a variable serif with editorial
+///   character. Reserved for hero moments (welcome, page titles, key metrics).
+/// - **Titles / UI** use Plus Jakarta Sans — a refined modern grotesk that
+///   reads premium on cream surfaces.
+/// - **Body** uses Inter — high-legibility grotesk, ideal for long copy.
 class AppTextStyles {
-  // Private constructor to prevent instantiation
   AppTextStyles._();
 
-  // ============================================================
-  // FONT FAMILIES
-  // ============================================================
+  // ── Font families ──────────────────────────────────────────────────
 
-  /// Primary font family for headings
-  static String get headingFontFamily => GoogleFonts.poppins().fontFamily!;
+  static String get displayFontFamily =>
+      GoogleFonts.fraunces().fontFamily!;
 
-  /// Secondary font family for body text
+  /// Primary font family for headings (alias kept for backwards compat).
+  static String get headingFontFamily =>
+      GoogleFonts.plusJakartaSans().fontFamily!;
+
+  static String get titleFontFamily =>
+      GoogleFonts.plusJakartaSans().fontFamily!;
+
   static String get bodyFontFamily => GoogleFonts.inter().fontFamily!;
 
-  // ============================================================
-  // DISPLAY STYLES (Large titles)
-  // ============================================================
+  // ── Display (editorial serif, hero moments only) ──────────────────
 
-  /// Display Large - 57px Bold
-  static TextStyle get displayLarge => GoogleFonts.poppins(
-    fontSize: 57,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-    letterSpacing: -0.25,
-    height: 1.12,
-  );
+  static TextStyle get displayLarge => GoogleFonts.fraunces(
+        fontSize: 52,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+        letterSpacing: -1.0,
+        height: 1.05,
+      );
 
-  /// Display Medium - 45px Bold
-  static TextStyle get displayMedium => GoogleFonts.poppins(
-    fontSize: 45,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-    height: 1.16,
-  );
+  static TextStyle get displayMedium => GoogleFonts.fraunces(
+        fontSize: 42,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.8,
+        height: 1.08,
+      );
 
-  /// Display Small - 36px Bold
-  static TextStyle get displaySmall => GoogleFonts.poppins(
-    fontSize: 36,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-    height: 1.22,
-  );
+  static TextStyle get displaySmall => GoogleFonts.fraunces(
+        fontSize: 34,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.6,
+        height: 1.1,
+      );
 
-  // ============================================================
-  // HEADLINE STYLES (Section titles)
-  // ============================================================
+  // ── Headlines (section titles, big card titles) ───────────────────
 
-  /// Headline Large - 32px SemiBold
-  static TextStyle get headlineLarge => GoogleFonts.poppins(
-    fontSize: 32,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-    height: 1.25,
-  );
+  static TextStyle get headlineLarge => GoogleFonts.fraunces(
+        fontSize: 28,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.4,
+        height: 1.18,
+      );
 
-  /// Headline Medium - 28px SemiBold
-  static TextStyle get headlineMedium => GoogleFonts.poppins(
-    fontSize: 28,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-    height: 1.29,
-  );
+  static TextStyle get headlineMedium => GoogleFonts.plusJakartaSans(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.3,
+        height: 1.22,
+      );
 
-  /// Headline Small - 24px SemiBold
-  static TextStyle get headlineSmall => GoogleFonts.poppins(
-    fontSize: 24,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-    height: 1.33,
-  );
+  static TextStyle get headlineSmall => GoogleFonts.plusJakartaSans(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.2,
+        height: 1.28,
+      );
 
-  // ============================================================
-  // TITLE STYLES (Card titles, list items)
-  // ============================================================
+  // ── Titles (card titles, list items, sheet titles) ────────────────
 
-  /// Title Large - 22px Medium
-  static TextStyle get titleLarge => GoogleFonts.poppins(
-    fontSize: 22,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textPrimary,
-    height: 1.27,
-  );
+  static TextStyle get titleLarge => GoogleFonts.plusJakartaSans(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.1,
+        height: 1.3,
+      );
 
-  /// Title Medium - 16px Medium
-  static TextStyle get titleMedium => GoogleFonts.poppins(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textPrimary,
-    letterSpacing: 0.15,
-    height: 1.5,
-  );
+  static TextStyle get titleMedium => GoogleFonts.plusJakartaSans(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        letterSpacing: 0,
+        height: 1.4,
+      );
 
-  /// Title Small - 14px Medium
-  static TextStyle get titleSmall => GoogleFonts.poppins(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textPrimary,
-    letterSpacing: 0.1,
-    height: 1.43,
-  );
+  static TextStyle get titleSmall => GoogleFonts.plusJakartaSans(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        letterSpacing: 0,
+        height: 1.4,
+      );
 
-  // ============================================================
-  // BODY STYLES (Paragraph text)
-  // ============================================================
+  // ── Body (paragraph text) ─────────────────────────────────────────
 
-  /// Body Large - 16px Regular
   static TextStyle get bodyLarge => GoogleFonts.inter(
-    fontSize: 16,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textPrimary,
-    letterSpacing: 0.15,
-    height: 1.5,
-  );
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textPrimary,
+        letterSpacing: 0,
+        height: 1.55,
+      );
 
-  /// Body Medium - 14px Regular
   static TextStyle get bodyMedium => GoogleFonts.inter(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textPrimary,
-    letterSpacing: 0.1,
-    height: 1.43,
-  );
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textPrimary,
+        letterSpacing: 0,
+        height: 1.5,
+      );
 
-  /// Body Small - 12px Regular
   static TextStyle get bodySmall => GoogleFonts.inter(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
-    letterSpacing: 0.2,
-    height: 1.33,
-  );
+        fontSize: 12.5,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textSecondary,
+        letterSpacing: 0.05,
+        height: 1.45,
+      );
 
-  // ============================================================
-  // LABEL STYLES (Buttons, chips, form labels)
-  // ============================================================
+  // ── Labels (buttons, chips, form labels) ──────────────────────────
 
-  /// Label Large - 14px Medium
-  static TextStyle get labelLarge => GoogleFonts.inter(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textPrimary,
-    letterSpacing: 0.05,
-    height: 1.43,
-  );
+  static TextStyle get labelLarge => GoogleFonts.plusJakartaSans(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        letterSpacing: 0.1,
+        height: 1.4,
+      );
 
-  /// Label Medium - 12px Medium
-  static TextStyle get labelMedium => GoogleFonts.inter(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textPrimary,
-    letterSpacing: 0.5,
-    height: 1.33,
-  );
+  static TextStyle get labelMedium => GoogleFonts.plusJakartaSans(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        letterSpacing: 0.2,
+        height: 1.35,
+      );
 
-  /// Label Small - 11px Medium
-  static TextStyle get labelSmall => GoogleFonts.inter(
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary,
-    letterSpacing: 0.3,
-    height: 1.45,
-  );
+  static TextStyle get labelSmall => GoogleFonts.plusJakartaSans(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textSecondary,
+        letterSpacing: 0.4,
+        height: 1.45,
+      );
 
-  // ============================================================
-  // CUSTOM STYLES
-  // ============================================================
+  // ── Custom ─────────────────────────────────────────────────────────
 
-  /// Button text style
-  static TextStyle get button => GoogleFonts.inter(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.25,
-    height: 1.43,
-  );
+  static TextStyle get button => GoogleFonts.plusJakartaSans(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+        height: 1.4,
+      );
 
-  /// Caption text style
   static TextStyle get caption => GoogleFonts.inter(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
-    letterSpacing: 0.4,
-    height: 1.33,
-  );
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textSecondary,
+        letterSpacing: 0.1,
+        height: 1.4,
+      );
 
-  /// Overline text style
-  static TextStyle get overline => GoogleFonts.inter(
-    fontSize: 10,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary,
-    letterSpacing: 1.5,
-    height: 1.6,
-  );
+  /// All-caps editorial overline (e.g. ASSIGNED · PROJECTS · etc.)
+  static TextStyle get overline => GoogleFonts.plusJakartaSans(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textSecondary,
+        letterSpacing: 1.6,
+        height: 1.5,
+      );
 
-  /// Error text style
   static TextStyle get error => GoogleFonts.inter(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    color: AppColors.error,
-    letterSpacing: 0.4,
-    height: 1.33,
-  );
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        color: AppColors.error,
+        letterSpacing: 0.1,
+        height: 1.4,
+      );
 
-  /// Link text style
-  static TextStyle get link => GoogleFonts.inter(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    color: AppColors.primary,
-    letterSpacing: 0.25,
-    decoration: TextDecoration.underline,
-    height: 1.43,
-  );
+  static TextStyle get link => GoogleFonts.plusJakartaSans(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.primary,
+        letterSpacing: 0,
+        decoration: TextDecoration.underline,
+        decorationColor: AppColors.primary,
+        height: 1.4,
+      );
 
-  /// Price/Currency text style
-  static TextStyle get price => GoogleFonts.inter(
-    fontSize: 18,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary,
-    letterSpacing: -0.5,
-    height: 1.33,
-  );
+  static TextStyle get price => GoogleFonts.plusJakartaSans(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.4,
+        height: 1.25,
+      );
 
-  /// Badge text style
-  static TextStyle get badge => GoogleFonts.inter(
-    fontSize: 10,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textOnPrimary,
-    letterSpacing: 0.5,
-    height: 1.2,
-  );
+  static TextStyle get badge => GoogleFonts.plusJakartaSans(
+        fontSize: 10.5,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textOnPrimary,
+        letterSpacing: 0.6,
+        height: 1.2,
+      );
 
-  // ============================================================
-  // TEXT THEME
-  // ============================================================
+  // ── Material TextTheme ────────────────────────────────────────────
 
-  /// Cached TextTheme for Material Theme (avoids re-creating on every access)
   static final TextTheme textTheme = TextTheme(
     displayLarge: displayLarge,
     displayMedium: displayMedium,
@@ -257,37 +236,23 @@ class AppTextStyles {
     labelSmall: labelSmall,
   );
 
-  // ============================================================
-  // HELPER METHODS
-  // ============================================================
+  // ── Helpers ────────────────────────────────────────────────────────
 
-  /// Apply color to any text style
-  static TextStyle withColor(TextStyle style, Color color) {
-    return style.copyWith(color: color);
-  }
+  static TextStyle withColor(TextStyle style, Color color) =>
+      style.copyWith(color: color);
 
-  /// Apply weight to any text style
-  static TextStyle withWeight(TextStyle style, FontWeight weight) {
-    return style.copyWith(fontWeight: weight);
-  }
+  static TextStyle withWeight(TextStyle style, FontWeight weight) =>
+      style.copyWith(fontWeight: weight);
 
-  /// Make text bold
-  static TextStyle bold(TextStyle style) {
-    return style.copyWith(fontWeight: FontWeight.bold);
-  }
+  static TextStyle bold(TextStyle style) =>
+      style.copyWith(fontWeight: FontWeight.w700);
 
-  /// Make text semi-bold
-  static TextStyle semiBold(TextStyle style) {
-    return style.copyWith(fontWeight: FontWeight.w600);
-  }
+  static TextStyle semiBold(TextStyle style) =>
+      style.copyWith(fontWeight: FontWeight.w600);
 
-  /// Apply secondary color
-  static TextStyle secondary(TextStyle style) {
-    return style.copyWith(color: AppColors.textSecondary);
-  }
+  static TextStyle secondary(TextStyle style) =>
+      style.copyWith(color: AppColors.textSecondary);
 
-  /// Apply primary color
-  static TextStyle primary(TextStyle style) {
-    return style.copyWith(color: AppColors.primary);
-  }
+  static TextStyle primary(TextStyle style) =>
+      style.copyWith(color: AppColors.primary);
 }

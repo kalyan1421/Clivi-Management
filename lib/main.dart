@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/config/env.dart';
 import 'core/config/supabase_client.dart';
 import 'core/providers/global_realtime_sync_provider.dart';
+import 'core/services/connectivity_service.dart';
 import 'core/services/local_database_service.dart';
 import 'core/services/offline_queue_service.dart';
 import 'core/theme/app_theme.dart';
@@ -34,6 +35,9 @@ void main() async {
 
     // Initialize Supabase
     await SupabaseConfig.initialize();
+
+    // Watch connectivity → flush offline queue on reconnect.
+    await ConnectivityService.instance.init();
 
     // Pre-load Google Fonts to prevent runtime download lag
     GoogleFonts.pendingFonts([

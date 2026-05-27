@@ -386,18 +386,42 @@ class BillRepository {
     }
   }
 
-  /// Stream bills for real-time updates
-  Stream<List<BillModel>> streamBillsByProject(String projectId) {
+  /// Stream bills for a single project.
+  ///
+  /// NOTE: Supabase `.stream()` does not support PostgREST joins, so
+  /// realtime payloads arrive with FK columns only (no creator/raiser
+  /// names). The combined provider (`billsCombinedProvider`) overlays
+  /// streamed updates on top of the initially-joined fetch, and
+  /// `_mergeBillSnapshot` preserves the joined names from the fetch.
+  Stream<List<BillModel>> streamBillsByProject(
+    String projectId, {
+    int limit = 200,
+  }) {
     return _client
         .from('bills')
         .stream(primaryKey: ['id'])
         .eq('project_id', projectId)
         .order('created_at', ascending: false)
+        .limit(limit)
         .map((data) => data.map((json) => BillModel.fromJson(json)).toList());
   }
 
+  /// Stream bills for the dashboard with a hard cap.
+  ///
+  /// On a multi-project deployment the bills table can grow into the
+  /// thousands; without a `limit` Supabase realtime would replay the
+  /// entire table on every event, causing OOM and battery drain.
+  ///
+  /// Implications:
+  /// - The cap means very old bills won't surface here. That's OK —
+  ///   the dashboard shows recent activity only. Full history lives
+  ///   on `/bills` (paginated) and per-project detail screens.
+  /// - Joined fields (creator name, etc.) are not available on stream
+  ///   events (Supabase limitation). Use the combined provider for the
+  ///   merged view.
   Stream<List<BillModel>> streamBillsForDashboard({
     bool onlyAssignedProjects = false,
+    int limit = 200,
   }) async* {
     final userId = _client.auth.currentUser?.id;
     if (onlyAssignedProjects && userId == null) {
@@ -424,6 +448,7 @@ class BillRepository {
         .from('bills')
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
+        .limit(limit)
         .map((data) => data.map((json) => BillModel.fromJson(json)).toList())
         .map((items) {
           if (!onlyAssignedProjects || userId == null) {

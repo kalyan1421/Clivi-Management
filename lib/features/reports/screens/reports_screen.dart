@@ -826,7 +826,7 @@ class _VendorFilter extends StatelessWidget {
             borderSide: const BorderSide(color: AppColors.border),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.surface,
         ),
         style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
         items: [

@@ -120,7 +120,7 @@ class _BlueprintFilesScreenState extends ConsumerState<BlueprintFilesScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -160,7 +160,7 @@ class _BlueprintFilesScreenState extends ConsumerState<BlueprintFilesScreen> {
                   borderSide: BorderSide(color: AppColors.borderDark),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.surface,
               ),
               onChanged: (value) {
                 setState(() {

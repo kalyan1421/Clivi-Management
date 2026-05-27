@@ -607,7 +607,12 @@ class _SupplierChartCard extends StatelessWidget {
   }
 
   String _axisLabel(double value) {
-    if (metric == VendorChartMetric.amount) return '${(value / 1000).round()}k';
+    if (metric == VendorChartMetric.amount) {
+      if (value >= 10000000) return '₹${(value / 10000000).toStringAsFixed(1)}Cr';
+      if (value >= 100000) return '₹${(value / 100000).toStringAsFixed(1)}L';
+      if (value >= 1000) return '₹${(value / 1000).toStringAsFixed(1)}K';
+      return '₹${value.toStringAsFixed(0)}';
+    }
     return '${value.round()}';
   }
 }
@@ -1151,10 +1156,8 @@ String _compactCurrency(double value) {
   if (value.abs() >= 100000) {
     return '₹${(value / 100000).toStringAsFixed(1)}L';
   }
-  if (value.abs() >= 10000) {
-    return '₹${(value / 1000).toStringAsFixed(0)}K';
-  }
-  return '₹${value.toStringAsFixed(0)}';
+  // Show exact amount for values below 1 lakh to avoid misleading abbreviations
+  return '₹${NumberFormat('#,##0').format(value.round())}';
 }
 
 String _formatQuantity(double quantity) {

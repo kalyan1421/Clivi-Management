@@ -105,9 +105,9 @@ class _SiteManagerManagementScreenState
     final siteManagersAsync = ref.watch(siteManagersProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         centerTitle: false,
         leading: IconButton(

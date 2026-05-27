@@ -52,7 +52,7 @@ class _ProjectOperationsScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),

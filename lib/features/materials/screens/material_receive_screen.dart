@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clivi_management/core/config/supabase_client.dart' show logger;
@@ -5,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/master_data_provider.dart';
+import '../providers/repository_providers.dart' show receiptsRepositoryProvider;
 import '../providers/stock_provider.dart';
 import '../data/models/material_grade_model.dart';
 import '../../inventory/data/models/supplier_model.dart';
@@ -27,6 +31,10 @@ class MaterialEntryForm {
   final TextEditingController unitController = TextEditingController();
   final TextEditingController billAmountController = TextEditingController();
   String paymentType = 'Cash'; // Default
+
+  // Delivery receipt / invoice attachment
+  List<int>? receiptBytes;
+  String? receiptName;
 
   // Validation helper
   bool isValid() {
@@ -137,12 +145,35 @@ class _MaterialReceiveScreenState extends ConsumerState<MaterialReceiveScreen> {
 
     try {
       final stockRepo = ref.read(stockRepositoryProvider);
+      final receiptsRepo = ref.read(receiptsRepositoryProvider);
 
       for (final entry in _entries) {
-        // IMPORTANT: Send null grade if user didn’t select
+        // IMPORTANT: Send null grade if user didn't select
         final grade = (entry.selectedGrade?.gradeName.trim().isEmpty ?? true)
             ? null
             : entry.selectedGrade!.gradeName.trim();
+
+        // Upload delivery receipt/invoice if provided
+        String? receiptUrl;
+        if (entry.receiptBytes != null && entry.receiptName != null) {
+          try {
+            final ext = entry.receiptName!.toLowerCase();
+            final mimeType = ext.endsWith('.pdf')
+                ? 'application/pdf'
+                : ext.endsWith('.png')
+                    ? 'image/png'
+                    : 'image/jpeg';
+            receiptUrl = await receiptsRepo.uploadAttachment(
+              projectId: pid,
+              fileName: entry.receiptName!,
+              fileBytes: Uint8List.fromList(entry.receiptBytes!),
+              mimeType: mimeType,
+            );
+          } catch (e) {
+            logger.w('Receipt upload failed: $e');
+            // Don't block submission; receipt is optional
+          }
+        }
 
         await stockRepo.logMaterialInward(
           projectId: pid,
@@ -153,6 +184,7 @@ class _MaterialReceiveScreenState extends ConsumerState<MaterialReceiveScreen> {
           supplierId: entry.selectedSupplier!.id,
           billAmount: double.parse(entry.billAmountController.text),
           paymentType: entry.paymentType,
+          receiptUrl: receiptUrl,
           notes: null, // notes is not available in the form
         );
       }
@@ -664,19 +696,24 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
                   error: (e, _) => Text('Error loading suppliers: $e'),
                   data: (suppliers) {
                     // Filter suppliers by the selected material name/category.
-                    // A supplier with no category or matching category is shown.
+                    // Only show suppliers whose category matches the selected
+                    // material (or all suppliers when no material is chosen).
+                    // Fallback: if no categorized supplier matches, show all so
+                    // the form remains usable with uncategorized data.
                     final materialName = entry.selectedMaterial?.name.toLowerCase();
-                    final filtered = materialName == null
-                        ? suppliers
-                        : suppliers.where((s) {
-                            if (s.category == null) return true;
-                            return s.category!.toLowerCase().contains(
-                                  materialName,
-                                ) ||
-                                materialName.contains(
-                                  s.category!.toLowerCase(),
-                                );
-                          }).toList();
+                    List<SupplierModel> filtered;
+                    if (materialName == null) {
+                      filtered = suppliers;
+                    } else {
+                      // Strict match: category matches the material
+                      final strictMatch = suppliers.where((s) {
+                        if (s.category == null) return false;
+                        return s.category!.toLowerCase().contains(materialName) ||
+                            materialName.contains(s.category!.toLowerCase());
+                      }).toList();
+                      // Fallback to all if no categorical match found
+                      filtered = strictMatch.isNotEmpty ? strictMatch : suppliers;
+                    }
 
                     // Reset selection if current supplier is no longer in list.
                     if (entry.selectedSupplier != null &&
@@ -778,6 +815,88 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
               controller: entry.billAmountController,
               label: 'Bill amount',
               // prefixText is handled internally by CurrencyTextField with prefixIcon
+            ),
+
+            const SizedBox(height: 16),
+
+            // Delivery receipt / invoice photo (optional)
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () async {
+                final result = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+                  withData: true,
+                );
+                if (result != null && result.files.single.bytes != null) {
+                  setState(() {
+                    entry.receiptBytes = result.files.single.bytes;
+                    entry.receiptName = result.files.single.name;
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: entry.receiptName != null
+                        ? AppColors.primary
+                        : Colors.grey.shade300,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  color: entry.receiptName != null
+                      ? AppColors.primary.withValues(alpha: 0.05)
+                      : Colors.grey.shade50,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      entry.receiptName != null
+                          ? Icons.check_circle_outline
+                          : Icons.receipt_long_outlined,
+                      size: 20,
+                      color: entry.receiptName != null
+                          ? AppColors.primary
+                          : Colors.grey,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: entry.receiptName != null
+                          ? Text(
+                              entry.receiptName!,
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            )
+                          : Text(
+                              'Attach delivery receipt / invoice (optional)',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 13,
+                              ),
+                            ),
+                    ),
+                    if (entry.receiptName != null)
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          entry.receiptBytes = null;
+                          entry.receiptName = null;
+                        }),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: Colors.grey,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

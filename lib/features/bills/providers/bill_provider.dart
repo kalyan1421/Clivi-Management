@@ -15,8 +15,10 @@ final billRepositoryProvider = Provider<BillRepository>((ref) {
 // STREAMS (READ)
 // ============================================================
 
-/// Real-time stream of bills for a specific project
-final billsStreamProvider = StreamProvider.family<List<BillModel>, String>((
+/// Real-time stream of bills for a specific project (autoDispose to
+/// release the subscription when we navigate away).
+final billsStreamProvider =
+    StreamProvider.autoDispose.family<List<BillModel>, String>((
   ref,
   projectId,
 ) {
@@ -24,8 +26,9 @@ final billsStreamProvider = StreamProvider.family<List<BillModel>, String>((
   return repository.streamBillsByProject(projectId);
 });
 
-/// Baseline fetch of bills (non-realtime)
-final billsProvider = FutureProvider.family<List<BillModel>, String>((
+/// Baseline fetch of bills (non-realtime).
+final billsProvider =
+    FutureProvider.autoDispose.family<List<BillModel>, String>((
   ref,
   projectId,
 ) {
@@ -285,6 +288,7 @@ BillModel _mergeBillSnapshot(BillModel fetched, BillModel streamed) {
   return streamed.copyWith(
     projectName: streamed.projectName ?? fetched.projectName,
     createdByName: streamed.createdByName ?? fetched.createdByName,
+    raisedByName: streamed.raisedByName ?? fetched.raisedByName,
     approvedByName: streamed.approvedByName ?? fetched.approvedByName,
   );
 }

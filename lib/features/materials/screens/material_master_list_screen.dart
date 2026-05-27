@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/error_widget.dart';
 
 import '../../../../core/widgets/custom_text_field.dart';
 import '../providers/master_data_provider.dart';
@@ -50,7 +51,10 @@ class MaterialMasterListScreen extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) => Center(child: Text('Error: $err')),
+            error: (err, stack) => AppErrorWidget(
+              message: err.toString(),
+              onRetry: () => ref.invalidate(allMaterialsProvider),
+            ),
           ),
     );
   }
@@ -191,6 +195,7 @@ class _MaterialItemCardState extends ConsumerState<_MaterialItemCard> {
                       children: grades.map((g) {
                         return InkWell(
                           borderRadius: BorderRadius.circular(8),
+                          onTap: () => _showGradeOptions(context, g),
                           onLongPress: () => _showGradeOptions(context, g),
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 8),

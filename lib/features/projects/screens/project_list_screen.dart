@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/responsive.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -95,45 +97,68 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title row
+        // Editorial overline + count
         Row(
           children: [
             Text(
-              'Projects',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+              'PORTFOLIO',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.secondaryDark,
+                letterSpacing: 2.2,
+              ),
             ),
             const SizedBox(width: 10),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${state.projects.length}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
-                    ),
+              width: 5,
+              height: 5,
+              decoration: const BoxDecoration(
+                color: AppColors.borderDark,
+                shape: BoxShape.circle,
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 10),
+            Text(
+              '${state.projects.length} active',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Serif title + actions
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                'Projects',
+                style: GoogleFonts.fraunces(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -1.0,
+                  height: 1.05,
+                ),
+              ),
+            ),
             if (isAdmin) ...[
               Material(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                color: AppColors.surface,
+                shape: const CircleBorder(),
                 child: InkWell(
                   onTap: () => _showFilterSheet(context),
-                  borderRadius: BorderRadius.circular(10),
+                  customBorder: const CircleBorder(),
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
+                      shape: BoxShape.circle,
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Icon(
@@ -141,7 +166,7 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
                       size: 18,
                       color: state.statusFilter != null
                           ? AppColors.primary
-                          : AppColors.textSecondary,
+                          : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -149,39 +174,25 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
               const SizedBox(width: 10),
               Material(
                 color: AppColors.primary,
-                borderRadius: BorderRadius.circular(10),
+                shape: const CircleBorder(),
                 child: InkWell(
                   onTap: () => context.push('/projects/create'),
-                  borderRadius: BorderRadius.circular(10),
+                  customBorder: const CircleBorder(),
                   child: Container(
-                    height: 40,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.add_rounded,
-                            size: 18, color: Colors.white),
-                        if (r.isDesktop) ...[
-                          const SizedBox(width: 6),
-                          const Text(
-                            'New Project',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ],
+                    width: 42,
+                    height: 42,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
                     ),
+                    child: const Icon(Icons.add_rounded,
+                        size: 20, color: AppColors.textOnPrimary),
                   ),
                 ),
               ),
             ],
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
         // Search + active filter
         Row(
@@ -225,7 +236,7 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
                           const BorderSide(color: AppColors.primary, width: 2),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.surface,
                   ),
                   onChanged: (value) {
                     setState(() {});
@@ -384,145 +395,187 @@ class _ProjectCard extends StatelessWidget {
     final statusColor = project.status.color;
     final progressColor = _getProgressColor(project.progress);
 
+    final typeColor = project.projectType?.color ?? AppColors.primary;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: AppColors.borderDark.withValues(alpha: 0.5)),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top row: status + type badges
+                // ── Top: monogram + title + budget ──
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ProjectMonogram(
+                      name: project.name,
+                      color: typeColor,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            project.name,
+                            style: GoogleFonts.fraunces(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.4,
+                              height: 1.18,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (project.clientName != null &&
+                              project.clientName!.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              project.clientName!,
+                              style: GoogleFonts.inter(
+                                fontSize: 12.5,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (project.budget != null) ...[
+                      const SizedBox(width: 12),
+                      Text(
+                        CurrencyFormatter.formatIndian(project.budget!),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.2,
+                          height: 1.4,
+                          fontFeatures: const [
+                            FontFeature.tabularFigures(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+
+                const SizedBox(height: 14),
+
+                // ── Status + type ──
                 Row(
                   children: [
-                    _Badge(
+                    _StatusPill(
                       label: project.status.displayName,
                       color: statusColor,
                     ),
                     if (project.projectType != null) ...[
                       const SizedBox(width: 8),
-                      _Badge(
-                        label: project.projectType!.value,
-                        color: project.projectType!.color,
-                        outlined: true,
+                      Text(
+                        '·',
+                        style: TextStyle(
+                          color: AppColors.borderDark,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        project.projectType!.value.toUpperCase(),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary,
+                          letterSpacing: 1.6,
+                        ),
                       ),
                     ],
-                    const Spacer(),
-                    if (project.budget != null)
-                      Text(
-                        '₹${_formatBudget(project.budget!)}',
-                        style:
-                            Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                      ),
                   ],
                 ),
-                const SizedBox(height: 12),
-
-                // Name
-                Text(
-                  project.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (project.clientName != null &&
-                    project.clientName!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    project.clientName!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
 
                 const SizedBox(height: 14),
 
                 // Meta row
-                Row(
+                Wrap(
+                  spacing: 14,
+                  runSpacing: 4,
                   children: [
-                    if (project.location != null) ...[
-                      Icon(Icons.location_on_outlined,
-                          size: 14, color: AppColors.textHint),
-                      const SizedBox(width: 3),
-                      Flexible(
-                        child: Text(
-                          project.location!,
-                          style: TextStyle(
-                              fontSize: 12, color: AppColors.textHint),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                    if (project.location != null)
+                      _MetaItem(
+                        icon: Icons.location_on_outlined,
+                        text: project.location!,
                       ),
-                      const SizedBox(width: 12),
-                    ],
-                    if (project.startDate != null) ...[
-                      Icon(Icons.calendar_today_outlined,
-                          size: 12, color: AppColors.textHint),
-                      const SizedBox(width: 3),
-                      Text(
-                        DateFormat('MMM d, yy').format(project.startDate!),
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textHint),
+                    if (project.startDate != null)
+                      _MetaItem(
+                        icon: Icons.calendar_today_outlined,
+                        text: DateFormat('MMM d, yyyy')
+                            .format(project.startDate!),
                       ),
-                    ],
                     if (project.assignments != null &&
-                        project.assignments!.isNotEmpty) ...[
-                      const Spacer(),
-                      Icon(Icons.people_outline_rounded,
-                          size: 14, color: AppColors.textHint),
-                      const SizedBox(width: 3),
-                      Text(
-                        '${project.assignments!.length}',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textHint),
+                        project.assignments!.isNotEmpty)
+                      _MetaItem(
+                        icon: Icons.people_outline_rounded,
+                        text: '${project.assignments!.length} '
+                            '${project.assignments!.length == 1 ? "manager" : "managers"}',
                       ),
-                    ],
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
+
+                // Hairline divider
+                Container(
+                  height: 1,
+                  color: AppColors.borderLight,
+                ),
+                const SizedBox(height: 14),
 
                 // Progress
                 Row(
                   children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: project.progress / 100,
-                          backgroundColor: AppColors.border,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(progressColor),
-                          minHeight: 4,
-                        ),
+                    Text(
+                      'Progress',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textHint,
+                        letterSpacing: 0.6,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const Spacer(),
                     Text(
                       '${project.progress}%',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: progressColor,
-                          ),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: progressColor,
+                        letterSpacing: -0.1,
+                      ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(
+                    value: project.progress / 100,
+                    backgroundColor: AppColors.borderLight,
+                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                    minHeight: 3,
+                  ),
                 ),
               ],
             ),
@@ -530,17 +583,6 @@ class _ProjectCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatBudget(double budget) {
-    if (budget >= 10000000) {
-      return '${(budget / 10000000).toStringAsFixed(1)}Cr';
-    } else if (budget >= 100000) {
-      return '${(budget / 100000).toStringAsFixed(1)}L';
-    } else if (budget >= 1000) {
-      return '${(budget / 1000).toStringAsFixed(1)}K';
-    }
-    return budget.toStringAsFixed(0);
   }
 
   Color _getProgressColor(int progress) {
@@ -551,38 +593,107 @@ class _ProjectCard extends StatelessWidget {
   }
 }
 
-// ── Badge ──
+// ── Project Monogram ──
+//
+// A square tile with a serif initial — the recognition anchor for a
+// project card when no cover photo is available.
 
-class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.label,
-    required this.color,
-    this.outlined = false,
-  });
-
-  final String label;
+class _ProjectMonogram extends StatelessWidget {
+  final String name;
   final Color color;
-  final bool outlined;
+
+  const _ProjectMonogram({required this.name, required this.color});
+
+  String get _initial {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '?';
+    return trimmed[0].toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      width: 52,
+      height: 52,
       decoration: BoxDecoration(
-        color: outlined ? Colors.transparent : color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: outlined
-            ? Border.all(color: color.withValues(alpha: 0.4))
-            : null,
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.18), width: 1),
       ),
+      alignment: Alignment.center,
       child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+        _initial,
+        style: GoogleFonts.fraunces(
+          fontSize: 26,
+          fontWeight: FontWeight.w400,
           color: color,
+          height: 1,
+          letterSpacing: -0.5,
         ),
       ),
+    );
+  }
+}
+
+// ── Status Pill (editorial) ──
+
+class _StatusPill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatusPill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label.toUpperCase(),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: 1.6,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MetaItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _MetaItem({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: AppColors.textHint),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: GoogleFonts.inter(
+            fontSize: 12.5,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w400,
+            height: 1.2,
+          ),
+        ),
+      ],
     );
   }
 }

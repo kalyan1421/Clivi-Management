@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/responsive.dart';
 import '../../auth/data/models/user_profile_model.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../materials/screens/material_master_list_screen.dart';
+import '../../bills/data/models/bill_model.dart';
+import '../../bills/providers/bill_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../data/models/dashboard_models.dart';
 
@@ -41,6 +43,18 @@ class AdminDashboard extends ConsumerWidget {
                           Consumer(builder: (context, ref, _) {
                             final profile = ref.watch(userProfileProvider);
                             return _buildHeader(context, ref, profile);
+                          }),
+                          SizedBox(height: r.isDesktop ? 28 : 20),
+                          Consumer(builder: (context, ref, _) {
+                            final statsState =
+                                ref.watch(dashboardStatsProvider);
+                            final billsAsync = ref.watch(
+                                dashboardBillsCombinedProvider(false));
+                            return _AttentionHero(
+                              stats: statsState.stats,
+                              bills: billsAsync.valueOrNull ??
+                                  const <BillModel>[],
+                            );
                           }),
                           SizedBox(height: r.isDesktop ? 28 : 20),
                           Consumer(builder: (context, ref, _) {
@@ -125,46 +139,66 @@ class AdminDashboard extends ConsumerWidget {
             : 'Good evening';
     final dateStr = DateFormat('EEEE, MMM d').format(now);
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$greeting, $name',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+        Row(
+          children: [
+            Text(
+              dateStr.toUpperCase(),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.secondaryDark,
+                letterSpacing: 2.2,
               ),
-              const SizedBox(height: 4),
-              Text(
-                dateStr,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+            ),
+            const Spacer(),
+            _HeaderIconButton(
+              icon: Icons.notifications_none_rounded,
+              tooltip: 'Notifications',
+              onTap: () => _showNotificationsPanel(context, ref),
+            ),
+            const SizedBox(width: 10),
+            _HeaderIconButton(
+              icon: Icons.add_rounded,
+              filled: true,
+              tooltip: 'New Project',
+              onTap: () async {
+                await context.push('/projects/create');
+                if (context.mounted) {
+                  await Future.delayed(const Duration(milliseconds: 300));
+                  if (context.mounted) {
+                    ref.invalidate(activeProjectsProvider);
+                    ref.invalidate(operationsLiveCountsProvider);
+                    await ref.read(dashboardStatsProvider.notifier).refresh();
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Text(
+          '$greeting,',
+          style: GoogleFonts.fraunces(
+            fontSize: 32,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textPrimary,
+            letterSpacing: -1.0,
+            height: 1.05,
           ),
         ),
-        _HeaderIconButton(
-          icon: Icons.add_rounded,
-          filled: true,
-          tooltip: 'New Project',
-          onTap: () async {
-            await context.push('/projects/create');
-            if (context.mounted) {
-              ref.invalidate(activeProjectsProvider);
-              ref.read(dashboardStatsProvider.notifier).refresh();
-            }
-          },
-        ),
-        const SizedBox(width: 10),
-        _HeaderIconButton(
-          icon: Icons.notifications_outlined,
-          tooltip: 'Notifications',
-          onTap: () => _showNotificationsPanel(context, ref),
+        Text(
+          name,
+          style: GoogleFonts.fraunces(
+            fontSize: 32,
+            fontWeight: FontWeight.w400,
+            fontStyle: FontStyle.italic,
+            color: AppColors.primary,
+            letterSpacing: -1.0,
+            height: 1.05,
+          ),
         ),
       ],
     );
@@ -217,7 +251,7 @@ class AdminDashboard extends ConsumerWidget {
         crossAxisCount: r.isDesktop ? 4 : (r.isTablet ? 2 : 2),
         crossAxisSpacing: r.isDesktop ? 20 : 12,
         mainAxisSpacing: r.isDesktop ? 20 : 12,
-        mainAxisExtent: 140,
+        mainAxisExtent: 158,
       ),
       itemBuilder: (context, index) {
         final item = items[index];
@@ -287,36 +321,27 @@ class AdminDashboard extends ConsumerWidget {
         subtitle: 'Master list',
         icon: Icons.category_outlined,
         color: AppColors.success,
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const MaterialMasterListScreen(),
-            ),
-          );
-        },
+        onTap: () => context.push('/master/materials'),
       ),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Quick Actions',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w700),
+        _SectionHeader(
+          overline: 'Manage',
+          title: 'Quick actions',
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: actions.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: r.isDesktop ? 4 : 2,
-            crossAxisSpacing: r.isDesktop ? 16 : 10,
-            mainAxisSpacing: r.isDesktop ? 16 : 10,
-            mainAxisExtent: 64,
+            crossAxisSpacing: r.isDesktop ? 16 : 12,
+            mainAxisSpacing: r.isDesktop ? 16 : 12,
+            mainAxisExtent: 72,
           ),
           itemBuilder: (context, index) {
             return _QuickActionTile(action: actions[index]);
@@ -334,44 +359,48 @@ class AdminDashboard extends ConsumerWidget {
     ActiveProjectsState state,
   ) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppColors.cardShadow,
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.rocket_launch_outlined,
-                  size: 20, color: AppColors.primary),
-              const SizedBox(width: 10),
-              Text(
-                'Active Projects',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+              Expanded(
+                child: _SectionHeader(
+                  overline: 'In progress',
+                  title: 'Active projects',
+                ),
               ),
-              const Spacer(),
-              TextButton.icon(
+              TextButton(
                 onPressed: () => context.push('/projects'),
-                icon: const Text('View All'),
-                label: const Icon(Icons.arrow_forward_rounded, size: 16),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: GoogleFonts.plusJakartaSans(
                       fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Text('View all'),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_rounded, size: 14),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           if (state.isLoading)
             _buildProjectsLoading()
           else if (state.error != null)
@@ -415,16 +444,29 @@ class AdminDashboard extends ConsumerWidget {
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: _getTypeColor(project.projectType).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                color: _getTypeColor(project.projectType)
+                    .withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _getTypeColor(project.projectType)
+                      .withValues(alpha: 0.18),
+                ),
               ),
-              child: Icon(
-                Icons.business_rounded,
-                color: _getTypeColor(project.projectType),
-                size: 20,
+              alignment: Alignment.center,
+              child: Text(
+                project.name.trim().isNotEmpty
+                    ? project.name.trim()[0].toUpperCase()
+                    : '?',
+                style: GoogleFonts.fraunces(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w400,
+                  color: _getTypeColor(project.projectType),
+                  height: 1,
+                  letterSpacing: -0.4,
+                ),
               ),
             ),
             const SizedBox(width: 14),
@@ -524,31 +566,21 @@ class AdminDashboard extends ConsumerWidget {
     RecentActivityState state,
   ) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppColors.cardShadow,
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Icon(Icons.history_rounded,
-                  size: 20, color: AppColors.primary),
-              const SizedBox(width: 10),
-              Text(
-                'Recent Activity',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ],
+          _SectionHeader(
+            overline: 'Latest',
+            title: 'Recent activity',
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _buildRecentOperations(context, ref, state),
         ],
       ),
@@ -961,24 +993,22 @@ class _HeaderIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final child = Material(
-      color: filled ? AppColors.primary : Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      color: filled ? AppColors.primary : AppColors.surface,
+      shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        customBorder: const CircleBorder(),
         child: Container(
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: filled
-                ? null
-                : Border.all(color: AppColors.border),
+            shape: BoxShape.circle,
+            border: filled ? null : Border.all(color: AppColors.border),
           ),
           child: Icon(
             icon,
-            size: 20,
-            color: filled ? Colors.white : AppColors.textPrimary,
+            size: 19,
+            color: filled ? AppColors.textOnPrimary : AppColors.textPrimary,
           ),
         ),
       ),
@@ -1016,34 +1046,45 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: stat.onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderDark.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: stat.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(stat.icon, color: stat.color, size: 20),
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: stat.color.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(stat.icon, color: stat.color, size: 17),
+                  ),
+                  const Spacer(),
+                  if (stat.onTap != null)
+                    Icon(
+                      Icons.arrow_outward_rounded,
+                      size: 14,
+                      color: AppColors.textHint,
+                    ),
+                ],
               ),
               const Spacer(),
               if (isLoading)
                 Container(
-                  height: 24,
-                  width: 48,
+                  height: 28,
+                  width: 56,
                   decoration: BoxDecoration(
                     color: AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(6),
@@ -1052,17 +1093,24 @@ class _StatCard extends StatelessWidget {
               else
                 Text(
                   stat.value,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
+                  style: GoogleFonts.fraunces(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                    letterSpacing: -1.2,
+                    height: 1,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 stat.label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.1,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1098,16 +1146,16 @@ class _QuickActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: action.onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.borderDark.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -1115,37 +1163,323 @@ class _QuickActionTile extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: action.color.withValues(alpha: 0.1),
+                  color: action.color.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(action.icon, color: action.color, size: 18),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       action.label,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.1,
+                        height: 1.2,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 1),
+                    const SizedBox(height: 3),
                     Text(
                       action.subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                          ),
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: AppColors.textSecondary,
+                        height: 1.2,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: AppColors.textHint,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.overline, required this.title});
+
+  final String overline;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          overline.toUpperCase(),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.secondaryDark,
+            letterSpacing: 2.0,
+            height: 1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: GoogleFonts.fraunces(
+            fontSize: 22,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.4,
+            height: 1.15,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  Attention Required hero
+//
+//  Surfaces what the user should DO right now — not what they have.
+//  Replaces the decorative greeting as the dashboard's focal point.
+// ─────────────────────────────────────────────────────────────────────
+
+class _AttentionHero extends StatelessWidget {
+  final DashboardStats stats;
+  final List<BillModel> bills;
+
+  const _AttentionHero({required this.stats, required this.bills});
+
+  @override
+  Widget build(BuildContext context) {
+    final pendingBills =
+        bills.where((b) => !b.status.isCompleted).length;
+    final items = <_AttentionItem>[
+      if (pendingBills > 0)
+        _AttentionItem(
+          icon: Icons.receipt_long_outlined,
+          label: pendingBills == 1 ? 'bill needs approval' : 'bills need approval',
+          count: pendingBills,
+          color: AppColors.warning,
+          route: '/bills/approval-queue',
+        ),
+      if (stats.lowStockItems > 0)
+        _AttentionItem(
+          icon: Icons.inventory_2_outlined,
+          label: stats.lowStockItems == 1 ? 'low stock item' : 'low stock items',
+          count: stats.lowStockItems,
+          color: AppColors.error,
+          route: '/master/materials',
+        ),
+      if (stats.pendingReports > 0)
+        _AttentionItem(
+          icon: Icons.description_outlined,
+          label: stats.pendingReports == 1 ? 'pending report' : 'pending reports',
+          count: stats.pendingReports,
+          color: AppColors.info,
+          route: '/reports',
+        ),
+    ];
+
+    if (items.isEmpty) return _AllClearCard();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.primaryDark,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryLight,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'NEEDS ATTENTION',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.secondaryLight,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${items.length}',
+                style: GoogleFonts.fraunces(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textOnPrimary.withValues(alpha: 0.6),
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...items.map((item) => _AttentionRow(item: item)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AllClearCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_rounded,
+              size: 18,
+              color: AppColors.success,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'All caught up',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'No pending approvals or alerts',
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttentionItem {
+  final IconData icon;
+  final String label;
+  final int count;
+  final Color color;
+  final String route;
+
+  const _AttentionItem({
+    required this.icon,
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.route,
+  });
+}
+
+class _AttentionRow extends StatelessWidget {
+  final _AttentionItem item;
+  const _AttentionRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.push(item.route),
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: item.color.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(item.icon, size: 19, color: item.color),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '${item.count}',
+                      style: GoogleFonts.fraunces(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textOnPrimary,
+                        letterSpacing: -0.8,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        item.label,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textOnPrimary
+                              .withValues(alpha: 0.85),
+                          letterSpacing: 0,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 16,
+                color: AppColors.textOnPrimary.withValues(alpha: 0.55),
               ),
             ],
           ),

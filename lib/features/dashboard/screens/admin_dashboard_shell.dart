@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:clivi_management/core/theme/app_colors.dart';
 import 'package:clivi_management/core/ui/responsive.dart';
+import 'package:clivi_management/core/widgets/sync_banner.dart';
 import 'package:clivi_management/features/auth/providers/auth_provider.dart';
 
 class DashboardShell extends ConsumerWidget {
@@ -64,29 +66,48 @@ class DashboardShell extends ConsumerWidget {
         // Mobile: bottom nav only for main tab routes
         final showBottomNav = _isMainTabRoute(location);
         return Scaffold(
-          body: child,
+          body: Column(
+            children: [
+              const SyncBanner(),
+              Expanded(child: child),
+            ],
+          ),
           bottomNavigationBar: showBottomNav
-              ? BottomNavigationBar(
-                  currentIndex: activeIndex.clamp(0, destinations.length - 1),
-                  onTap: (i) => context.go(destinations[i].route),
-                  type: BottomNavigationBarType.fixed,
-                  backgroundColor: Colors.white,
-                  selectedItemColor: AppColors.primary,
-                  unselectedItemColor: AppColors.textSecondary,
-                  selectedLabelStyle: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+              ? Container(
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(
+                      top: BorderSide(color: AppColors.border, width: 1),
+                    ),
                   ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.normal,
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceAround,
+                        children: List.generate(
+                          destinations.length,
+                          (i) {
+                            final selected = i ==
+                                activeIndex.clamp(
+                                    0, destinations.length - 1);
+                            final d = destinations[i];
+                            return _BottomNavItem(
+                              icon: d.icon,
+                              label: d.label,
+                              selected: selected,
+                              onTap: () => context.go(d.route),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                   ),
-                  items: destinations
-                      .map((d) => BottomNavigationBarItem(
-                            icon: Icon(d.icon),
-                            label: d.label,
-                          ))
-                      .toList(),
                 )
               : null,
         );
@@ -404,3 +425,73 @@ class _SidebarFooter extends ConsumerWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────
+//  Editorial bottom nav item
+// ─────────────────────────────────────────────────────────────────────
+
+class _BottomNavItem extends StatelessWidget {
+  const _BottomNavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        selected ? AppColors.primary : AppColors.textHint;
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.surfaceVariant
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Icon(icon, size: 23, color: color),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11.5,
+                    fontWeight:
+                        selected ? FontWeight.w700 : FontWeight.w500,
+                    color: color,
+                    letterSpacing: 0.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

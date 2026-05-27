@@ -105,9 +105,9 @@ class _AddSiteManagerScreenState extends ConsumerState<AddSiteManagerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         centerTitle: true,
         title: const Text(
@@ -357,7 +357,7 @@ class _AddSiteManagerScreenState extends ConsumerState<AddSiteManagerScreen> {
         fontSize: 14,
       ),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppColors.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

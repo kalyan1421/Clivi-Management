@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../../../core/config/supabase_client.dart';
 import '../../../core/errors/app_exceptions.dart';
+import '../../../core/services/cache_registry.dart';
 import '../../../core/services/local_database_service.dart';
+import '../../../core/services/offline_queue_service.dart';
 import '../../../core/services/session_manager.dart';
 import '../data/models/models.dart';
 import '../data/repositories/auth_repository.dart';
@@ -122,9 +124,10 @@ class AppAuthState {
 /// Auth state notifier - uses repository pattern
 class AuthNotifier extends StateNotifier<AppAuthState> {
   final AuthRepository _repository;
+  final Ref _ref;
   StreamSubscription<supabase.AuthState>? _authSubscription;
 
-  AuthNotifier(this._repository) : super(const AppAuthState()) {
+  AuthNotifier(this._repository, this._ref) : super(const AppAuthState()) {
     _init();
   }
 
@@ -354,13 +357,35 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
     }
   }
 
-  /// Sign out and clear local cache
+  /// Sign out and tear down all per-user state.
+  ///
+  /// On sign out we must purge anything that could leak between users:
+  /// - Supabase session (server-side)
+  /// - Hive caches (projects, bills, materials, etc.)
+  /// - Offline queue (pending writes attributed to the signed-out user)
+  /// - In-memory provider state (invalidated via container.invalidate)
+  ///
+  /// We invalidate the *root* provider containers — `authRepositoryProvider`
+  /// rebuilds will cascade through dependent providers since they all
+  /// `.watch(...)` upstream chains.
   Future<void> signOut() async {
     try {
       await _repository.signOut();
 
-      // Clear local cached data
+      // Per-user durable caches.
       await LocalDatabaseService.instance.clearAll();
+
+      // Drop any pending offline writes — they belong to the previous user.
+      try {
+        await OfflineQueueService.instance.clear();
+      } catch (e) {
+        // Service may not be initialized in some tests; non-fatal.
+        logger.w('Offline queue clear skipped: $e');
+      }
+
+      // Invalidate the broad feature roots. Family providers (e.g. by
+      // projectId) clean up via .autoDispose when no widget watches them.
+      _invalidateFeatureCaches();
 
       state = const AppAuthState(
         user: null,
@@ -369,11 +394,34 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
         isLoading: false,
         isInitialized: true,
       );
-      logger.i('User signed out and local cache cleared');
+      logger.i('User signed out and all per-user caches cleared');
     } catch (e) {
       logger.e('Sign out failed: $e');
       rethrow;
     }
+  }
+
+  /// Invalidates feature provider roots so any in-memory state from the
+  /// previous user is dropped.
+  ///
+  /// Repositories that hold their own in-memory caches expose a
+  /// `clearCaches()` method we can hit via a registry on
+  /// [CacheRegistry]. Family providers that use `.autoDispose` will
+  /// naturally drop when the router redirects to /login and no widget
+  /// watches them.
+  void _invalidateFeatureCaches() {
+    // Drop any process-level caches held by repository singletons.
+    CacheRegistry.instance.clearAll();
+
+    // Force the auth repository (root of the dependency graph) to
+    // rebuild. Anything that watches it will recompute on next access.
+    try {
+      _ref.invalidate(authRepositoryProvider);
+    } catch (_) {
+      // Ignore in tests where ref may not be live.
+    }
+
+    logger.d('Sign-out: feature caches cleared');
   }
 
   /// Send password reset email
@@ -467,7 +515,7 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
 /// Uses ref.onDispose() for proper cleanup of stream subscriptions
 final authProvider = StateNotifierProvider<AuthNotifier, AppAuthState>((ref) {
   final repository = ref.watch(authRepositoryProvider);
-  final notifier = AuthNotifier(repository);
+  final notifier = AuthNotifier(repository, ref);
 
   // Start session health check when provider is created
   SessionManager.instance.startHealthCheck();

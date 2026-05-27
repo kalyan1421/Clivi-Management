@@ -1,130 +1,144 @@
 import 'package:flutter/material.dart';
 
-/// Application color palette
-/// Primary: Blue (#2196F3) - Material Design Blue
-/// Secondary: Amber (#F59E0B) - Warm, sophisticated amber
+/// Editorial cream + navy palette.
+///
+/// Mood: refined, architectural, calm. Cream surfaces with a deep navy
+/// accent and warm hairlines. Designed for content-first layouts where
+/// imagery and typography do the heavy lifting.
 class AppColors {
   AppColors._();
 
-  // Primary Colors - Blue (#2196F3)
-  static const Color primary = Color(0xFF2196F3);
-  static const Color primaryDark = Color(0xFF1976D2);
-  static const Color primaryLight = Color(0xFF64B5F6);
-  static const Color primaryVariant = Color(0xFF1565C0);
+  // ── Brand ──────────────────────────────────────────────────────────
+  // Deep editorial navy — used sparingly for primary actions and key marks.
+  static const Color primary = Color(0xFF1E3A8A);
+  static const Color primaryDark = Color(0xFF172554);
+  static const Color primaryLight = Color(0xFF3B5BDB);
+  static const Color primaryVariant = Color(0xFF1E40AF);
 
-  // Secondary Colors - Amber
-  static const Color secondary = Color(0xFFF59E0B);
-  static const Color secondaryDark = Color(0xFFD97706);
-  static const Color secondaryLight = Color(0xFFFBBF24);
-  static const Color secondaryVariant = Color(0xFFB45309);
+  // Soft tonal partner to navy — used for chips, highlights, hover.
+  static const Color secondary = Color(0xFFB8845C);
+  static const Color secondaryDark = Color(0xFF8C5E3C);
+  static const Color secondaryLight = Color(0xFFDCC2A8);
+  static const Color secondaryVariant = Color(0xFF7A4F32);
 
-  // Accent Colors - Cyan
-  static const Color accent = Color(0xFF06B6D4);
-  static const Color accentDark = Color(0xFF0891B2);
-  static const Color accentLight = Color(0xFF22D3EE);
+  // Accent — used very sparingly for "new", "highlight" callouts.
+  static const Color accent = Color(0xFF3B5BDB);
+  static const Color accentDark = Color(0xFF1E3A8A);
+  static const Color accentLight = Color(0xFF8DA4F1);
 
-  // Status Colors
-  static const Color success = Color(0xFF10B981);
-  static const Color successLight = Color(0xFF6EE7B7);
-  static const Color successDark = Color(0xFF059669);
+  // ── Status ─────────────────────────────────────────────────────────
+  static const Color success = Color(0xFF15803D);
+  static const Color successLight = Color(0xFFBBF7D0);
+  static const Color successDark = Color(0xFF166534);
 
-  static const Color error = Color(0xFFEF4444);
-  static const Color errorLight = Color(0xFFFCA5A5);
-  static const Color errorDark = Color(0xFFDC2626);
+  static const Color error = Color(0xFFB91C1C);
+  static const Color errorLight = Color(0xFFFECACA);
+  static const Color errorDark = Color(0xFF991B1B);
 
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color warningLight = Color(0xFFFCD34D);
-  static const Color warningDark = Color(0xFFD97706);
+  static const Color warning = Color(0xFFB45309);
+  static const Color warningLight = Color(0xFFFDE68A);
+  static const Color warningDark = Color(0xFF92400E);
 
-  static const Color info = Color(0xFF3B82F6);
-  static const Color infoLight = Color(0xFF93C5FD);
-  static const Color infoDark = Color(0xFF2563EB);
+  static const Color info = Color(0xFF1E40AF);
+  static const Color infoLight = Color(0xFFDBEAFE);
+  static const Color infoDark = Color(0xFF1E3A8A);
 
-  // Neutral Colors
-  static const Color background = Color(0xFFF8FAFC);
+  // ── Surfaces ───────────────────────────────────────────────────────
+  // Warm cream paper-like background.
+  static const Color background = Color(0xFFFAF8F3);
+  static const Color scaffoldBackground = Color(0xFFFAF8F3);
+
+  // Pure white for elevated cards and surfaces.
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFF1F5F9);
-  static const Color scaffoldBackground = Color(0xFFF8FAFC);
 
-  // Text Colors
+  // Slightly warm tinted neutral for filled chips and subtle blocks.
+  static const Color surfaceVariant = Color(0xFFF3EFE6);
+
+  // ── Text ───────────────────────────────────────────────────────────
+  // All values verified against cream (#FAF8F3) for WCAG AA compliance.
+  // textPrimary  ~17:1, textSecondary ~7:1, textHint ~4.7:1 — all pass.
   static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color textHint = Color(0xFF94A3B8);
-  static const Color textDisabled = Color(0xFFCBD5E1);
-  static const Color textOnPrimary = Color(0xFFFFFFFF);
-  static const Color textOnSecondary = Color(0xFF000000);
+  static const Color textSecondary = Color(0xFF4B4B53);
+  static const Color textHint = Color(0xFF6F6A5E);
+  static const Color textDisabled = Color(0xFFA8A296);
+  static const Color textOnPrimary = Color(0xFFFAF8F3);
+  static const Color textOnSecondary = Color(0xFF0F172A);
 
-  // Border Colors
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color borderLight = Color(0xFFF1F5F9);
-  static const Color borderDark = Color(0xFFCBD5E1);
-  static const Color divider = Color(0xFFE2E8F0);
+  // ── Borders / dividers ─────────────────────────────────────────────
+  // Warm cream hairlines instead of grey-blue.
+  static const Color border = Color(0xFFE7E2D8);
+  static const Color borderLight = Color(0xFFF1ECE2);
+  static const Color borderDark = Color(0xFFD5CFC2);
+  static const Color divider = Color(0xFFE7E2D8);
 
-  // Shadow
-  static const Color shadow = Color(0x12000000);
-  static const Color shadowLight = Color(0x08000000);
-  static const Color shadowDark = Color(0x24000000);
+  // ── Shadow ─────────────────────────────────────────────────────────
+  // Warm low-alpha shadows — never blue/grey on cream.
+  static const Color shadow = Color(0x14241C0A);
+  static const Color shadowLight = Color(0x0A241C0A);
+  static const Color shadowDark = Color(0x1F241C0A);
 
-  // Role-based Colors
-  static const Color superAdmin = Color(0xFF8B5CF6);
-  static const Color admin = Color(0xFF2196F3);
-  static const Color siteManager = Color(0xFF10B981);
+  // ── Roles ──────────────────────────────────────────────────────────
+  static const Color superAdmin = Color(0xFF7C3AED);
+  static const Color admin = Color(0xFF1E3A8A);
+  static const Color siteManager = Color(0xFF15803D);
 
-  // Project Status Colors
-  static const Color statusActive = Color(0xFF10B981);
-  static const Color statusPending = Color(0xFFF59E0B);
-  static const Color statusCompleted = Color(0xFF3B82F6);
-  static const Color statusOnHold = Color(0xFF94A3B8);
-  static const Color statusCancelled = Color(0xFFEF4444);
+  // ── Project status ─────────────────────────────────────────────────
+  static const Color statusActive = Color(0xFF15803D);
+  static const Color statusPending = Color(0xFFB45309);
+  static const Color statusCompleted = Color(0xFF1E3A8A);
+  static const Color statusOnHold = Color(0xFF8B8579);
+  static const Color statusCancelled = Color(0xFFB91C1C);
 
-  // Sidebar Colors
-  static const Color sidebarBackground = Color(0xFF0F1729);
-  static const Color sidebarSurface = Color(0xFF1E293B);
-  static const Color sidebarTextPrimary = Color(0xFFE2E8F0);
-  static const Color sidebarTextSecondary = Color(0xFF94A3B8);
-  static const Color sidebarSelectedBg = Color(0x1AFFFFFF);
-  static const Color sidebarHoverBg = Color(0x0DFFFFFF);
-  static const Color sidebarAccent = Color(0xFF64B5F6);
+  // ── Sidebar (desktop / tablet) ────────────────────────────────────
+  static const Color sidebarBackground = Color(0xFF0B1224);
+  static const Color sidebarSurface = Color(0xFF1A2240);
+  static const Color sidebarTextPrimary = Color(0xFFEDE9DD);
+  static const Color sidebarTextSecondary = Color(0xFF9CA3B8);
+  static const Color sidebarSelectedBg = Color(0x1AFAF8F3);
+  static const Color sidebarHoverBg = Color(0x0DFAF8F3);
+  static const Color sidebarAccent = Color(0xFFDCC2A8);
 
-  // Chart Colors
+  // ── Chart palette ──────────────────────────────────────────────────
+  // Editorial sequence — navy → tonal warmth, distinct but unified.
   static const List<Color> chartColors = [
-    Color(0xFF2196F3),
-    Color(0xFFF59E0B),
-    Color(0xFF10B981),
-    Color(0xFF8B5CF6),
-    Color(0xFF06B6D4),
-    Color(0xFFEF4444),
-    Color(0xFFF97316),
-    Color(0xFF1976D2),
+    Color(0xFF1E3A8A), // navy
+    Color(0xFFB8845C), // warm tan
+    Color(0xFF15803D), // forest
+    Color(0xFF7C3AED), // plum
+    Color(0xFF0E7490), // teal
+    Color(0xFFB91C1C), // crimson
+    Color(0xFFB45309), // ochre
+    Color(0xFF3B5BDB), // azure
   ];
 
-  // Gradient Colors
+  // ── Gradients ──────────────────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF42A5F5), Color(0xFF1976D2)],
+    colors: [Color(0xFF1E3A8A), Color(0xFF0B1224)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient secondaryGradient = LinearGradient(
-    colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+    colors: [Color(0xFFDCC2A8), Color(0xFFB8845C)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient successGradient = LinearGradient(
-    colors: [Color(0xFF34D399), Color(0xFF10B981)],
+    colors: [Color(0xFF22C55E), Color(0xFF15803D)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  // Layered shadow helpers (cached as static const lists)
+  // ── Shadow presets ─────────────────────────────────────────────────
+  // Layered, warm-toned shadows. Calmer than greyscale defaults.
   static const List<BoxShadow> cardShadow = [
-    BoxShadow(color: Color(0x06000000), blurRadius: 2, offset: Offset(0, 1)),
-    BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 4)),
+    BoxShadow(color: Color(0x07241C0A), blurRadius: 2, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x0C241C0A), blurRadius: 12, offset: Offset(0, 6)),
   ];
 
   static const List<BoxShadow> elevatedShadow = [
-    BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 2)),
-    BoxShadow(color: Color(0x12000000), blurRadius: 24, offset: Offset(0, 12)),
+    BoxShadow(color: Color(0x0A241C0A), blurRadius: 6, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x14241C0A), blurRadius: 28, offset: Offset(0, 16)),
   ];
 }

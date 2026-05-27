@@ -1,4 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
+import '../../../../core/config/supabase_client.dart' show logger;
 import '../../../../core/utils/validators.dart';
 import '../models/stock_item.dart';
 import '../models/material_log.dart';
@@ -144,6 +146,7 @@ class StockRepository {
     required double quantity,
     required double billAmount,
     required String paymentType,
+    String? receiptUrl,
     String? activity,
     String? notes,
   }) async {
@@ -151,6 +154,14 @@ class StockRepository {
     if (supplierId.isEmpty) {
       throw Exception('Supplier ID is required. Vendor must be selected.');
     }
+
+    // Idempotency token embedded in notes so we can locate the exact
+    // bill we created (avoids racing the "latest bill" query under
+    // concurrent material entries).
+    final idempotencyToken = const Uuid().v4();
+    final notesWithToken = notes == null || notes.isEmpty
+        ? '[ref:$idempotencyToken]'
+        : '$notes\n[ref:$idempotencyToken]';
 
     final params = {
       'p_project_id': projectId,
@@ -162,10 +173,61 @@ class StockRepository {
       'p_bill_amount': billAmount,
       'p_payment_type': paymentType,
       'p_activity': activity ?? 'Material Received',
-      'p_notes': notes,
+      'p_notes': notesWithToken,
     };
 
     await _client.rpc('receive_material', params: params);
+
+    // If a delivery receipt was provided, find the bill we just created
+    // via the unique idempotency token in its description / notes.
+    if (receiptUrl != null && receiptUrl.isNotEmpty) {
+      try {
+        final ownBill = await _client
+            .from('bills')
+            .select('id')
+            .eq('project_id', projectId)
+            .or(
+              // The RPC may map p_notes to either column — check both.
+              'description.ilike.%ref:$idempotencyToken%,'
+              'title.ilike.%ref:$idempotencyToken%',
+            )
+            .limit(1)
+            .maybeSingle();
+
+        if (ownBill != null) {
+          await _client
+              .from('bills')
+              .update({'image_url': receiptUrl, 'receipt_url': receiptUrl})
+              .eq('id', ownBill['id'] as String);
+        } else {
+          // Fall back to "latest" only if the token lookup found nothing
+          // (e.g. older RPC versions that don't persist p_notes verbatim).
+          // This preserves prior behavior without making it worse.
+          final recentBill = await _client
+              .from('bills')
+              .select('id, created_at')
+              .eq('project_id', projectId)
+              .eq('bill_type', 'materials')
+              .order('created_at', ascending: false)
+              .limit(1)
+              .maybeSingle();
+
+          if (recentBill != null) {
+            logger.w(
+              'Idempotency token not found in bill — falling back to '
+              'latest bill match. Token: $idempotencyToken',
+            );
+            await _client
+                .from('bills')
+                .update({'image_url': receiptUrl, 'receipt_url': receiptUrl})
+                .eq('id', recentBill['id'] as String);
+          }
+        }
+      } catch (e) {
+        logger.w('Failed to attach receipt URL to bill: $e');
+        // Non-fatal — material log was still saved
+      }
+    }
   }
 
   /// Log material outward (consumed)

@@ -8,21 +8,19 @@ final stockRepositoryProvider = Provider<StockRepository>((ref) {
   return StockRepository(supabase);
 });
 
-// Stock Items Stream
-final stockItemsStreamProvider = StreamProvider.family<List<StockItem>, String>(
+// Stock Items Stream — autoDispose so leaving a project releases the
+// realtime subscription and we don't accumulate listeners on navigation.
+final stockItemsStreamProvider =
+    StreamProvider.autoDispose.family<List<StockItem>, String>(
   (ref, projectId) {
     final repo = ref.watch(stockRepositoryProvider);
     return repo.streamStockItemsByProject(projectId);
   },
 );
 
-// Logs Stream (Optional, if we add stream method to repo for logs too. Repo currently has getMaterialLogsByProject Future. I should add stream there too if needed. For now Future is fine for logs list, but stream is better. Let's stick to Future or Stream. StockItems HAS stream in repo).
-// The repo has:
-// Stream<List<StockItem>> streamStockItemsByProject(String projectId)
-// Future<List<MaterialLog>> getMaterialLogsByProject(String projectId)
-
-// I will use Future for logs for now, or add Stream if needed.
-final materialLogsProvider = FutureProvider.family<List<MaterialLog>, String>((
+// Material logs per project — autoDispose for same reason as above.
+final materialLogsProvider =
+    FutureProvider.autoDispose.family<List<MaterialLog>, String>((
   ref,
   projectId,
 ) async {

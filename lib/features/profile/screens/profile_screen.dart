@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/responsive.dart';
@@ -66,13 +67,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Header
+                          // Editorial header
+                          Text(
+                            'ACCOUNT',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.secondaryDark,
+                              letterSpacing: 2.2,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
                           Text(
                             'Profile',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.w700),
+                            style: GoogleFonts.fraunces(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -1.0,
+                              height: 1.05,
+                            ),
                           ),
                           const SizedBox(height: 24),
 
@@ -138,103 +152,142 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final roleBadgeColor = _getRoleColor(profile.role);
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 26),
       decoration: BoxDecoration(
-        color: AppColors.sidebarBackground,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.primaryDark,
+        borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 36,
-            backgroundColor: Colors.white.withValues(alpha: 0.15),
-            backgroundImage: profile.avatarUrl != null
-                ? NetworkImage(profile.avatarUrl!)
-                : null,
-            child: profile.avatarUrl == null
-                ? Text(
-                    initials,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  profile.fullName ?? 'User',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+          Row(
+            children: [
+              // Avatar
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryLight.withValues(alpha: 0.3),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.secondaryLight.withValues(alpha: 0.5),
+                    width: 1,
+                  ),
+                  image: profile.avatarUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(profile.avatarUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                const SizedBox(height: 4),
-                if (profile.email != null)
-                  Text(
-                    profile.email!,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 13,
+                alignment: Alignment.center,
+                child: profile.avatarUrl == null
+                    ? Text(
+                        initials,
+                        style: GoogleFonts.fraunces(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.secondaryLight,
+                          height: 1,
+                        ),
+                      )
+                    : null,
+              ),
+              const Spacer(),
+              Material(
+                color: AppColors.secondaryLight.withValues(alpha: 0.15),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: () => _showEditSheet(context),
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(shape: BoxShape.circle),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: AppColors.secondaryLight,
                     ),
                   ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: roleBadgeColor.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        profile.role.replaceAll('_', ' ').toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    if (profile.createdAt != null) ...[
-                      const SizedBox(width: 12),
-                      Icon(Icons.calendar_today_outlined,
-                          size: 12,
-                          color: Colors.white.withValues(alpha: 0.5)),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Joined ${DateFormat('MMM yyyy').format(profile.createdAt!)}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ],
-                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Role label
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: roleBadgeColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                profile.role.replaceAll('_', ' ').toUpperCase(),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.secondaryLight,
+                  letterSpacing: 1.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Name in editorial serif
+          Text(
+            profile.fullName ?? 'User',
+            style: GoogleFonts.fraunces(
+              fontSize: 30,
+              fontWeight: FontWeight.w400,
+              color: AppColors.textOnPrimary,
+              letterSpacing: -0.8,
+              height: 1.1,
+            ),
+          ),
+          if (profile.email != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              profile.email!,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.textOnPrimary.withValues(alpha: 0.65),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+          if (profile.createdAt != null) ...[
+            const SizedBox(height: 14),
+            Container(
+              height: 1,
+              color: AppColors.textOnPrimary.withValues(alpha: 0.12),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 12,
+                  color: AppColors.textOnPrimary.withValues(alpha: 0.55),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Member since ${DateFormat('MMMM yyyy').format(profile.createdAt!)}',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textOnPrimary.withValues(alpha: 0.65),
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ],
             ),
-          ),
-          Material(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-            child: InkWell(
-              onTap: () => _showEditSheet(context),
-              borderRadius: BorderRadius.circular(10),
-              child: const Padding(
-                padding: EdgeInsets.all(10),
-                child:
-                    Icon(Icons.edit_outlined, size: 18, color: Colors.white),
-              ),
-            ),
-          ),
+          ],
         ],
       ),
     );

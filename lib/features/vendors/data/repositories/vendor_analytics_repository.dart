@@ -378,25 +378,25 @@ class VendorAnalyticsRepository {
     final categorySource = (stockCategory ?? '').trim().toLowerCase();
     final materialSource = materialName.toLowerCase();
 
-    // 1. First, check if the actual material name or its stock category matches any keywords
+    // 1. Check if the actual material name or its stock category matches any keywords
     final matchesMaterial = tab.keywords.any(
       (kw) => categorySource.contains(kw) || materialSource.contains(kw),
     );
+    if (matchesMaterial) return true;
 
-    if (matchesMaterial) {
-      return true; // We found the material matches this tab specifically
-    }
-
-    // 2. If the material name itself doesn't explicitly match, check if the supplier category matches
-    // (e.g. supplier is "Steel", but material was generically named "Rods")
+    // 2. Check if the supplier category matches
     if (supplierCat.isNotEmpty) {
       final matchesSupplier =
           tab.keywords.any((kw) => supplierCat.contains(kw)) ||
           supplierCat == tab.supplierCategory.toLowerCase();
-      if (matchesSupplier) {
-        return true;
-      }
+      if (matchesSupplier) return true;
     }
+
+    // 3. Fallback: if category data is missing / join failed, include the entry
+    //    in the currently selected tab so data is not silently hidden.
+    final noCategory = categorySource.isEmpty &&
+        (materialSource.isEmpty || materialSource == 'unknown material');
+    if (noCategory) return true;
 
     return false;
   }

@@ -442,7 +442,7 @@ class _ApprovalQueueCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Raised By: ${bill.vendorName ?? bill.createdByName ?? bill.raisedBy ?? '-'}',
+              'Raised By: ${bill.raisedByName ?? bill.createdByName ?? bill.vendorName ?? '-'}',
               style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,

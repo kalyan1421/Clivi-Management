@@ -1,10 +1,17 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/config/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/responsive.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/upload_helper.dart';
 import '../../../core/widgets/error_widget.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -157,18 +164,55 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title + actions
+        // Editorial overline
         Row(
           children: [
             Text(
-              'Bills',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+              'EXPENSES',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.secondaryDark,
+                letterSpacing: 2.2,
+              ),
             ),
-            const Spacer(),
-            // Date filter
+            const SizedBox(width: 10),
+            Container(
+              width: 5,
+              height: 5,
+              decoration: const BoxDecoration(
+                color: AppColors.borderDark,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '$pendingCount pending',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Title row + actions
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Bills',
+                style: GoogleFonts.fraunces(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -1.0,
+                  height: 1.05,
+                ),
+              ),
+            ),
             _DateFilterChip(
               selectedDate: _selectedFilterDate,
               onTap: _pickDate,
@@ -178,7 +222,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
               const SizedBox(width: 10),
               _HeaderButton(
                 icon: Icons.add_rounded,
-                label: 'New Bill',
+                label: 'New',
                 filled: true,
                 onTap: () => context.push('/bills/create'),
               ),
@@ -187,51 +231,47 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
               const SizedBox(width: 10),
               _HeaderButton(
                 icon: Icons.checklist_rounded,
-                label: 'Approvals',
+                label: 'Approve',
                 filled: true,
                 onTap: () => context.push('/bills/approval-queue'),
               ),
             ],
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
-        // Tab bar
+        // Tab bar — refined segmented control
         Container(
-          height: 42,
+          height: 44,
           decoration: BoxDecoration(
             color: AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: TabBar(
             controller: _tabController,
             indicatorSize: TabBarIndicatorSize.tab,
             indicator: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0A000000),
-                  blurRadius: 4,
-                  offset: Offset(0, 1),
-                ),
-              ],
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
             ),
             labelColor: AppColors.textPrimary,
             unselectedLabelColor: AppColors.textSecondary,
             dividerColor: Colors.transparent,
-            labelStyle: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600),
-            unselectedLabelStyle: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w500),
+            labelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.1,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.1,
+            ),
             padding: const EdgeInsets.all(3),
             tabs: [
-              Tab(
-                child: Text('Pending  $pendingCount'),
-              ),
-              Tab(
-                child: Text('Completed  $completedCount'),
-              ),
+              Tab(child: Text('Pending  $pendingCount')),
+              Tab(child: Text('Completed  $completedCount')),
             ],
           ),
         ),
@@ -416,6 +456,10 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
     DateTime selectedBillDate = bill.billDate;
     bool isSaving = false;
 
+    // Receipt / attachment state
+    List<int>? receiptBytes;
+    String? receiptName;
+
     try {
       await showModalBottomSheet<void>(
         context: context,
@@ -436,6 +480,33 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                 }
 
                 setModalState(() => isSaving = true);
+
+                // Upload receipt if a new one was selected
+                String? newReceiptUrl;
+                if (receiptBytes != null && receiptName != null) {
+                  try {
+                    final relativePath = UploadHelper.generateUniquePath(
+                      'receipts',
+                      receiptName!,
+                    );
+                    final filePath = '${bill.projectId}/$relativePath';
+                    newReceiptUrl = await UploadHelper.uploadWithRetry(
+                      bucket: AppConstants.bucketBills,
+                      path: filePath,
+                      bytes: Uint8List.fromList(receiptBytes!),
+                    );
+                  } catch (e) {
+                    if (!sheetContext.mounted) return;
+                    setModalState(() => isSaving = false);
+                    if (mounted) {
+                      ScaffoldMessenger.of(this.context).showSnackBar(
+                        SnackBar(content: Text('Receipt upload failed: $e')),
+                      );
+                    }
+                    return;
+                  }
+                }
+
                 final success = await ref
                     .read(billControllerProvider.notifier)
                     .updateBill(
@@ -457,6 +528,10 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                             .toIso8601String()
                             .split('T')
                             .first,
+                        if (newReceiptUrl != null) ...{
+                          'receipt_url': newReceiptUrl,
+                          'image_url': newReceiptUrl,
+                        },
                       },
                     );
                 if (sheetContext.mounted) {
@@ -625,6 +700,132 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                         decoration: const InputDecoration(
                           labelText: 'Description',
                           prefixIcon: Icon(Icons.notes_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Receipt / Invoice attachment
+                      InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: isSaving
+                            ? null
+                            : () async {
+                                final result =
+                                    await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  allowedExtensions: [
+                                    'jpg',
+                                    'jpeg',
+                                    'png',
+                                    'pdf',
+                                  ],
+                                  withData: true,
+                                );
+                                if (result != null &&
+                                    result.files.single.bytes != null) {
+                                  setModalState(() {
+                                    receiptBytes =
+                                        result.files.single.bytes;
+                                    receiptName = result.files.single.name;
+                                  });
+                                }
+                              },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: receiptName != null
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            color: receiptName != null
+                                ? AppColors.primary.withValues(alpha: 0.05)
+                                : AppColors.surfaceVariant
+                                    .withValues(alpha: 0.4),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                receiptName != null
+                                    ? Icons.check_circle_outline
+                                    : Icons.attach_file_rounded,
+                                size: 20,
+                                color: receiptName != null
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: receiptName != null
+                                    ? Text(
+                                        receiptName!,
+                                        style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 13,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : bill.receiptUrl != null
+                                        ? Row(
+                                            children: [
+                                              Text(
+                                                'Receipt attached',
+                                                style: TextStyle(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 6,
+                                                  vertical: 2,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.success
+                                                      .withValues(alpha: 0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  'Replace',
+                                                  style: TextStyle(
+                                                    color: AppColors.success,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : Text(
+                                            'Attach receipt / invoice (optional)',
+                                            style: TextStyle(
+                                              color: AppColors.textHint,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                              ),
+                              if (receiptName != null)
+                                GestureDetector(
+                                  onTap: () => setModalState(() {
+                                    receiptBytes = null;
+                                    receiptName = null;
+                                  }),
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    size: 18,
+                                    color: AppColors.textHint,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -850,116 +1051,147 @@ class _BillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = bill.status.isCompleted;
+    final statusColor =
+        isCompleted ? AppColors.success : AppColors.warning;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: AppColors.borderDark.withValues(alpha: 0.5)),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Top: date + amount
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.calendar_today_outlined,
-                        size: 13, color: AppColors.textHint),
-                    const SizedBox(width: 5),
-                    Text(
-                      DateFormat('dd MMM yyyy').format(bill.billDate),
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.textHint),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            DateFormat('dd MMM · yyyy')
+                                .format(bill.billDate)
+                                .toUpperCase(),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10.5,
+                              color: AppColors.textHint,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            bill.title,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.2,
+                              height: 1.25,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (bill.raisedByName != null ||
+                              bill.createdByName != null ||
+                              bill.vendorName != null) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              bill.raisedByName ??
+                                  bill.createdByName ??
+                                  bill.vendorName ??
+                                  '',
+                              style: GoogleFonts.inter(
+                                fontSize: 12.5,
+                                color: AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                    const Spacer(),
-                    Text(
-                      '₹${bill.amount.toStringAsFixed(0)}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          CurrencyFormatter.formatSimple(bill.amount),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.4,
+                            height: 1.1,
+                            fontFeatures: const [
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        if (canEdit || canDelete)
+                          SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: PopupMenuButton<_BillMenuAction>(
+                              icon: Icon(Icons.more_horiz_rounded,
+                                  color: AppColors.textHint, size: 18),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onSelected: onMenuAction,
+                              itemBuilder: (_) {
+                                final items =
+                                    <PopupMenuEntry<_BillMenuAction>>[];
+                                if (canEdit) {
+                                  items.add(const PopupMenuItem(
+                                      value: _BillMenuAction.edit,
+                                      child: Text('Edit')));
+                                }
+                                if (canDelete) {
+                                  items.add(const PopupMenuItem(
+                                      value: _BillMenuAction.delete,
+                                      child: Text('Delete')));
+                                }
+                                return items;
+                              },
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-
-                // Title
-                Text(
-                  bill.title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-
-                // Raised by
-                if (bill.raisedByName != null ||
-                    bill.createdByName != null ||
-                    bill.vendorName != null)
-                  Text(
-                    bill.raisedByName ??
-                        bill.createdByName ??
-                        bill.vendorName ??
-                        '',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                const SizedBox(height: 14),
+                Container(height: 1, color: AppColors.borderLight),
                 const SizedBox(height: 12),
 
-                // Bottom: chips + menu
+                // Bottom: status pills
                 Row(
                   children: [
-                    _StatusChip(
+                    _StatusDot(
                       label: isCompleted ? 'Completed' : 'Pending',
-                      color: isCompleted
-                          ? AppColors.success
-                          : AppColors.warning,
+                      color: statusColor,
                     ),
-                    const SizedBox(width: 8),
-                    _StatusChip(
+                    const SizedBox(width: 16),
+                    _StatusDot(
                       label: bill.paymentStatus.label,
-                      color: AppColors.info,
+                      color: AppColors.primary,
                     ),
                     const Spacer(),
-                    if (canEdit || canDelete)
-                      PopupMenuButton<_BillMenuAction>(
-                        icon: Icon(Icons.more_horiz_rounded,
-                            color: AppColors.textHint, size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onSelected: onMenuAction,
-                        itemBuilder: (_) {
-                          final items = <PopupMenuEntry<_BillMenuAction>>[];
-                          if (canEdit) {
-                            items.add(const PopupMenuItem(
-                                value: _BillMenuAction.edit,
-                                child: Text('Edit')));
-                          }
-                          if (canDelete) {
-                            items.add(const PopupMenuItem(
-                                value: _BillMenuAction.delete,
-                                child: Text('Delete')));
-                          }
-                          return items;
-                        },
-                      ),
                     if (onTap != null)
-                      Icon(Icons.chevron_right_rounded,
-                          color: AppColors.textHint, size: 20),
+                      Icon(Icons.arrow_forward_rounded,
+                          color: AppColors.textHint, size: 15),
                   ],
                 ),
               ],
@@ -971,35 +1203,40 @@ class _BillCard extends StatelessWidget {
   }
 }
 
-enum _BillMenuAction { edit, delete }
-
-// ── Shared Widgets ──
-
-class _StatusChip extends StatelessWidget {
+/// Tiny dot + label — replaces filled chip "noise".
+class _StatusDot extends StatelessWidget {
   final String label;
   final Color color;
-
-  const _StatusChip({required this.label, required this.color});
+  const _StatusDot({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-      ),
+        const SizedBox(width: 6),
+        Text(
+          label.toUpperCase(),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: 1.4,
+          ),
+        ),
+      ],
     );
   }
 }
+
+enum _BillMenuAction { edit, delete }
+
+// ── Shared Widgets ──
 
 class _DateFilterChip extends StatelessWidget {
   final DateTime? selectedDate;
@@ -1014,47 +1251,53 @@ class _DateFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final active = selectedDate != null;
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
+      color: active ? AppColors.primary : AppColors.surface,
+      borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(999),
         child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: selectedDate != null
-                  ? AppColors.primary
-                  : AppColors.border,
-            ),
+            borderRadius: BorderRadius.circular(999),
+            border: active
+                ? null
+                : Border.all(color: AppColors.border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.calendar_today_outlined,
-                  size: 15, color: AppColors.textSecondary),
-              const SizedBox(width: 8),
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 14,
+                color: active
+                    ? AppColors.textOnPrimary
+                    : AppColors.textPrimary,
+              ),
+              const SizedBox(width: 7),
               Text(
-                selectedDate != null
-                    ? DateFormat('dd MMM').format(selectedDate!)
-                    : 'Date',
-                style: TextStyle(
-                  fontSize: 13,
+                active ? DateFormat('dd MMM').format(selectedDate!) : 'Date',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w600,
-                  color: selectedDate != null
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+                  color: active
+                      ? AppColors.textOnPrimary
+                      : AppColors.textPrimary,
+                  letterSpacing: 0,
                 ),
               ),
-              if (selectedDate != null) ...[
-                const SizedBox(width: 6),
+              if (active) ...[
+                const SizedBox(width: 8),
                 GestureDetector(
                   onTap: onClear,
-                  child: Icon(Icons.close_rounded,
-                      size: 15, color: AppColors.textSecondary),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 14,
+                    color: AppColors.textOnPrimary.withValues(alpha: 0.8),
+                  ),
                 ),
               ],
             ],
@@ -1081,31 +1324,38 @@ class _HeaderButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: filled ? AppColors.primary : Colors.white,
-      borderRadius: BorderRadius.circular(10),
+      color: filled ? AppColors.primary : AppColors.surface,
+      borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(999),
         child: Container(
-          height: 40,
+          height: 38,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(999),
             border: filled ? null : Border.all(color: AppColors.border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon,
-                  size: 17,
-                  color: filled ? Colors.white : AppColors.textPrimary),
+              Icon(
+                icon,
+                size: 15,
+                color: filled
+                    ? AppColors.textOnPrimary
+                    : AppColors.textPrimary,
+              ),
               const SizedBox(width: 6),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: filled ? Colors.white : AppColors.textPrimary,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: filled
+                      ? AppColors.textOnPrimary
+                      : AppColors.textPrimary,
+                  letterSpacing: 0,
                 ),
               ),
             ],

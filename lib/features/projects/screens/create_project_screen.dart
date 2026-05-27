@@ -371,7 +371,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                       decoration: InputDecoration(
                         hintText: 'Select project type',
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppColors.surface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -472,7 +472,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                       decoration: InputDecoration(
                         hintText: 'Tell About the Project ...',
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppColors.surface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -541,7 +541,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
       decoration: InputDecoration(
         hintText: hintText,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -575,7 +575,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
           decoration: InputDecoration(
             hintText: 'dd-MM-yyyy',
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
