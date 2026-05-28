@@ -28,7 +28,8 @@ class BillRepository {
       var query = _client
           .from('bills')
           .select(_billSelectQuery)
-          .eq('project_id', projectId);
+          .eq('project_id', projectId)
+          .isFilter('deleted_at', null);
 
       if (status != null) {
         query = query.eq('status', status);
@@ -58,6 +59,7 @@ class BillRepository {
           .select(_billSelectQuery)
           .eq('project_id', projectId)
           .eq('status', 'pending')
+          .isFilter('deleted_at', null)
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
 
@@ -119,13 +121,14 @@ class BillRepository {
         'amount': amount,
         'bill_type': billType,
         'description': description,
+        'vendor_name': vendorName,
         'payment_type': paymentType,
         'payment_status': paymentStatus ?? 'need_to_pay',
         'status': 'pending',
         'created_by': userId,
         'uploaded_by': userId,
         'raised_by': userId,
-        'image_url': receiptUrl, // null when no receipt — never store ''
+        'image_url': receiptUrl,
         'image_path': receiptUrl,
         'bill_date': (billDate ?? DateTime.now())
             .toIso8601String()
@@ -141,7 +144,7 @@ class BillRepository {
 
       final bill = BillModel.fromJson(response);
 
-      // Log operation for admin notifications (activity feed)
+      // Log operation for activity feed
       try {
         await _client.rpc(
           'log_operation',
@@ -156,6 +159,26 @@ class BillRepository {
         );
       } catch (e) {
         logger.d('log_operation failed for bill: $e');
+      }
+
+      // Notify all admins that a new bill needs review
+      try {
+        final admins = await _client
+            .from('user_profiles')
+            .select('id')
+            .inFilter('role', ['admin', 'super_admin']);
+        for (final admin in admins as List) {
+          await _insertNotification(
+            userId: admin['id'] as String,
+            type: 'bill_pending',
+            title: 'New Bill Submitted',
+            body: '${bill.title} — ₹${bill.amount.toStringAsFixed(0)} pending review',
+            entityId: bill.id,
+            projectId: bill.projectId,
+          );
+        }
+      } catch (e) {
+        logger.d('Admin bill notification failed: $e');
       }
 
       return bill;
@@ -208,6 +231,8 @@ class BillRepository {
       if (status != null) {
         query = query.eq('status', status);
       }
+
+      query = query.isFilter('deleted_at', null);
 
       final response = await query
           .order('created_at', ascending: false)
@@ -304,6 +329,23 @@ class BillRepository {
         logger.d('log_operation failed for bill update: $e');
       }
 
+      final recipientId = bill.raisedBy ?? bill.createdBy;
+      if (recipientId != null) {
+        final notifType = markCompleted ? 'bill_paid' : 'bill_approved';
+        final notifTitle = markCompleted ? 'Bill Paid' : 'Bill Approved';
+        final notifBody = markCompleted
+            ? '${bill.title} has been marked as paid'
+            : '${bill.title} has been approved (${paymentStatus.label})';
+        await _insertNotification(
+          userId: recipientId,
+          type: notifType,
+          title: notifTitle,
+          body: notifBody,
+          entityId: bill.id,
+          projectId: bill.projectId,
+        );
+      }
+
       return bill;
     } on PostgrestException catch (e) {
       throw DatabaseException.fromPostgrest(e);
@@ -346,9 +388,6 @@ class BillRepository {
     final userId = _client.auth.currentUser?.id;
 
     try {
-      // NOTE: A dedicated `rejection_reason` column should be added to the
-      // bills table. Until then, we do NOT overwrite `description` with the
-      // rejection reason — that would destroy the original bill description.
       final updateData = <String, dynamic>{
         'status': 'rejected',
         'approved_by': userId,
@@ -356,18 +395,32 @@ class BillRepository {
         'updated_at': DateTime.now().toIso8601String(),
       };
       if (reason != null && reason.isNotEmpty) {
-        // Temporary: store reason in notes/rejection_reason if the column
-        // exists; the field is ignored gracefully by Postgres if absent.
         updateData['rejection_reason'] = reason;
       }
       final response = await _client
           .from('bills')
           .update(updateData)
           .eq('id', billId)
-          .select()
+          .select(_billSelectQuery)
           .single();
 
-      return BillModel.fromJson(response);
+      final bill = BillModel.fromJson(response);
+
+      final recipientId = bill.raisedBy ?? bill.createdBy;
+      if (recipientId != null) {
+        await _insertNotification(
+          userId: recipientId,
+          type: 'bill_rejected',
+          title: 'Bill Rejected',
+          body: reason != null && reason.isNotEmpty
+              ? '${bill.title} was rejected: $reason'
+              : '${bill.title} has been rejected',
+          entityId: bill.id,
+          projectId: bill.projectId,
+        );
+      }
+
+      return bill;
     } on PostgrestException catch (e) {
       throw DatabaseException.fromPostgrest(e);
     } catch (e) {
@@ -375,16 +428,92 @@ class BillRepository {
     }
   }
 
-  /// Delete a bill
-  Future<void> deleteBill(String billId) async {
+  Future<void> _insertNotification({
+    required String userId,
+    required String type,
+    required String title,
+    required String body,
+    required String entityId,
+    required String projectId,
+  }) async {
     try {
-      await _client.from('bills').delete().eq('id', billId);
+      await _client.from('notifications').insert({
+        'user_id': userId,
+        'type': type,
+        'title': title,
+        'body': body,
+        'data': {
+          'entity_type': 'bill',
+          'entity_id': entityId,
+          'project_id': projectId,
+        },
+        'is_read': false,
+      });
+    } catch (e) {
+      logger.d('Notification insert failed: $e');
+    }
+  }
+
+  /// Soft-delete a bill (sets deleted_at; keeps the record for the admin bin)
+  Future<void> softDeleteBill(String billId) async {
+    try {
+      await _client
+          .from('bills')
+          .update({'deleted_at': DateTime.now().toIso8601String()})
+          .eq('id', billId);
     } on PostgrestException catch (e) {
       throw DatabaseException.fromPostgrest(e);
     } catch (e) {
       throw Exception('Failed to delete bill: $e');
     }
   }
+
+  /// Restore a soft-deleted bill (clears deleted_at)
+  Future<void> restoreBill(String billId) async {
+    try {
+      await _client
+          .from('bills')
+          .update({'deleted_at': null})
+          .eq('id', billId);
+    } on PostgrestException catch (e) {
+      throw DatabaseException.fromPostgrest(e);
+    } catch (e) {
+      throw Exception('Failed to restore bill: $e');
+    }
+  }
+
+  /// Permanently hard-delete a bill (admin bin only)
+  Future<void> permanentlyDeleteBill(String billId) async {
+    try {
+      await _client.from('bills').delete().eq('id', billId);
+    } on PostgrestException catch (e) {
+      throw DatabaseException.fromPostgrest(e);
+    } catch (e) {
+      throw Exception('Failed to permanently delete bill: $e');
+    }
+  }
+
+  /// Fetch all soft-deleted bills (admin bin view)
+  Future<List<BillModel>> fetchDeletedBills() async {
+    try {
+      final response = await _client
+          .from('bills')
+          .select(_billSelectQuery)
+          .not('deleted_at', 'is', null)
+          .order('deleted_at', ascending: false)
+          .limit(200);
+      return (response as List)
+          .map((json) => BillModel.fromJson(json))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw DatabaseException.fromPostgrest(e);
+    } catch (e) {
+      throw Exception('Failed to fetch deleted bills: $e');
+    }
+  }
+
+  /// Legacy alias kept for compatibility — delegates to softDeleteBill
+  Future<void> deleteBill(String billId) => softDeleteBill(billId);
 
   /// Stream bills for a single project.
   ///
@@ -403,7 +532,10 @@ class BillRepository {
         .eq('project_id', projectId)
         .order('created_at', ascending: false)
         .limit(limit)
-        .map((data) => data.map((json) => BillModel.fromJson(json)).toList());
+        .map((data) => data
+            .where((json) => json['deleted_at'] == null)
+            .map((json) => BillModel.fromJson(json))
+            .toList());
   }
 
   /// Stream bills for the dashboard with a hard cap.
@@ -449,7 +581,10 @@ class BillRepository {
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
         .limit(limit)
-        .map((data) => data.map((json) => BillModel.fromJson(json)).toList())
+        .map((data) => data
+            .where((json) => json['deleted_at'] == null)
+            .map((json) => BillModel.fromJson(json))
+            .toList())
         .map((items) {
           if (!onlyAssignedProjects || userId == null) {
             return items;
@@ -457,7 +592,15 @@ class BillRepository {
           return items
               .where((bill) => assignedProjectIds.contains(bill.projectId))
               .toList();
-        });
+        })
+        // Supabase throws RealtimeSubscribeException into the stream when the
+        // websocket disconnects (app backgrounded). Swallowing it here keeps
+        // the StreamProvider in data state so the last snapshot stays visible;
+        // the channel resubscribes automatically when the socket reconnects.
+        .handleError(
+          (Object e) => logger.d('Bills stream paused (websocket disconnect): $e'),
+          test: (e) => e is RealtimeSubscribeException,
+        );
   }
 }
 

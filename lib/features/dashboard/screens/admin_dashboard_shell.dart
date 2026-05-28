@@ -63,16 +63,19 @@ class DashboardShell extends ConsumerWidget {
           );
         }
 
-        // Mobile: bottom nav only for main tab routes
-        final showBottomNav = _isMainTabRoute(location);
+        // Mobile: bottom nav on all shell routes (shell is only rendered for authed users)
         return Scaffold(
+          // Inner scaffolds handle their own keyboard avoidance — disable here
+          // to prevent the bottom nav from double-shifting when a keyboard opens.
+          resizeToAvoidBottomInset: false,
           body: Column(
             children: [
-              const SyncBanner(),
+              // SafeArea only top so the banner doesn't overlap the status bar
+              const SafeArea(bottom: false, child: SyncBanner()),
               Expanded(child: child),
             ],
           ),
-          bottomNavigationBar: showBottomNav
+          bottomNavigationBar: true
               ? Container(
                   decoration: const BoxDecoration(
                     color: AppColors.surface,
@@ -116,31 +119,18 @@ class DashboardShell extends ConsumerWidget {
   }
 
   int _resolveActiveIndex(String location, List<_NavDestination> dests) {
-    // Match most specific first
-    if (location.startsWith('/projects')) return 1;
-    if (location.startsWith('/bills')) return 2;
-
-    // Reports is index 3 only when it exists (admin roles)
-    final hasReports = dests.length > 4;
-    if (hasReports && location.startsWith('/reports')) return 3;
-
-    final profileIndex = hasReports ? 4 : 3;
-    if (location.startsWith('/profile')) return profileIndex;
-
-    // Everything else (dashboard, master routes, admin routes) → Home
-    return 0;
-  }
-
-  bool _isMainTabRoute(String location) {
-    const mainRoutes = {
-      '/admin/dashboard',
-      '/site-manager/dashboard',
-      '/projects',
-      '/bills',
-      '/reports',
-      '/profile',
-    };
-    return mainRoutes.contains(location);
+    // Pick the destination whose route is the longest prefix of location.
+    // Longest-prefix wins so /bills/approval-queue → Bills, /projects/create → Projects.
+    int best = 0;
+    int bestLen = 0;
+    for (int i = 0; i < dests.length; i++) {
+      final route = dests[i].route;
+      if (location.startsWith(route) && route.length > bestLen) {
+        best = i;
+        bestLen = route.length;
+      }
+    }
+    return best;
   }
 }
 

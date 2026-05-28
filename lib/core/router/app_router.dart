@@ -30,6 +30,7 @@ import '../../features/reports/screens/reports_screen.dart';
 import '../../features/bills/screens/bills_screen.dart';
 import '../../features/bills/screens/create_bill_screen.dart';
 import '../../features/bills/screens/admin_approval_queue_screen.dart';
+import '../../features/bills/screens/bills_bin_screen.dart';
 import '../../features/materials/screens/materials_tab_screen.dart';
 import '../../features/materials/screens/material_master_list_screen.dart';
 import '../../features/materials/screens/material_receive_screen.dart';
@@ -222,6 +223,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: 'admin-approval-queue',
                 builder: (context, state) =>
                     const AdminApprovalQueueScreen(),
+              ),
+              GoRoute(
+                path: 'bin',
+                name: 'bills-bin',
+                builder: (context, state) => const BillsBinScreen(),
               ),
             ],
           ),
@@ -544,6 +550,7 @@ bool _requiresAdmin(String path) {
     '/suppliers',
     '/vendors',
     '/bills/approval-queue',
+    '/bills/bin',
     '/projects/create',
   };
   if (adminOnlyRoutes.contains(path)) return true;

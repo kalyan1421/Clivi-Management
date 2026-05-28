@@ -361,6 +361,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             label: 'Site Managers',
             onTap: () => context.push('/admin/site-managers'),
           ),
+        if (isAdmin)
+          _MenuTile(
+            icon: Icons.delete_outline_rounded,
+            label: 'Deleted Bills (Bin)',
+            subtitle: 'Restore or permanently delete',
+            onTap: () => context.push('/bills/bin'),
+          ),
       ],
     );
   }

@@ -82,6 +82,11 @@ class CliviManagementApp extends ConsumerWidget {
       next.whenData((state) {
         if (state != null) {
           SupabaseConfig.handleAppLifecycle(state);
+          // Re-initialise the global realtime channel on resume so any
+          // channels that timed out while backgrounded resubscribe cleanly.
+          if (state == AppLifecycleState.resumed) {
+            ref.invalidate(globalRealtimeSyncProvider);
+          }
         }
       });
     });

@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -168,9 +169,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               onRefresh: () =>
                   notifier.refresh(projectId: widget.projectId),
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: r.isDesktop ? 32 : 20,
-                  vertical: r.isDesktop ? 28 : 16,
+                padding: EdgeInsets.fromLTRB(
+                  r.isDesktop ? 32 : 20,
+                  r.isDesktop ? 28 : 8,
+                  r.isDesktop ? 32 : 20,
+                  r.isDesktop ? 28 : 16,
                 ),
                 child: Align(
                   alignment: Alignment.topCenter,
@@ -200,6 +203,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             onRetry: () => notifier.refresh(),
                           )
                         else ...[
+                          // KPI summary row
+                          _KpiSummaryRow(stats: state.stats),
+                          const SizedBox(height: 20),
+
                           // Desktop: side-by-side charts
                           if (r.isDesktop)
                             Row(
@@ -224,7 +231,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           ],
                           const SizedBox(height: 20),
 
+                          // Project-wise breakdown (only on global reports)
                           if (widget.projectId == null) ...[
+                            _ProjectBreakdownSection(
+                              materialRows: state.materialVendors,
+                              machineryRows: state.machineryProjects,
+                              labourRows: state.labourProjects,
+                              isLoading: state.isLoading,
+                            ),
+                            const SizedBox(height: 20),
                             _VendorAnalyticsSection(),
                             const SizedBox(height: 20),
                           ],
@@ -257,33 +272,51 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   Widget _buildHeader(BuildContext context, ReportState state) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(
-          'Insights',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-        ),
-        if (widget.projectId != null) ...[
-          const SizedBox(width: 10),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'Project',
-              style: TextStyle(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'ANALYTICS',
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+                color: AppColors.secondaryDark,
+                letterSpacing: 2.2,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 6),
+            Text(
+              'Reports',
+              style: GoogleFonts.fraunces(
+                fontSize: 32,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textPrimary,
+                letterSpacing: -1.0,
+                height: 1.0,
+              ),
+            ),
+            if (widget.projectId != null) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Project',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         const Spacer(),
         Material(
           color: Colors.white,
@@ -305,8 +338,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     const SizedBox(
                       width: 16,
                       height: 16,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   else
                     Icon(Icons.download_rounded,
@@ -401,6 +433,339 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           error: (_, _) => const SizedBox.shrink(),
         ),
       ],
+    );
+  }
+}
+
+// ── KPI Summary Row ──
+
+class _KpiSummaryRow extends StatelessWidget {
+  final FinancialStats stats;
+  const _KpiSummaryRow({required this.stats});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _KpiItem(
+        label: 'Total Spend',
+        value: _fmt(stats.totalExpenses),
+        icon: Icons.currency_rupee_rounded,
+        color: AppColors.primary,
+      ),
+      _KpiItem(
+        label: 'Labour',
+        value: _fmt(stats.laborCost),
+        icon: Icons.people_outline_rounded,
+        color: AppColors.warning,
+      ),
+      _KpiItem(
+        label: 'Material',
+        value: _fmt(stats.materialCost),
+        icon: Icons.inventory_2_outlined,
+        color: AppColors.success,
+      ),
+      _KpiItem(
+        label: 'Machinery',
+        value: _fmt(stats.machineryCost),
+        icon: Icons.precision_manufacturing_outlined,
+        color: AppColors.info,
+      ),
+    ];
+
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 2.2,
+      children: items.map((item) => _KpiCard(item: item)).toList(),
+    );
+  }
+
+  String _fmt(double v) => v >= 100000
+      ? '₹${(v / 100000).toStringAsFixed(1)}L'
+      : v >= 1000
+          ? '₹${(v / 1000).toStringAsFixed(0)}K'
+          : '₹${v.toStringAsFixed(0)}';
+}
+
+class _KpiItem {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  const _KpiItem({required this.label, required this.value, required this.icon, required this.color});
+}
+
+class _KpiCard extends StatelessWidget {
+  final _KpiItem item;
+  const _KpiCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderDark.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: item.color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(item.icon, size: 18, color: item.color),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  item.value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Project-wise Breakdown ──
+
+class _ProjectBreakdownSection extends StatelessWidget {
+  final List<MaterialVendorReportRow> materialRows;
+  final List<MachineryProjectReportRow> machineryRows;
+  final List<LabourProjectReportRow> labourRows;
+  final bool isLoading;
+
+  const _ProjectBreakdownSection({
+    required this.materialRows,
+    required this.machineryRows,
+    required this.labourRows,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Aggregate material count per project
+    final Map<String, int> materialByProject = {};
+    for (final r in materialRows) {
+      materialByProject[r.projectName] =
+          (materialByProject[r.projectName] ?? 0) + 1;
+    }
+
+    // Aggregate machinery hours per project
+    final Map<String, double> machineryByProject = {};
+    for (final r in machineryRows) {
+      machineryByProject[r.projectName] =
+          (machineryByProject[r.projectName] ?? 0) + r.totalHours;
+    }
+
+    // Aggregate labour count per project
+    final Map<String, int> labourByProject = {};
+    for (final r in labourRows) {
+      labourByProject[r.projectName] =
+          (labourByProject[r.projectName] ?? 0) + 1;
+    }
+
+    // Union of all project names
+    final allProjects = <String>{
+      ...materialByProject.keys,
+      ...machineryByProject.keys,
+      ...labourByProject.keys,
+    }.toList()..sort();
+
+    if (allProjects.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderDark.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bar_chart_rounded, size: 18, color: AppColors.textSecondary),
+              const SizedBox(width: 8),
+              Text(
+                'Project-wise Breakdown',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              if (isLoading) ...[
+                const Spacer(),
+                const SizedBox(
+                  height: 14,
+                  width: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Resource activity across all active projects',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 18),
+          ...allProjects.map((project) {
+            final mCount = materialByProject[project] ?? 0;
+            final mHours = machineryByProject[project] ?? 0;
+            final lCount = labourByProject[project] ?? 0;
+            return _ProjectBreakdownRow(
+              projectName: project,
+              materialCount: mCount,
+              machineryHours: mHours,
+              labourCount: lCount,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectBreakdownRow extends StatelessWidget {
+  final String projectName;
+  final int materialCount;
+  final double machineryHours;
+  final int labourCount;
+
+  const _ProjectBreakdownRow({
+    required this.projectName,
+    required this.materialCount,
+    required this.machineryHours,
+    required this.labourCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  projectName,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 14),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                if (materialCount > 0)
+                  _ProjectBadge(
+                    icon: Icons.inventory_2_outlined,
+                    label: '$materialCount material${materialCount > 1 ? "s" : ""}',
+                    color: AppColors.success,
+                  ),
+                if (machineryHours > 0)
+                  _ProjectBadge(
+                    icon: Icons.precision_manufacturing_outlined,
+                    label: '${machineryHours.toStringAsFixed(0)} machinery hrs',
+                    color: AppColors.primary,
+                  ),
+                if (labourCount > 0)
+                  _ProjectBadge(
+                    icon: Icons.people_outline_rounded,
+                    label: '$labourCount worker${labourCount > 1 ? "s" : ""}',
+                    color: AppColors.warning,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  const _ProjectBadge({required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

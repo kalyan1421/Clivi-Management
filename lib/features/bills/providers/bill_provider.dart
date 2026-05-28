@@ -4,6 +4,15 @@ import '../data/models/bill_model.dart';
 import '../data/repositories/bill_repository.dart';
 
 // ============================================================
+// CONSTANTS
+// ============================================================
+
+/// Passed to dashboardBillsCombined/Stream/Fetch providers to mean
+/// "admin sees all projects". Defined once so a future role change
+/// only needs updating here.
+const bool kAdminSeesAllBills = false;
+
+// ============================================================
 // REPOSITORY PROVIDER
 // ============================================================
 
@@ -210,23 +219,15 @@ class BillController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> approveBill(String billId) async {
-    state = const AsyncValue.loading();
-    try {
-      await _repository.approveBill(billId);
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  Future<void> rejectBill(String billId, {String? reason}) async {
+  Future<bool> rejectBill(String billId, {String? reason}) async {
     state = const AsyncValue.loading();
     try {
       await _repository.rejectBill(billId, reason: reason);
       state = const AsyncValue.data(null);
+      return true;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      return false;
     }
   }
 
@@ -257,6 +258,30 @@ class BillController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  Future<bool> softDeleteBill(String billId) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.softDeleteBill(billId);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  Future<bool> restoreBill(String billId) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.restoreBill(billId);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
   Future<bool> updateBillApproval({
     required String billId,
     required PaymentStatus paymentStatus,
@@ -278,11 +303,17 @@ class BillController extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-// Controller Provider
+// Controller Provider — NOT autoDispose so it stays alive during async operations
 final billControllerProvider =
     StateNotifierProvider<BillController, AsyncValue<void>>((ref) {
       return BillController(ref.watch(billRepositoryProvider));
     });
+
+/// Provider for fetching soft-deleted bills (admin bin)
+final deletedBillsProvider = FutureProvider<List<BillModel>>((ref) {
+  final repository = ref.watch(billRepositoryProvider);
+  return repository.fetchDeletedBills();
+});
 
 BillModel _mergeBillSnapshot(BillModel fetched, BillModel streamed) {
   return streamed.copyWith(

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +18,7 @@ import '../../../core/widgets/loading_widget.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../data/models/bill_model.dart';
 import '../providers/bill_provider.dart';
+import '../widgets/bill_approval_sheet.dart';
 
 class BillsScreen extends ConsumerStatefulWidget {
   const BillsScreen({super.key});
@@ -28,7 +30,9 @@ class BillsScreen extends ConsumerStatefulWidget {
 class _BillsScreenState extends ConsumerState<BillsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  DateTime? _selectedFilterDate;
+  DateTimeRange? _dateRange;
+  BillType? _filterType;
+  PaymentStatus? _filterPaymentStatus;
 
   @override
   void initState() {
@@ -49,14 +53,144 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
     super.dispose();
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+  bool get _hasActiveFilters =>
+      _dateRange != null || _filterType != null || _filterPaymentStatus != null;
+
+  void _clearAllFilters() {
+    setState(() {
+      _dateRange = null;
+      _filterType = null;
+      _filterPaymentStatus = null;
+    });
+  }
+
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
       context: context,
-      initialDate: _selectedFilterDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _dateRange,
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: AppColors.primary,
+          ),
+        ),
+        child: child!,
+      ),
     );
-    if (picked != null) setState(() => _selectedFilterDate = picked);
+    if (picked != null) setState(() => _dateRange = picked);
+  }
+
+  Future<void> _showFilterSheet() async {
+    BillType? tmpType = _filterType;
+    PaymentStatus? tmpPaymentStatus = _filterPaymentStatus;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Filter Bills',
+                      style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () {
+                      setSheet(() {
+                        tmpType = null;
+                        tmpPaymentStatus = null;
+                      });
+                    },
+                    child: const Text('Clear All'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text('Bill Type',
+                  style: Theme.of(ctx)
+                      .textTheme
+                      .labelMedium
+                      ?.copyWith(color: AppColors.textSecondary)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: BillType.values.map((t) {
+                  final selected = tmpType == t;
+                  return FilterChip(
+                    label: Text(t.label),
+                    selected: selected,
+                    onSelected: (v) =>
+                        setSheet(() => tmpType = v ? t : null),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                    checkmarkColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      color:
+                          selected ? AppColors.primary : AppColors.textPrimary,
+                      fontSize: 12.5,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+              Text('Payment Status',
+                  style: Theme.of(ctx)
+                      .textTheme
+                      .labelMedium
+                      ?.copyWith(color: AppColors.textSecondary)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: PaymentStatus.values.map((s) {
+                  final selected = tmpPaymentStatus == s;
+                  return FilterChip(
+                    label: Text(s.label),
+                    selected: selected,
+                    onSelected: (v) =>
+                        setSheet(() => tmpPaymentStatus = v ? s : null),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                    checkmarkColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      color:
+                          selected ? AppColors.primary : AppColors.textPrimary,
+                      fontSize: 12.5,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _filterType = tmpType;
+                      _filterPaymentStatus = tmpPaymentStatus;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Apply Filters'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -86,7 +220,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                 Padding(
                   padding: EdgeInsets.fromLTRB(
                     r.isDesktop ? 32 : 20,
-                    r.isDesktop ? 28 : 16,
+                    r.isDesktop ? 28 : 8,
                     r.isDesktop ? 32 : 20,
                     0,
                   ),
@@ -97,6 +231,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                           BoxConstraints(maxWidth: r.maxContentWidth),
                       child: _buildHeader(
                         context,
+                        r: r,
                         isAdmin: isAdmin,
                         isSiteManager: isSiteManager,
                         pendingCount: pendingCount,
@@ -112,19 +247,25 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                   child: billsAsync.when(
                     data: (bills) {
                       final filtered = bills.where((bill) {
-                        bool matchesDate = true;
-                        if (_selectedFilterDate != null) {
-                          matchesDate =
-                              bill.billDate.year ==
-                                      _selectedFilterDate!.year &&
-                                  bill.billDate.month ==
-                                      _selectedFilterDate!.month &&
-                                  bill.billDate.day ==
-                                      _selectedFilterDate!.day;
+                        if (_dateRange != null) {
+                          final d = DateTime(
+                              bill.billDate.year, bill.billDate.month, bill.billDate.day);
+                          final start = DateTime(_dateRange!.start.year,
+                              _dateRange!.start.month, _dateRange!.start.day);
+                          final end = DateTime(_dateRange!.end.year,
+                              _dateRange!.end.month, _dateRange!.end.day);
+                          if (d.isBefore(start) || d.isAfter(end)) return false;
+                        }
+                        if (_filterType != null && bill.type != _filterType) {
+                          return false;
+                        }
+                        if (_filterPaymentStatus != null &&
+                            bill.paymentStatus != _filterPaymentStatus) {
+                          return false;
                         }
                         return _showCompletedTab
-                            ? bill.status.isCompleted && matchesDate
-                            : !bill.status.isCompleted && matchesDate;
+                            ? bill.status.isCompleted
+                            : !bill.status.isCompleted;
                       }).toList()
                         ..sort(
                             (a, b) => b.billDate.compareTo(a.billDate));
@@ -156,6 +297,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
 
   Widget _buildHeader(
     BuildContext context, {
+    required R r,
     required bool isAdmin,
     required bool isSiteManager,
     required int pendingCount,
@@ -198,7 +340,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
         ),
         const SizedBox(height: 10),
 
-        // Title row + actions
+        // Title row + filter actions
         Row(
           children: [
             Expanded(
@@ -213,13 +355,19 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                 ),
               ),
             ),
-            _DateFilterChip(
-              selectedDate: _selectedFilterDate,
-              onTap: _pickDate,
-              onClear: () => setState(() => _selectedFilterDate = null),
+            _DateRangeChip(
+              dateRange: _dateRange,
+              onTap: _pickDateRange,
+              onClear: () => setState(() => _dateRange = null),
             ),
-            if (isSiteManager) ...[
-              const SizedBox(width: 10),
+            const SizedBox(width: 8),
+            _FilterIconButton(
+              hasActiveFilters: _filterType != null || _filterPaymentStatus != null,
+              onTap: _showFilterSheet,
+            ),
+            // On desktop keep action buttons in the same row
+            if (r.isDesktop && (isSiteManager || isAdmin)) ...[
+              const SizedBox(width: 8),
               _HeaderButton(
                 icon: Icons.add_rounded,
                 label: 'New',
@@ -227,17 +375,80 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                 onTap: () => context.push('/bills/create'),
               ),
             ],
-            if (isAdmin) ...[
-              const SizedBox(width: 10),
+            if (r.isDesktop && isAdmin) ...[
+              const SizedBox(width: 8),
               _HeaderButton(
                 icon: Icons.checklist_rounded,
-                label: 'Approve',
-                filled: true,
+                label: 'Queue',
+                filled: false,
                 onTap: () => context.push('/bills/approval-queue'),
               ),
             ],
           ],
         ),
+        // On mobile: action buttons on their own row
+        if (!r.isDesktop && (isSiteManager || isAdmin)) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _HeaderButton(
+                icon: Icons.add_rounded,
+                label: 'New',
+                filled: true,
+                onTap: () => context.push('/bills/create'),
+              ),
+              if (isAdmin) ...[
+                const SizedBox(width: 8),
+                _HeaderButton(
+                  icon: Icons.checklist_rounded,
+                  label: 'Queue',
+                  filled: false,
+                  onTap: () => context.push('/bills/approval-queue'),
+                ),
+              ],
+            ],
+          ),
+        ],
+        if (_hasActiveFilters) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              if (_dateRange != null)
+                _ActiveFilterChip(
+                  label: '${DateFormat('dd MMM').format(_dateRange!.start)} – ${DateFormat('dd MMM').format(_dateRange!.end)}',
+                  onRemove: () => setState(() => _dateRange = null),
+                ),
+              if (_filterType != null)
+                _ActiveFilterChip(
+                  label: _filterType!.label,
+                  onRemove: () => setState(() => _filterType = null),
+                ),
+              if (_filterPaymentStatus != null)
+                _ActiveFilterChip(
+                  label: _filterPaymentStatus!.label,
+                  onRemove: () => setState(() => _filterPaymentStatus = null),
+                ),
+              const Spacer(),
+              TextButton(
+                onPressed: _clearAllFilters,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Clear all',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 18),
 
         // Tab bar — refined segmented control
@@ -538,10 +749,10 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                   setModalState(() => isSaving = false);
                 }
                 if (success) {
-                  _refreshBillData();
                   if (sheetContext.mounted) {
                     Navigator.of(sheetContext).pop();
                   }
+                  _refreshBillData();
                   if (mounted) {
                     ScaffoldMessenger.of(this.context).showSnackBar(
                       const SnackBar(
@@ -709,25 +920,62 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
                         onTap: isSaving
                             ? null
                             : () async {
-                                final result =
-                                    await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  allowedExtensions: [
-                                    'jpg',
-                                    'jpeg',
-                                    'png',
-                                    'pdf',
-                                  ],
-                                  withData: true,
+                                await showModalBottomSheet<void>(
+                                  context: context,
+                                  builder: (ctx) => SafeArea(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ListTile(
+                                          leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                                          title: const Text('Take Photo'),
+                                          onTap: () async {
+                                            Navigator.pop(ctx);
+                                            final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85);
+                                            if (picked == null) return;
+                                            final bytes = await picked.readAsBytes();
+                                            setModalState(() {
+                                              receiptBytes = bytes;
+                                              receiptName = picked.name;
+                                            });
+                                          },
+                                        ),
+                                        ListTile(
+                                          leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                                          title: const Text('Choose from Gallery'),
+                                          onTap: () async {
+                                            Navigator.pop(ctx);
+                                            final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+                                            if (picked == null) return;
+                                            final bytes = await picked.readAsBytes();
+                                            setModalState(() {
+                                              receiptBytes = bytes;
+                                              receiptName = picked.name;
+                                            });
+                                          },
+                                        ),
+                                        ListTile(
+                                          leading: const Icon(Icons.attach_file_outlined, color: AppColors.primary),
+                                          title: const Text('Browse Files (PDF / Image)'),
+                                          onTap: () async {
+                                            Navigator.pop(ctx);
+                                            final result = await FilePicker.platform.pickFiles(
+                                              type: FileType.custom,
+                                              allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+                                              withData: true,
+                                            );
+                                            if (result != null && result.files.single.bytes != null) {
+                                              setModalState(() {
+                                                receiptBytes = result.files.single.bytes;
+                                                receiptName = result.files.single.name;
+                                              });
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 );
-                                if (result != null &&
-                                    result.files.single.bytes != null) {
-                                  setModalState(() {
-                                    receiptBytes =
-                                        result.files.single.bytes;
-                                    receiptName = result.files.single.name;
-                                  });
-                                }
                               },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -881,152 +1129,25 @@ class _BillsScreenState extends ConsumerState<BillsScreen>
 
     if (shouldDelete != true || !mounted) return;
 
-    final success =
-        await ref.read(billControllerProvider.notifier).deleteBill(bill.id);
+    final success = await ref
+        .read(billControllerProvider.notifier)
+        .softDeleteBill(bill.id);
     if (!mounted) return;
 
     if (success) _refreshBillData();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-            success ? 'Bill deleted successfully' : 'Failed to delete bill'),
+        content: Text(success ? 'Bill moved to Bin' : 'Failed to delete bill'),
       ),
     );
   }
 
-  Future<void> _showAdminApprovalDialog(BillModel bill) async {
-    PaymentStatus selectedPaymentStatus = bill.paymentStatus;
-    bool markCompleted = bill.status.isCompleted;
-    bool isSaving = false;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            Future<void> saveApproval() async {
-              setModalState(() => isSaving = true);
-              final success = await ref
-                  .read(billControllerProvider.notifier)
-                  .updateBillApproval(
-                    billId: bill.id,
-                    paymentStatus: selectedPaymentStatus,
-                    markCompleted: markCompleted,
-                  );
-              if (sheetContext.mounted) {
-                setModalState(() => isSaving = false);
-              }
-              if (success) {
-                _refreshBillData();
-                if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-                if (mounted) {
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Bill updated successfully')),
-                  );
-                }
-              } else {
-                if (mounted) {
-                  final state = ref.read(billControllerProvider);
-                  final errorMessage = state.hasError
-                      ? state.error.toString()
-                      : 'Failed to update bill';
-                  ScaffoldMessenger.of(this.context)
-                      .showSnackBar(SnackBar(content: Text(errorMessage)));
-                }
-              }
-            }
-
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                20,
-                16,
-                16 + MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Approve Bill',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    bill.title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<PaymentStatus>(
-                    initialValue: selectedPaymentStatus,
-                    decoration: const InputDecoration(
-                      labelText: 'Payment Decision',
-                      prefixIcon: Icon(Icons.payments_outlined),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                          value: PaymentStatus.needToPay,
-                          child: Text('Pending')),
-                      DropdownMenuItem(
-                          value: PaymentStatus.advance,
-                          child: Text('Will Pay')),
-                      DropdownMenuItem(
-                          value: PaymentStatus.halfPaid,
-                          child: Text('Half Paid')),
-                      DropdownMenuItem(
-                          value: PaymentStatus.fullPaid,
-                          child: Text('Paid')),
-                    ],
-                    onChanged: isSaving
-                        ? null
-                        : (v) {
-                            if (v != null) {
-                              setModalState(
-                                  () => selectedPaymentStatus = v);
-                            }
-                          },
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile(
-                    value: markCompleted,
-                    onChanged: isSaving
-                        ? null
-                        : (v) => setModalState(() => markCompleted = v),
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Mark as Completed'),
-                    subtitle: const Text(
-                        'Completed bills move to Completed tab'),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isSaving ? null : saveApproval,
-                      child: isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2),
-                            )
-                          : const Text('Save Update'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+  Future<void> _showAdminApprovalDialog(BillModel bill) {
+    return BillApprovalSheet.show(
+      context,
+      bill: bill,
+      onSuccess: _refreshBillData,
     );
   }
 }
@@ -1238,20 +1359,20 @@ enum _BillMenuAction { edit, delete }
 
 // ── Shared Widgets ──
 
-class _DateFilterChip extends StatelessWidget {
-  final DateTime? selectedDate;
+class _DateRangeChip extends StatelessWidget {
+  final DateTimeRange? dateRange;
   final VoidCallback onTap;
   final VoidCallback onClear;
 
-  const _DateFilterChip({
-    required this.selectedDate,
+  const _DateRangeChip({
+    required this.dateRange,
     required this.onTap,
     required this.onClear,
   });
 
   @override
   Widget build(BuildContext context) {
-    final active = selectedDate != null;
+    final active = dateRange != null;
     return Material(
       color: active ? AppColors.primary : AppColors.surface,
       borderRadius: BorderRadius.circular(999),
@@ -1259,50 +1380,141 @@ class _DateFilterChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Container(
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
-            border: active
-                ? null
-                : Border.all(color: AppColors.border),
+            border: active ? null : Border.all(color: AppColors.border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.calendar_today_outlined,
+                Icons.date_range_outlined,
                 size: 14,
-                color: active
-                    ? AppColors.textOnPrimary
-                    : AppColors.textPrimary,
+                color: active ? AppColors.textOnPrimary : AppColors.textPrimary,
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: 6),
               Text(
-                active ? DateFormat('dd MMM').format(selectedDate!) : 'Date',
+                active
+                    ? '${DateFormat('dd MMM').format(dateRange!.start)} – ${DateFormat('dd MMM').format(dateRange!.end)}'
+                    : 'Date',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12.5,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: active
-                      ? AppColors.textOnPrimary
-                      : AppColors.textPrimary,
-                  letterSpacing: 0,
+                  color:
+                      active ? AppColors.textOnPrimary : AppColors.textPrimary,
                 ),
               ),
               if (active) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 GestureDetector(
                   onTap: onClear,
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 14,
-                    color: AppColors.textOnPrimary.withValues(alpha: 0.8),
-                  ),
+                  child: Icon(Icons.close_rounded,
+                      size: 14,
+                      color: AppColors.textOnPrimary.withValues(alpha: 0.8)),
                 ),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FilterIconButton extends StatelessWidget {
+  final bool hasActiveFilters;
+  final VoidCallback onTap;
+
+  const _FilterIconButton({
+    required this.hasActiveFilters,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: hasActiveFilters
+          ? AppColors.primary.withValues(alpha: 0.1)
+          : AppColors.surface,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: hasActiveFilters ? AppColors.primary : AppColors.border,
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(Icons.tune_rounded,
+                  size: 18,
+                  color: hasActiveFilters
+                      ? AppColors.primary
+                      : AppColors.textPrimary),
+              if (hasActiveFilters)
+                Positioned(
+                  top: 5,
+                  right: 5,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.surface, width: 1),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveFilterChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onRemove;
+
+  const _ActiveFilterChip({required this.label, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: onRemove,
+            child: Icon(Icons.close_rounded,
+                size: 13, color: AppColors.primary.withValues(alpha: 0.8)),
+          ),
+        ],
       ),
     );
   }

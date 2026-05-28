@@ -49,101 +49,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
       },
       child: ResponsiveScaffold(
         backgroundColor: AppColors.scaffoldBackground,
-        appBar: AppBar(
-          backgroundColor: AppColors.surface,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-            tooltip: 'Back',
-            onPressed: () => _navigateBack(userRole),
-          ),
-          title: Text(
-            projectState.project?.name ?? 'Project Details',
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          actions: [
-            if (isAdmin)
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, color: AppColors.textPrimary),
-                tooltip: 'Edit project',
-                onPressed: () => context.pushNamed(
-                  'edit-project',
-                  pathParameters: {'id': widget.projectId},
-                ),
-              ),
-            if (isAdmin)
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: _confirmDelete,
-                tooltip: 'Delete project',
-              ),
-          ],
-        ),
         builder: (context, r) {
-          if (projectState.isLoading) {
-            return const LoadingWidget();
-          }
-          if (projectState.error != null) {
-            return AppErrorWidget(
-              message: projectState.error!,
-              onRetry: () => ref
-                  .read(projectDetailProvider(widget.projectId).notifier)
-                  .refresh(),
-            );
-          }
-          if (projectState.project == null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceVariant,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.folder_off_outlined,
-                        size: 28,
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Project not found',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'It may have been deleted or you no longer have access.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                    ),
-                    const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: () => _navigateBack(userRole),
-                      child: const Text('Back to dashboard'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
           return Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
@@ -153,27 +59,124 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _HeroSection(
-                      project: projectState.project!,
-                      isAdmin: isAdmin,
-                      onEditManager: () => _showAssignManagerSheet(context),
-                      onEditProject: () => context.pushNamed(
-                        'edit-project',
-                        pathParameters: {'id': widget.projectId},
-                      ),
-                      onUpdateStatus: () => _showStatusUpdateSheet(
-                        context,
-                        projectState.project!,
-                      ),
-                      onUpdateProgress: isAdmin
-                          ? () => _showProgressUpdateDialog(
-                              context,
-                              projectState.project!,
-                            )
-                          : null,
+                    // Inline action bar (back + edit/delete)
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: () => _navigateBack(userRole),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              size: 18,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        if (isAdmin && projectState.project != null) ...[
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined,
+                                color: AppColors.textPrimary, size: 22),
+                            tooltip: 'Edit project',
+                            onPressed: () => context.pushNamed(
+                              'edit-project',
+                              pathParameters: {'id': widget.projectId},
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline,
+                                color: Colors.red, size: 22),
+                            tooltip: 'Delete project',
+                            onPressed: _confirmDelete,
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    _ModuleNavigation(projectId: widget.projectId),
+                    const SizedBox(height: 16),
+                    if (projectState.isLoading)
+                      const LoadingWidget()
+                    else if (projectState.error != null)
+                      AppErrorWidget(
+                        message: projectState.error!,
+                        onRetry: () => ref
+                            .read(projectDetailProvider(widget.projectId)
+                                .notifier)
+                            .refresh(),
+                      )
+                    else if (projectState.project == null)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.surfaceVariant,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.folder_off_outlined,
+                                  size: 28,
+                                  color: AppColors.textHint,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Project not found',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'It may have been deleted or you no longer have access.',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: AppColors.textSecondary),
+                              ),
+                              const SizedBox(height: 20),
+                              FilledButton(
+                                onPressed: () => _navigateBack(userRole),
+                                child: const Text('Back to dashboard'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else ...[
+                      _HeroSection(
+                        project: projectState.project!,
+                        isAdmin: isAdmin,
+                        onEditManager: () =>
+                            _showAssignManagerSheet(context),
+                        onEditProject: () => context.pushNamed(
+                          'edit-project',
+                          pathParameters: {'id': widget.projectId},
+                        ),
+                        onUpdateStatus: () => _showStatusUpdateSheet(
+                          context,
+                          projectState.project!,
+                        ),
+                        onUpdateProgress: isAdmin
+                            ? () => _showProgressUpdateDialog(
+                                context, projectState.project!)
+                            : null,
+                      ),
+                      const SizedBox(height: 24),
+                      _ModuleNavigation(projectId: widget.projectId),
+                    ],
                   ],
                 ),
               ),

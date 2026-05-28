@@ -11,6 +11,7 @@ import '../../auth/providers/auth_repository_provider.dart';
 import '../../projects/providers/project_provider.dart';
 import '../data/models/bill_model.dart';
 import '../providers/bill_provider.dart';
+import '../widgets/bill_approval_sheet.dart';
 
 final approvalQueueSiteManagersProvider =
     FutureProvider<List<UserProfileModel>>((ref) async {
@@ -69,7 +70,7 @@ class _AdminApprovalQueueScreenState
       );
     }
 
-    final billsAsync = ref.watch(dashboardBillsCombinedProvider(false));
+    final billsAsync = ref.watch(dashboardBillsCombinedProvider(kAdminSeesAllBills));
     final projectsState = ref.watch(projectListProvider);
     final siteManagersAsync = ref.watch(approvalQueueSiteManagersProvider);
 
@@ -122,7 +123,7 @@ class _AdminApprovalQueueScreenState
               error: (err, st) => AppErrorWidget(
                 message: err.toString(),
                 onRetry: () =>
-                    ref.refresh(dashboardBillsCombinedProvider(false)),
+                    ref.invalidate(dashboardBillsCombinedProvider(kAdminSeesAllBills)),
               ),
             ),
           ),
@@ -269,131 +270,13 @@ class _AdminApprovalQueueScreenState
     }
   }
 
-  Future<void> _showApprovalDialog(BillModel bill) async {
-    PaymentStatus selectedPaymentStatus = bill.paymentStatus;
-    bool markCompleted = bill.status.isCompleted;
-    bool isSaving = false;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            Future<void> saveApproval() async {
-              setModalState(() => isSaving = true);
-              final success = await ref
-                  .read(billControllerProvider.notifier)
-                  .updateBillApproval(
-                    billId: bill.id,
-                    paymentStatus: selectedPaymentStatus,
-                    markCompleted: markCompleted,
-                  );
-
-              if (!mounted) return;
-              setModalState(() => isSaving = false);
-
-              if (success) {
-                if (sheetContext.mounted) {
-                  Navigator.of(sheetContext).pop();
-                }
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(content: Text('Bill updated successfully')),
-                );
-              } else {
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(content: Text('Failed to update bill')),
-                );
-              }
-            }
-
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                20,
-                16,
-                16 + MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Approve Bill',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    bill.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<PaymentStatus>(
-                    initialValue: selectedPaymentStatus,
-                    decoration: const InputDecoration(
-                      labelText: 'Payment Decision',
-                      prefixIcon: Icon(Icons.payments_outlined),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: PaymentStatus.needToPay,
-                        child: Text('Pending'),
-                      ),
-                      DropdownMenuItem(
-                        value: PaymentStatus.advance,
-                        child: Text('Will Pay'),
-                      ),
-                      DropdownMenuItem(
-                        value: PaymentStatus.halfPaid,
-                        child: Text('Half Paid'),
-                      ),
-                      DropdownMenuItem(
-                        value: PaymentStatus.fullPaid,
-                        child: Text('Paid'),
-                      ),
-                    ],
-                    onChanged: isSaving
-                        ? null
-                        : (value) {
-                            if (value != null) {
-                              setModalState(
-                                () => selectedPaymentStatus = value,
-                              );
-                            }
-                          },
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile(
-                    value: markCompleted,
-                    onChanged: isSaving
-                        ? null
-                        : (value) => setModalState(() => markCompleted = value),
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Mark as Completed'),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isSaving ? null : saveApproval,
-                      child: isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Save Update'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+  Future<void> _showApprovalDialog(BillModel bill) {
+    return BillApprovalSheet.show(
+      context,
+      bill: bill,
+      onSuccess: () {
+        ref.invalidate(dashboardBillsCombinedProvider(kAdminSeesAllBills));
+        ref.invalidate(dashboardBillsProvider(kAdminSeesAllBills));
       },
     );
   }

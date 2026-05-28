@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
@@ -46,21 +47,104 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
   }
 
   Future<void> _pickFile() async {
+    if (!kIsWeb) {
+      await showModalBottomSheet<void>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined, color: Colors.indigo),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickFromCamera();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined, color: Colors.indigo),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickFromGallery();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.attach_file_outlined, color: Colors.indigo),
+                title: const Text('Browse Files (PDF/Image)'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickFromFilePicker();
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      await _pickFromFilePicker();
+    }
+  }
+
+  Future<void> _pickFromCamera() async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 90,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _selectedFileBytes = bytes;
+        _selectedFileName = picked.name;
+        _selectedFile = kIsWeb ? null : File(picked.path);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Camera error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _selectedFileBytes = bytes;
+        _selectedFileName = picked.name;
+        _selectedFile = kIsWeb ? null : File(picked.path);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gallery error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickFromFilePicker() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
-      withData: kIsWeb, // Load bytes on web
+      withData: kIsWeb,
     );
 
     if (result != null) {
       setState(() {
         if (kIsWeb) {
-          // On web: use bytes
           _selectedFileBytes = result.files.single.bytes;
           _selectedFileName = result.files.single.name;
           _selectedFile = null;
         } else {
-          // On mobile: use file path
           if (result.files.single.path != null) {
             _selectedFile = File(result.files.single.path!);
           }
@@ -268,11 +352,11 @@ class _BlueprintUploadScreenState extends ConsumerState<BlueprintUploadScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Upload documentation button
+                    // File picker — camera, gallery, or files
                     OutlinedButton.icon(
                       onPressed: _pickFile,
-                      icon: const Icon(Icons.upload_file),
-                      label: const Text('Upload documentation'),
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: const Text('Attach File (Camera / Gallery / PDF)'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(color: theme.primaryColor),

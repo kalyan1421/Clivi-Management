@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/app_constants.dart';
@@ -85,6 +86,66 @@ class _ProjectSitePhotosScreenState extends State<ProjectSitePhotosScreen> {
   }
 
   Future<void> _uploadPhoto() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickFromSource(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickFromSource(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_file_outlined, color: AppColors.primary),
+              title: const Text('Browse Files'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickFromFiles();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickFromSource(ImageSource source) async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.split('.').last.toLowerCase();
+      await _uploadBytes(
+        bytes: bytes,
+        name: picked.name,
+        mime: ext == 'png' ? 'image/png' : 'image/jpeg',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not capture photo: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickFromFiles() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
@@ -94,28 +155,18 @@ class _ProjectSitePhotosScreenState extends State<ProjectSitePhotosScreen> {
     if (result == null || result.files.isEmpty) return;
 
     setState(() => _uploading = true);
-
     int uploaded = 0;
     int failed = 0;
 
     for (final file in result.files) {
       if (file.bytes == null) continue;
       try {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final sanitized = file.name
-            .replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
-        final path = '${widget.projectId}/${timestamp}_$sanitized';
-
-        await _client.storage
-            .from(AppConstants.bucketProjectImages)
-            .uploadBinary(
-              path,
-              Uint8List.fromList(file.bytes!),
-              fileOptions: FileOptions(
-                upsert: false,
-                contentType: _mimeForFile(file.name),
-              ),
-            );
+        await _uploadBytes(
+          bytes: Uint8List.fromList(file.bytes!),
+          name: file.name,
+          mime: _mimeForFile(file.name),
+          incrementCounter: false,
+        );
         uploaded++;
       } catch (e) {
         logger.w('Failed to upload ${file.name}: $e');
@@ -125,20 +176,52 @@ class _ProjectSitePhotosScreenState extends State<ProjectSitePhotosScreen> {
 
     if (mounted) {
       setState(() => _uploading = false);
-      if (uploaded > 0) {
+      await _loadPhotos();
+      if (!mounted) return;
+      final msg = failed == 0
+          ? '$uploaded photo${uploaded > 1 ? 's' : ''} uploaded'
+          : '$uploaded uploaded, $failed failed';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
+  Future<void> _uploadBytes({
+    required Uint8List bytes,
+    required String name,
+    required String mime,
+    bool incrementCounter = true,
+  }) async {
+    if (incrementCounter) setState(() => _uploading = true);
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final sanitized = name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+      final path = '${widget.projectId}/${timestamp}_$sanitized';
+
+      await _client.storage
+          .from(AppConstants.bucketProjectImages)
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(upsert: true, contentType: mime),
+          );
+
+      if (incrementCounter && mounted) {
+        setState(() => _uploading = false);
         await _loadPhotos();
-        if (!mounted) return;
-        final msg = failed == 0
-            ? '$uploaded photo${uploaded > 1 ? 's' : ''} uploaded'
-            : '$uploaded uploaded, $failed failed';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Photo uploaded')),
+          );
+        }
+      }
+    } catch (e) {
+      if (incrementCounter && mounted) {
+        setState(() => _uploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
-      } else if (failed > 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Upload failed. Please try again.')),
+          SnackBar(content: Text('Upload failed: $e')),
         );
       }
+      rethrow;
     }
   }
 

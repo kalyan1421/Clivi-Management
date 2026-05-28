@@ -3,6 +3,12 @@ import 'responsive.dart';
 
 /// Standard scaffold wrapper that keeps pages scrollable, keyboard-safe,
 /// and constrained for all breakpoints.
+///
+/// ⚠ Nested scroll: this wraps the body in a [SingleChildScrollView].
+/// Do NOT place a [ListView] or [GridView] with default scroll physics
+/// inside it — use [NeverScrollableScrollPhysics] on any inner scroll
+/// view, or don't use this scaffold for screens whose primary content
+/// is already a scrollable list.
 class ResponsiveScaffold extends StatelessWidget {
   const ResponsiveScaffold({
     super.key,

@@ -1,10 +1,11 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/file_upload_widget.dart';
 import '../data/models/bill_model.dart';
 import '../providers/bill_provider.dart';
 import '../../projects/providers/project_provider.dart';
@@ -34,7 +35,6 @@ class _CreateBillScreenState extends ConsumerState<CreateBillScreen> {
   String? _receiptName;
 
   bool _isSubmitting = false;
-  String? _selectedFileName;
   String? _selectedFileSize;
 
   @override
@@ -304,56 +304,120 @@ class _CreateBillScreenState extends ConsumerState<CreateBillScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Receipt Upload
-                    const Text(
-                      'Receipt (PDF)',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    FileUploadWidget(
-                      label: 'Upload PDF',
-                      allowedExtensions: const ['pdf'],
-                      onFileSelected: (fileName, bytes) => setState(() {
-                        _receiptName = fileName;
-                        _receiptBytes = bytes;
-                        _selectedFileName = fileName;
-                        _selectedFileSize =
-                            '${(bytes.length / (1024 * 1024)).toStringAsFixed(2)} MB';
-                      }),
-                    ),
-                    if (_selectedFileName != null) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.picture_as_pdf, color: Colors.red),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _selectedFileName!,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                    // Receipt / Attachment
+                    InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () async {
+                        await showModalBottomSheet<void>(
+                          context: context,
+                          builder: (ctx) => SafeArea(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                                  title: const Text('Take Photo'),
+                                  onTap: () async {
+                                    Navigator.pop(ctx);
+                                    final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85);
+                                    if (picked == null) return;
+                                    final bytes = await picked.readAsBytes();
+                                    setState(() {
+                                      _receiptBytes = bytes;
+                                      _receiptName = picked.name;
+                                      _selectedFileSize = '${(bytes.length / (1024 * 1024)).toStringAsFixed(2)} MB';
+                                    });
+                                  },
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                                  title: const Text('Choose from Gallery'),
+                                  onTap: () async {
+                                    Navigator.pop(ctx);
+                                    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+                                    if (picked == null) return;
+                                    final bytes = await picked.readAsBytes();
+                                    setState(() {
+                                      _receiptBytes = bytes;
+                                      _receiptName = picked.name;
+                                      _selectedFileSize = '${(bytes.length / (1024 * 1024)).toStringAsFixed(2)} MB';
+                                    });
+                                  },
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.attach_file_outlined, color: AppColors.primary),
+                                  title: const Text('Browse Files (PDF / Image)'),
+                                  onTap: () async {
+                                    Navigator.pop(ctx);
+                                    final result = await FilePicker.platform.pickFiles(
+                                      type: FileType.custom,
+                                      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+                                      withData: true,
+                                    );
+                                    if (result != null && result.files.single.bytes != null) {
+                                      final f = result.files.single;
+                                      setState(() {
+                                        _receiptBytes = f.bytes;
+                                        _receiptName = f.name;
+                                        _selectedFileSize = '${((f.bytes!.length) / (1024 * 1024)).toStringAsFixed(2)} MB';
+                                      });
+                                    }
+                                  },
+                                ),
+                              ],
                             ),
                           ),
-                          Text(
-                            _selectedFileSize ?? '',
-                            style: TextStyle(color: AppColors.textSecondary),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _receiptName != null ? AppColors.primary : AppColors.border,
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              setState(() {
-                                _receiptBytes = null;
-                                _receiptName = null;
-                                _selectedFileName = null;
-                                _selectedFileSize = null;
-                              });
-                            },
-                          ),
-                        ],
+                          borderRadius: BorderRadius.circular(10),
+                          color: _receiptName != null
+                              ? AppColors.primary.withValues(alpha: 0.05)
+                              : AppColors.surfaceVariant.withValues(alpha: 0.4),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _receiptName != null ? Icons.check_circle_outline : Icons.attach_file_rounded,
+                              size: 20,
+                              color: _receiptName != null ? AppColors.primary : AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _receiptName ?? 'Attach receipt (photo / PDF) — optional',
+                                style: TextStyle(
+                                  color: _receiptName != null ? AppColors.primary : AppColors.textHint,
+                                  fontWeight: _receiptName != null ? FontWeight.w500 : FontWeight.normal,
+                                  fontSize: 13,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (_receiptName != null) ...[
+                              Text(
+                                _selectedFileSize ?? '',
+                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                              ),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () => setState(() {
+                                  _receiptBytes = null;
+                                  _receiptName = null;
+                                  _selectedFileSize = null;
+                                }),
+                                child: const Icon(Icons.close_rounded, size: 18, color: AppColors.textHint),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                    ],
+                    ),
 
                     const SizedBox(height: 32),
 

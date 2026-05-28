@@ -33,39 +33,48 @@ class AdminDashboard extends ConsumerWidget {
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: r.maxContentWidth),
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: r.isDesktop ? 32 : 20,
-                        vertical: r.isDesktop ? 28 : 20,
+                      padding: EdgeInsets.fromLTRB(
+                        r.isDesktop ? 32 : 20,
+                        r.isDesktop ? 28 : 8,
+                        r.isDesktop ? 32 : 20,
+                        r.isDesktop ? 28 : 20,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Consumer(builder: (context, ref, _) {
-                            final profile = ref.watch(userProfileProvider);
-                            return _buildHeader(context, ref, profile);
-                          }),
+                          RepaintBoundary(
+                            child: Consumer(builder: (context, ref, _) {
+                              final profile = ref.watch(userProfileProvider);
+                              return _buildHeader(context, ref, profile);
+                            }),
+                          ),
                           SizedBox(height: r.isDesktop ? 28 : 20),
-                          Consumer(builder: (context, ref, _) {
-                            final statsState =
-                                ref.watch(dashboardStatsProvider);
-                            final billsAsync = ref.watch(
-                                dashboardBillsCombinedProvider(false));
-                            return _AttentionHero(
-                              stats: statsState.stats,
-                              bills: billsAsync.valueOrNull ??
-                                  const <BillModel>[],
-                            );
-                          }),
+                          RepaintBoundary(
+                            child: Consumer(builder: (context, ref, _) {
+                              final statsState = ref.watch(dashboardStatsProvider);
+                              final billsAsync = ref.watch(
+                                  dashboardBillsCombinedProvider(kAdminSeesAllBills));
+                              return _AttentionHero(
+                                stats: statsState.stats,
+                                bills: billsAsync.valueOrNull ??
+                                    const <BillModel>[],
+                              );
+                            }),
+                          ),
                           SizedBox(height: r.isDesktop ? 28 : 20),
-                          Consumer(builder: (context, ref, _) {
-                            final statsState = ref.watch(dashboardStatsProvider);
-                            return _buildStatsRow(context, ref, statsState, r);
-                          }),
+                          RepaintBoundary(
+                            child: Consumer(builder: (context, ref, _) {
+                              final statsState = ref.watch(dashboardStatsProvider);
+                              return _buildStatsRow(context, ref, statsState, r);
+                            }),
+                          ),
                           SizedBox(height: r.isDesktop ? 28 : 20),
-                          Consumer(builder: (context, ref, _) {
-                            final operationsCounts = ref.watch(operationsLiveCountsProvider);
-                            return _buildQuickActions(context, operationsCounts, r);
-                          }),
+                          RepaintBoundary(
+                            child: Consumer(builder: (context, ref, _) {
+                              final operationsCounts = ref.watch(operationsLiveCountsProvider);
+                              return _buildQuickActions(context, operationsCounts, r);
+                            }),
+                          ),
                           SizedBox(height: r.isDesktop ? 28 : 20),
                           if (r.isDesktop)
                             Row(
@@ -73,31 +82,39 @@ class AdminDashboard extends ConsumerWidget {
                               children: [
                                 Expanded(
                                   flex: 3,
-                                  child: Consumer(builder: (context, ref, _) {
-                                    final projectsState = ref.watch(activeProjectsProvider);
-                                    return _buildActiveProjectsSection(context, ref, projectsState);
-                                  }),
+                                  child: RepaintBoundary(
+                                    child: Consumer(builder: (context, ref, _) {
+                                      final projectsState = ref.watch(activeProjectsProvider);
+                                      return _buildActiveProjectsSection(context, ref, projectsState);
+                                    }),
+                                  ),
                                 ),
                                 const SizedBox(width: 24),
                                 Expanded(
                                   flex: 2,
-                                  child: Consumer(builder: (context, ref, _) {
-                                    final activityState = ref.watch(recentActivityProvider);
-                                    return _buildRecentOpsSection(context, ref, activityState);
-                                  }),
+                                  child: RepaintBoundary(
+                                    child: Consumer(builder: (context, ref, _) {
+                                      final activityState = ref.watch(recentActivityProvider);
+                                      return _buildRecentOpsSection(context, ref, activityState);
+                                    }),
+                                  ),
                                 ),
                               ],
                             )
                           else ...[
-                            Consumer(builder: (context, ref, _) {
-                              final projectsState = ref.watch(activeProjectsProvider);
-                              return _buildActiveProjectsSection(context, ref, projectsState);
-                            }),
+                            RepaintBoundary(
+                              child: Consumer(builder: (context, ref, _) {
+                                final projectsState = ref.watch(activeProjectsProvider);
+                                return _buildActiveProjectsSection(context, ref, projectsState);
+                              }),
+                            ),
                             const SizedBox(height: 20),
-                            Consumer(builder: (context, ref, _) {
-                              final activityState = ref.watch(recentActivityProvider);
-                              return _buildRecentOpsSection(context, ref, activityState);
-                            }),
+                            RepaintBoundary(
+                              child: Consumer(builder: (context, ref, _) {
+                                final activityState = ref.watch(recentActivityProvider);
+                                return _buildRecentOpsSection(context, ref, activityState);
+                              }),
+                            ),
                           ],
                           const SizedBox(height: 32),
                         ],
@@ -171,12 +188,9 @@ class AdminDashboard extends ConsumerWidget {
               onTap: () async {
                 await context.push('/projects/create');
                 if (context.mounted) {
-                  await Future.delayed(const Duration(milliseconds: 300));
-                  if (context.mounted) {
-                    ref.invalidate(activeProjectsProvider);
-                    ref.invalidate(operationsLiveCountsProvider);
-                    await ref.read(dashboardStatsProvider.notifier).refresh();
-                  }
+                  ref.invalidate(activeProjectsProvider);
+                  ref.invalidate(operationsLiveCountsProvider);
+                  ref.read(dashboardStatsProvider.notifier).refresh();
                 }
               },
             ),
@@ -247,14 +261,16 @@ class AdminDashboard extends ConsumerWidget {
       ),
     ];
 
+    // Single-column on narrow phones (<360px) to avoid cramped cells.
+    final cols = r.columns(narrow: 1, mobile: 2, tablet: 2, desktop: 4);
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: r.isDesktop ? 4 : (r.isTablet ? 2 : 2),
-        crossAxisSpacing: r.isDesktop ? 20 : 12,
-        mainAxisSpacing: r.isDesktop ? 20 : 12,
+        crossAxisCount: cols,
+        crossAxisSpacing: cols >= 4 ? 20 : 12,
+        mainAxisSpacing: cols >= 4 ? 20 : 12,
         mainAxisExtent: 158,
       ),
       itemBuilder: (context, index) {
@@ -345,7 +361,7 @@ class AdminDashboard extends ConsumerWidget {
             crossAxisCount: r.isDesktop ? 4 : 2,
             crossAxisSpacing: r.isDesktop ? 16 : 12,
             mainAxisSpacing: r.isDesktop ? 16 : 12,
-            mainAxisExtent: 72,
+            mainAxisExtent: 80,
           ),
           itemBuilder: (context, index) {
             return _QuickActionTile(action: actions[index]);

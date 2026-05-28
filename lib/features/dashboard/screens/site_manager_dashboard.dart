@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/responsive.dart';
-import '../../../core/widgets/custom_app_bar.dart';
 import '../../auth/data/models/user_profile_model.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
@@ -23,7 +24,6 @@ class SiteManagerDashboard extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: _buildAppBar(context, profile),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => _refreshAll(ref),
@@ -43,6 +43,16 @@ class SiteManagerDashboard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            r.isDesktop ? 32 : 20,
+                            r.isDesktop ? 28 : 8,
+                            r.isDesktop ? 32 : 20,
+                            0,
+                          ),
+                          child: _buildHeader(context, profile),
+                        ),
+                        const SizedBox(height: 20),
                         _buildStatsCard(context, statsState),
                         const SizedBox(height: 20),
                         _buildOperationsSection(context),
@@ -150,40 +160,51 @@ class SiteManagerDashboard extends ConsumerWidget {
     ]);
   }
 
-  PreferredSizeWidget _buildAppBar(
-    BuildContext context,
-    UserProfileModel? profile,
-  ) {
-    return CustomAppBar(
-      showLogo: true,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Welcome back,',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
+  Widget _buildHeader(BuildContext context, UserProfileModel? profile) {
+    final name = (profile?.fullName ?? '').isNotEmpty
+        ? profile!.fullName!
+        : 'Manager';
+    final now = DateTime.now();
+    final greeting = now.hour < 12
+        ? 'Good morning'
+        : now.hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
+    final dateStr = DateFormat('EEEE, MMM d').format(now);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          dateStr.toUpperCase(),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.secondaryDark,
+            letterSpacing: 2.2,
           ),
-          const SizedBox(height: 2),
-          Text(
-            (profile?.fullName ?? '').isNotEmpty
-                ? profile!.fullName!
-                : 'Project Manager',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
+        ),
+        const SizedBox(height: 18),
+        Text(
+          '$greeting,',
+          style: GoogleFonts.fraunces(
+            fontSize: 32,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textPrimary,
+            letterSpacing: -1.0,
+            height: 1.05,
           ),
-        ],
-      ),
-      showBackButton: false,
-      actions: [
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          child: const Icon(Icons.person, color: AppColors.primary, size: 20),
+        ),
+        Text(
+          name,
+          style: GoogleFonts.fraunces(
+            fontSize: 32,
+            fontWeight: FontWeight.w400,
+            fontStyle: FontStyle.italic,
+            color: AppColors.primary,
+            letterSpacing: -1.0,
+            height: 1.05,
+          ),
         ),
       ],
     );
@@ -318,14 +339,14 @@ class SiteManagerDashboard extends ConsumerWidget {
         label: 'Projects',
         subtitle: 'Open assigned sites',
         icon: Icons.business_outlined,
-        bg: Colors.blue[50],
+        bg: AppColors.infoLight,
         onTap: () => context.push('/projects'),
       ),
       _OperationTile(
         label: 'Bills',
         subtitle: 'Track bill requests',
         icon: Icons.receipt_long_outlined,
-        bg: Colors.orange[50],
+        bg: AppColors.warningLight,
         onTap: () => context.push('/bills'),
       ),
     ];
@@ -363,15 +384,10 @@ class SiteManagerDashboard extends ConsumerWidget {
                     horizontal: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: AppColors.cardShadow,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -418,11 +434,41 @@ class SiteManagerDashboard extends ConsumerWidget {
 
     if (state.projects.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
         child: Center(
-          child: Text(
-            'No active projects',
-            style: TextStyle(color: AppColors.textSecondary),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.folder_open_outlined,
+                  size: 28,
+                  color: AppColors.textHint,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No active projects',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Projects assigned to you will appear here',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textHint,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       );
@@ -450,8 +496,9 @@ class SiteManagerDashboard extends ConsumerWidget {
             margin: const EdgeInsets.only(bottom: 12),
             height: 80,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
             ),
           );
         }),
@@ -465,15 +512,10 @@ class SiteManagerDashboard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: AppColors.border),
+          boxShadow: AppColors.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -671,8 +713,9 @@ class SiteManagerDashboard extends ConsumerWidget {
             margin: const EdgeInsets.only(bottom: 12),
             height: 60,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
             ),
           );
         }),
@@ -685,15 +728,10 @@ class SiteManagerDashboard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Row(
         children: [

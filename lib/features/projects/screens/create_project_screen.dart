@@ -46,6 +46,9 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
   Set<String> _selectedManagerIds = {};
   // List of selected manager models for display (fetched on load)
   List<SiteManagerModel> _displayManagers = [];
+  // True only when admin explicitly adds/removes a manager in this session.
+  // Prevents wiping existing assignments when _selectedManagerIds failed to load.
+  bool _managersChanged = false;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -65,31 +68,47 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
   }
 
   void _loadProjectData() {
-    // Load existing project data for editing
+    // Load existing project data for editing.
+    // The provider starts loading asynchronously, so we must await it before reading.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      final state = ref.read(projectDetailProvider(widget.projectId!));
-      final project = state.project;
 
-      if (project != null) {
-        _nameController.text = project.name;
-        _clientNameController.text = project.clientName ?? '';
-        _descriptionController.text = project.description ?? '';
-        _locationController.text = project.location ?? '';
-        _budgetController.text = project.budget?.toStringAsFixed(0) ?? '';
+      // Ensure the project is fully loaded from the DB before reading state.
+      await ref
+          .read(projectDetailProvider(widget.projectId!).notifier)
+          .loadProject();
 
-        // Initialize selected managers from project assignments
-        if (project.assignments != null) {
-          _selectedManagerIds = project.assignments!
-              .map((a) => a.userId)
-              .toSet();
+      if (!mounted) return;
+      final project =
+          ref.read(projectDetailProvider(widget.projectId!)).project;
 
-          // We need to fetch the actual manager models to display names
-          // This is a bit of a workaround since assignments have user profiles nested
-          // but mapped to ProjectAssignmentModel. We can reconstruct display models.
-          setState(() {
-            _displayManagers = project.assignments!
-                .map(
+      if (project == null) return;
+
+      _nameController.text = project.name;
+      _clientNameController.text = project.clientName ?? '';
+      _descriptionController.text = project.description ?? '';
+      _locationController.text = project.location ?? '';
+      _budgetController.text = project.budget?.toStringAsFixed(0) ?? '';
+
+      setState(() {
+        _selectedStatus = project.status;
+        _selectedProjectType = project.projectType;
+        _startDate = project.startDate;
+        _endDate = project.endDate;
+        if (_startDate != null) {
+          _startDateController.text =
+              DateFormat('dd-MM-yyyy').format(_startDate!);
+        }
+        if (_endDate != null) {
+          _endDateController.text =
+              DateFormat('dd-MM-yyyy').format(_endDate!);
+        }
+
+        // Reconstruct display managers from the joined assignment data.
+        _selectedManagerIds =
+            project.assignments?.map((a) => a.userId).toSet() ?? {};
+        _displayManagers = project.assignments
+                ?.map(
                   (a) => SiteManagerModel(
                     id: a.userId,
                     fullName: a.userName,
@@ -97,27 +116,9 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
                     isAssigned: true,
                   ),
                 )
-                .toList();
-          });
-        }
-
-        setState(() {
-          _selectedStatus = project.status;
-          _selectedProjectType = project.projectType;
-          _startDate = project.startDate;
-          _endDate = project.endDate;
-          if (_startDate != null) {
-            _startDateController.text = DateFormat(
-              'dd-MM-yyyy',
-            ).format(_startDate!);
-          }
-          if (_endDate != null) {
-            _endDateController.text = DateFormat(
-              'dd-MM-yyyy',
-            ).format(_endDate!);
-          }
-        });
-      }
+                .toList() ??
+            [];
+      });
     });
   }
 
@@ -146,6 +147,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
     if (result != null) {
       setState(() {
         _selectedManagerIds = result;
+        _managersChanged = true;
       });
       _refreshDisplayManagers();
     }
@@ -222,8 +224,13 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
       }
 
       // Handle Manager Assignments
-      // If we have a project ID (created/updated), update assignments
-      if (resultProjectId != null) {
+      // For new projects: always apply (even if empty).
+      // For edits: only apply if admin explicitly changed the assignment in this
+      // session. This guards against wiping existing managers when
+      // _loadProjectData() failed to populate _selectedManagerIds.
+      final shouldUpdateAssignments =
+          resultProjectId != null && (!widget.isEditing || _managersChanged);
+      if (shouldUpdateAssignments) {
         final currentUser = ref.read(currentUserProvider);
         if (currentUser != null) {
           await ref
@@ -627,6 +634,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
               setState(() {
                 _selectedManagerIds.remove(manager.id);
                 _displayManagers.removeWhere((m) => m.id == manager.id);
+                _managersChanged = true;
               });
             },
             child: const Padding(

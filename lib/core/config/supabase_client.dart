@@ -75,11 +75,15 @@ class SupabaseConfig {
         await _refreshConnection();
         break;
       case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
         _connectionState = ConnectionState.paused;
         // Close the realtime websocket while backgrounded to save
         // battery + data. It's reopened on AppLifecycleState.resumed.
         _pauseRealtime();
+        break;
+      case AppLifecycleState.inactive:
+        // Don't disconnect on inactive — it fires transiently for the app
+        // switcher, system dialogs, phone calls, etc. and would cause
+        // unnecessary timeout errors on streams that are still active.
         break;
       case AppLifecycleState.detached:
         // Save any pending data

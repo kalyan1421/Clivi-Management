@@ -237,6 +237,7 @@ class StockRepository {
     required double quantity,
     String? activity,
     String? notes,
+    String? challanUrl,
   }) async {
     validateProjectId(projectId);
     final userId = _client.auth.currentUser?.id;
@@ -251,6 +252,7 @@ class StockRepository {
       'notes': notes,
       'logged_by': userId,
       'logged_at': DateTime.now().toIso8601String(),
+      if (challanUrl != null) 'challan_url': challanUrl,
     });
   }
 

@@ -60,14 +60,19 @@ enum BillType {
   equipmentRent('equipment_rent'),
   expense('expense'),
   income('income'),
-  invoice('invoice');
+  invoice('invoice'),
+  advance('Advance'),
+  partPayment('Part'),
+  fullPayment('Full'),
+  pettyCash('Petty_Cash');
 
   final String value;
   const BillType(this.value);
 
   static BillType fromString(String? type) {
+    if (type == null) return BillType.expense;
     return BillType.values.firstWhere(
-      (e) => e.value == type,
+      (e) => e.value.toLowerCase() == type.toLowerCase(),
       orElse: () => BillType.expense,
     );
   }
@@ -88,6 +93,14 @@ enum BillType {
         return 'Income';
       case BillType.invoice:
         return 'Invoice';
+      case BillType.advance:
+        return 'Advance';
+      case BillType.partPayment:
+        return 'Part Payment';
+      case BillType.fullPayment:
+        return 'Full Payment';
+      case BillType.pettyCash:
+        return 'Petty Cash';
     }
   }
 }
@@ -178,6 +191,8 @@ class BillModel {
   final PaymentType? paymentType;
   final PaymentStatus paymentStatus;
 
+  final DateTime? deletedAt;
+
   // Joined data (optional)
   final String? projectName;
   final String? createdByName;
@@ -203,6 +218,7 @@ class BillModel {
     this.approvedAt,
     this.paymentType,
     this.paymentStatus = PaymentStatus.needToPay,
+    this.deletedAt,
     this.projectName,
     this.createdByName,
     this.raisedByName,
@@ -237,6 +253,9 @@ class BillModel {
       paymentStatus: PaymentStatus.fromString(
         json['payment_status'] as String?,
       ),
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
+          : null,
 
       projectName: json['project'] != null
           ? json['project']['name'] as String?
@@ -299,6 +318,7 @@ class BillModel {
     DateTime? approvedAt,
     PaymentType? paymentType,
     PaymentStatus? paymentStatus,
+    DateTime? deletedAt,
     String? projectName,
     String? createdByName,
     String? raisedByName,
@@ -323,6 +343,7 @@ class BillModel {
       approvedAt: approvedAt ?? this.approvedAt,
       paymentType: paymentType ?? this.paymentType,
       paymentStatus: paymentStatus ?? this.paymentStatus,
+      deletedAt: deletedAt ?? this.deletedAt,
       projectName: projectName ?? this.projectName,
       createdByName: createdByName ?? this.createdByName,
       raisedByName: raisedByName ?? this.raisedByName,

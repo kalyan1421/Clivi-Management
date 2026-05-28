@@ -9,6 +9,7 @@ class R {
   double get w => size.width;
   double get h => size.height;
 
+  bool get isNarrow => w < 360; // e.g. iPhone SE 1st gen, small Androids
   bool get isMobile => w < 600;
   bool get isTablet => w >= 600 && w < 1024;
   bool get isDesktop => w >= 1024;
@@ -40,9 +41,12 @@ class R {
     return mobile;
   }
 
-  int columns({int mobile = 1, int tablet = 2, int desktop = 3}) {
+  /// [narrow] applies when width < 360px (e.g. iPhone SE 1st gen).
+  /// Falls back to [mobile] when [narrow] is not provided.
+  int columns({int? narrow, int mobile = 1, int tablet = 2, int desktop = 3}) {
     if (isDesktop) return desktop;
     if (isTablet) return tablet;
+    if (isNarrow && narrow != null) return narrow;
     return mobile;
   }
 }

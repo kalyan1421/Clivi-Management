@@ -83,6 +83,8 @@ class _ProjectOperationsScreenState
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.primary,
           indicatorWeight: 3,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           tabs: const [
             Tab(text: 'Materials'),
             Tab(text: 'Machinery'),

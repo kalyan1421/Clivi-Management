@@ -63,7 +63,7 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
                 Padding(
                   padding: EdgeInsets.fromLTRB(
                     r.isDesktop ? 32 : 20,
-                    r.isDesktop ? 28 : 16,
+                    r.isDesktop ? 28 : 8,
                     r.isDesktop ? 32 : 20,
                     0,
                   ),

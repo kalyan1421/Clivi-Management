@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clivi_management/core/config/supabase_client.dart' show logger;
 import '../../../../core/theme/app_colors.dart';
@@ -823,17 +824,62 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
             InkWell(
               borderRadius: BorderRadius.circular(8),
               onTap: () async {
-                final result = await FilePicker.platform.pickFiles(
-                  type: FileType.custom,
-                  allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
-                  withData: true,
+                await showModalBottomSheet<void>(
+                  context: context,
+                  builder: (ctx) => SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                          title: const Text('Take Photo'),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85);
+                            if (picked == null) return;
+                            final bytes = await picked.readAsBytes();
+                            setState(() {
+                              entry.receiptBytes = bytes;
+                              entry.receiptName = picked.name;
+                            });
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                          title: const Text('Choose from Gallery'),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+                            if (picked == null) return;
+                            final bytes = await picked.readAsBytes();
+                            setState(() {
+                              entry.receiptBytes = bytes;
+                              entry.receiptName = picked.name;
+                            });
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.attach_file_outlined, color: AppColors.primary),
+                          title: const Text('Browse Files (PDF / Image)'),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final result = await FilePicker.platform.pickFiles(
+                              type: FileType.custom,
+                              allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+                              withData: true,
+                            );
+                            if (result != null && result.files.single.bytes != null) {
+                              setState(() {
+                                entry.receiptBytes = result.files.single.bytes;
+                                entry.receiptName = result.files.single.name;
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 );
-                if (result != null && result.files.single.bytes != null) {
-                  setState(() {
-                    entry.receiptBytes = result.files.single.bytes;
-                    entry.receiptName = result.files.single.name;
-                  });
-                }
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(
