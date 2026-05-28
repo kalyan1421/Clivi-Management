@@ -75,8 +75,7 @@ class DashboardShell extends ConsumerWidget {
               Expanded(child: child),
             ],
           ),
-          bottomNavigationBar: true
-              ? Container(
+          bottomNavigationBar: Container(
                   decoration: const BoxDecoration(
                     color: AppColors.surface,
                     border: Border(
@@ -111,8 +110,7 @@ class DashboardShell extends ConsumerWidget {
                       ),
                     ),
                   ),
-                )
-              : null,
+                ),
         );
       },
     );

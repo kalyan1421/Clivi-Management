@@ -144,7 +144,7 @@ class _MaterialConsumeScreenState extends ConsumerState<MaterialConsumeScreen> {
     if (_attachmentBytes == null || _attachmentName == null) return null;
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final sanitized = _attachmentName!.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
-    final path = '${widget.projectId}/consume/$timestamp\_$sanitized';
+    final path = '${widget.projectId}/consume/${timestamp}_$sanitized';
     await Supabase.instance.client.storage
         .from(AppConstants.bucketReceipts)
         .uploadBinary(

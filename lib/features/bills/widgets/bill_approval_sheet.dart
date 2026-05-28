@@ -269,7 +269,7 @@ class _BillApprovalSheetState extends ConsumerState<BillApprovalSheet> {
 
   Widget _buildPaymentDropdown() {
     return DropdownButtonFormField<PaymentStatus>(
-      value: _paymentStatus,
+      initialValue: _paymentStatus,
       decoration: const InputDecoration(
         labelText: 'Payment Decision',
         prefixIcon: Icon(Icons.payments_outlined),
@@ -441,7 +441,7 @@ class _ReceiptThumbnail extends StatelessWidget {
           height: 120,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
+          errorBuilder: (_, _, _) => Container(
             height: 60,
             color: AppColors.surface,
             child: const Center(
@@ -514,7 +514,7 @@ class _ImageReceiptViewer extends StatelessWidget {
                 : const Center(
                     child: CircularProgressIndicator(color: Colors.white),
                   ),
-            errorBuilder: (_, __, ___) => const Column(
+            errorBuilder: (_, _, _) => const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.broken_image_outlined, size: 48, color: Colors.white54),
