@@ -48,6 +48,20 @@ class SupabaseConfig {
     }
   }
 
+  /// Initialize Dummy Supabase for UI Dev
+  static Future<void> initializeDummy() async {
+    try {
+      logger.w('Initializing Dummy Supabase for UI Development...');
+      await Supabase.initialize(
+        url: 'https://example.supabase.co',
+        anonKey: 'dummy-key',
+        debug: true,
+      );
+    } catch (e) {
+      logger.e('Failed to initialize Dummy Supabase: $e');
+    }
+  }
+
   /// Check if user is authenticated
   static bool get isAuthenticated => supabase.auth.currentSession != null;
 

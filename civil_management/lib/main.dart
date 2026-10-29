@@ -1,3 +1,4 @@
+import 'package:civil_management/features/auth/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/env.dart';
@@ -10,38 +11,44 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Initialize environment variables
-    await Env.init();
-    logger.i('Environment variables loaded');
+    // // Initialize environment variables
+    // await Env.init();
+    // logger.i('Environment variables loaded');
 
-    // Validate environment variables
-    if (!Env.validate()) {
-      throw Exception('Invalid environment configuration');
-    }
+    // // Validate environment variables
+    // if (!Env.validate()) {
+    //   throw Exception('Invalid environment configuration');
+    // }
 
     // Initialize Supabase
-    await SupabaseConfig.initialize();
+    await SupabaseConfig.initializeDummy();
 
     // Run the app
-    runApp(
-      const ProviderScope(
-        child: CivilManagementApp(),
-      ),
-    );
+    runApp(const ProviderScope(child: CivilManagementApp()));
   } catch (e, stackTrace) {
-    logger.e(
-      'Failed to initialize app',
-      error: e,
-      stackTrace: stackTrace,
-    );
+    logger.e('Failed to initialize app', error: e, stackTrace: stackTrace);
 
-    // Show error screen
-    runApp(
-      MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: ErrorApp(error: e.toString()),
-      ),
-    );
+    // Run the app anyway for UI development
+    // Initialize dummy Supabase for UI testing
+    try {
+      await SupabaseConfig.initializeDummy();
+    } catch (_) {
+      // Ignore secondary init failure
+    }
+
+    // Show error app
+    // runApp(ErrorApp(error: e.toString()));
+
+    runApp(const ProviderScope(child: CivilManagementApp()));
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(home: SplashScreen());
   }
 }
 
@@ -66,10 +73,7 @@ class CivilManagementApp extends ConsumerWidget {
 class ErrorApp extends StatelessWidget {
   final String error;
 
-  const ErrorApp({
-    super.key,
-    required this.error,
-  });
+  const ErrorApp({super.key, required this.error});
 
   @override
   Widget build(BuildContext context) {
@@ -81,11 +85,7 @@ class ErrorApp extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red,
-              ),
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 24),
               const Text(
                 'App Initialization Failed',
@@ -128,10 +128,7 @@ class ErrorApp extends StatelessWidget {
               const SizedBox(height: 24),
               const Text(
                 'Please check your configuration:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),

@@ -22,9 +22,8 @@ import '../../features/projects/data/models/project_model.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
 
-
   return GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/admin/dashboard', // Changed for development
     debugLogDiagnostics: true,
     refreshListenable: _AuthStateNotifier(ref),
     redirect: (context, state) {
@@ -135,7 +134,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final projectId = state.pathParameters['id']!;
               final folderName = state.pathParameters['folderName']!;
-              return BlueprintFilesScreen(projectId: projectId, folderName: folderName);
+              return BlueprintFilesScreen(
+                projectId: projectId,
+                folderName: folderName,
+              );
             },
             routes: [
               GoRoute(
@@ -146,9 +148,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                   return BlueprintViewerScreen(blueprint: blueprint);
                 },
               ),
-            ]
+            ],
           ),
-        ]
+        ],
       ),
       GoRoute(
         path: '/projects/:id/edit',
