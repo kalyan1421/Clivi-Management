@@ -4,4 +4,5 @@
     <color name="brand_cream">#FFFAF8F3</color>
     <color name="brand_navy">#FF1E3A8A</color>
     <color name="brand_surface">#FFFFFFFF</color>
+	<color name="ic_launcher_background">#FFFFFF</color>
 </resources>

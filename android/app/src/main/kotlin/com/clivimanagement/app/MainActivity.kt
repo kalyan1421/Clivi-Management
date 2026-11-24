@@ -1,4 +1,4 @@
-package com.example.clivi_management
+package com.clivimanagement.app
 
 import io.flutter.embedding.android.FlutterActivity
 

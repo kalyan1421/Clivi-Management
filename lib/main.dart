@@ -1,7 +1,13 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:clivi_management/core/config/app_lifecycle_provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'firebase_options.dart';
 import 'core/config/env.dart';
 import 'core/config/supabase_client.dart';
 import 'core/providers/global_realtime_sync_provider.dart';
@@ -12,9 +18,36 @@ import 'core/services/offline_queue_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 
+/// Whether Firebase initialized successfully this launch. Guards Crashlytics
+/// calls so a missing/failed Firebase init never crashes the app itself.
+bool _crashlyticsReady = false;
+
 void main() async {
   // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase + Crashlytics (best-effort; must never block startup).
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    _crashlyticsReady = true;
+
+    // Collect crash reports only in release builds to avoid debug noise.
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+      !kDebugMode,
+    );
+
+    // Route Flutter framework + async/platform errors to Crashlytics.
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  } catch (e, st) {
+    logger.w('Crashlytics init skipped: $e');
+    logger.d('$st');
+  }
 
   try {
     // Initialize environment variables
@@ -54,6 +87,16 @@ void main() async {
   } catch (e, stackTrace) {
     logger.e('Failed to initialize app', error: e, stackTrace: stackTrace);
 
+    // Report the fatal startup failure if Crashlytics is available.
+    if (_crashlyticsReady) {
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        stackTrace,
+        reason: 'App initialization failed',
+        fatal: true,
+      );
+    }
+
     // Show error screen
     runApp(
       MaterialApp(
@@ -92,7 +135,7 @@ class CliviManagementApp extends ConsumerWidget {
     });
 
     return MaterialApp.router(
-      title: 'Clivi Management',
+      title: 'Civil Pro',
       debugShowCheckedModeBanner: false,
       theme: _theme,
       themeMode: ThemeMode.light,
